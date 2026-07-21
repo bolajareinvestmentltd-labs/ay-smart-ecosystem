@@ -1,0 +1,52 @@
+﻿from django.contrib import admin
+from unfold.admin import ModelAdmin
+from .models import (
+    BranchLocation, Vehicle, PickupVoucher,
+    Property, InspectionBooking,
+    BuildProject, ProjectMilestone
+)
+
+# --- AUTOMOTIVE ADMIN ---
+@admin.register(BranchLocation)
+class BranchLocationAdmin(ModelAdmin):
+    list_display = ('name', 'contact_phone', 'is_active')
+    list_filter = ('is_active',)
+
+@admin.register(Vehicle)
+class VehicleAdmin(ModelAdmin):
+    list_display = ('title', 'brand', 'model_year', 'outright_price', 'daily_hire_rate', 'status', 'assigned_branch')
+    list_filter = ('status', 'brand', 'assigned_branch')
+    search_fields = ('title', 'brand')
+
+@admin.register(PickupVoucher)
+class PickupVoucherAdmin(ModelAdmin):
+    list_display = ('client_name', 'vehicle', 'pickup_branch', 'qr_code_string', 'is_scanned', 'created_at')
+    list_filter = ('is_scanned', 'pickup_branch')
+    search_fields = ('client_name', 'qr_code_string')
+
+
+# --- REAL ESTATE ADMIN ---
+@admin.register(Property)
+class PropertyAdmin(ModelAdmin):
+    list_display = ('title', 'property_type', 'price', 'is_for_lease', 'is_available')
+    list_filter = ('property_type', 'is_for_lease', 'is_available')
+    search_fields = ('title', 'location_address')
+
+@admin.register(InspectionBooking)
+class InspectionBookingAdmin(ModelAdmin):
+    list_display = ('client_name', 'client_phone', 'property_to_view', 'scheduled_date', 'status', 'payment_unlocked')
+    list_filter = ('status', 'payment_unlocked', 'scheduled_date')
+    search_fields = ('client_name', 'client_phone')
+
+
+# --- BUILD TRACKER ADMIN ---
+class ProjectMilestoneInline(admin.TabularInline):
+    model = ProjectMilestone
+    extra = 1
+
+@admin.register(BuildProject)
+class BuildProjectAdmin(ModelAdmin):
+    list_display = ('project_title', 'client_name', 'current_phase', 'progress_percentage', 'last_updated')
+    list_filter = ('progress_percentage',)
+    search_fields = ('project_title', 'client_name')
+    inlines = [ProjectMilestoneInline]
