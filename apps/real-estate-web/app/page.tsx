@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Building2, Home, ShieldCheck, ArrowRight, MapPin, Sparkles, Star, Tag } from 'lucide-react';
 import DockNavbar from './components/DockNavbar';
 
+const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? 'http://localhost:3001';
+
 // Admin-managed carousel items (synced with Django backend later)
 const carouselImages = [
   {
@@ -113,7 +115,7 @@ export default function RealEstateHome() {
           <div className="relative z-10">
             <h3 className="text-xs font-black uppercase tracking-wider text-brand-accent">Looking for Vehicles?</h3>
             <p className="text-xs text-zinc-100 mt-1">Explore cars for sale, lease, hire, or trade-in on our Automotive app.</p>
-            <a href="http://localhost:3001" className="inline-block mt-3 px-4 py-2 rounded-xl bg-white text-brand-purple text-xs font-bold shadow-md hover:bg-brand-accent hover:text-brand-dark transition-all">
+            <a href={AUTOMOTIVE_APP_URL} className="inline-block mt-3 px-4 py-2 rounded-xl bg-white text-brand-purple text-xs font-bold shadow-md hover:bg-brand-accent hover:text-brand-dark transition-all">
               Switch to Automotive Hub
             </a>
           </div>

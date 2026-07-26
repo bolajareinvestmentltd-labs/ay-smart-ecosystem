@@ -2,6 +2,8 @@
 import { getProperties } from "../lib/api";
 import PropertyCarousel from "../components/PropertyCarousel";
 
+const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? "http://localhost:3001";
+
 export default async function RealEstateLandingPage() {
   const properties = await getProperties();
 
@@ -20,7 +22,7 @@ export default async function RealEstateLandingPage() {
           </p>
         </div>
         <a
-          href="http://localhost:3001"
+          href={AUTOMOTIVE_APP_URL}
           className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-all duration-300 shadow-lg shadow-blue-600/30 whitespace-nowrap"
         >
           Explore Motors Division →

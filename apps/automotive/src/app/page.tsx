@@ -2,6 +2,8 @@
 import { getVehicles } from "../lib/api";
 import VehicleCarousel from "../components/VehicleCarousel";
 
+const REAL_ESTATE_APP_URL = process.env.NEXT_PUBLIC_REAL_ESTATE_APP_URL ?? "http://localhost:3000";
+
 export default async function AutomotiveLandingPage() {
   const vehicles = await getVehicles();
 
@@ -21,7 +23,7 @@ export default async function AutomotiveLandingPage() {
           </p>
         </div>
         <a
-          href="http://localhost:3000"
+          href={REAL_ESTATE_APP_URL}
           className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 whitespace-nowrap"
         >
           Explore Real Estate Division →

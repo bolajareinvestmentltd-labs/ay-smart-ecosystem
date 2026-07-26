@@ -1,4 +1,6 @@
-﻿from rest_framework import serializers
+﻿from datetime import datetime, time
+
+from rest_framework import serializers
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking,
@@ -26,9 +28,22 @@ class PropertySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InspectionBookingSerializer(serializers.ModelSerializer):
+    property = serializers.PrimaryKeyRelatedField(
+        queryset=Property.objects.all(),
+        write_only=True,
+        source='property_to_view',
+    )
+    preferred_date = serializers.DateField(write_only=True)
+
     class Meta:
         model = InspectionBooking
-        fields = '__all__'
+        fields = ['id', 'client_name', 'client_phone', 'property', 'preferred_date', 'status', 'payment_unlocked', 'scheduled_date']
+        read_only_fields = ['id', 'scheduled_date', 'payment_unlocked']
+
+    def create(self, validated_data):
+        preferred_date = validated_data.pop('preferred_date')
+        validated_data['scheduled_date'] = datetime.combine(preferred_date, time.min)
+        return super().create(validated_data)
 
 class ProjectMilestoneSerializer(serializers.ModelSerializer):
     class Meta:

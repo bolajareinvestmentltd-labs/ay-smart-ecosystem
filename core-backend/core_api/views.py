@@ -25,9 +25,9 @@ class PropertyViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 class InspectionBookingViewSet(viewsets.ModelViewSet):
-    queryset = InspectionBooking.objects.all()
+    queryset = InspectionBooking.objects.all().order_by('-id')
     serializer_class = InspectionBookingSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
 class BuildProjectViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BuildProject.objects.all()

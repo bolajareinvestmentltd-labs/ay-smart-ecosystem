@@ -16,17 +16,22 @@ export default function BookingModal({ property, onClose }: ModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:8000/api";
 
   if (!property) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!property) {
+      setErrorMessage("Please select a valid property before booking.");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
-      // Best Practice: Live POST mutation to Django REST API
-      const response = await fetch("http://127.0.0.1:8000/api/inspections/", {
+      const response = await fetch(`${apiUrl}/inspections/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
