@@ -95,17 +95,25 @@ export default function RealEstateHome() {
 
         <div className="grid grid-cols-2 gap-3">
           {[
-            { title: "Houses & Duplexes", count: "12 Listings", icon: Home },
-            { title: "Commercial Offices", count: "8 Listings", icon: Building2 },
-            { title: "Student Hostels", count: "15 Listings", icon: MapPin },
-            { title: "From-Scratch Build", count: "Custom Service", icon: ShieldCheck },
+            { title: "Houses & Duplexes", count: "12 Listings", icon: Home, href: "/properties" },
+            { title: "Commercial Offices", count: "8 Listings", icon: Building2, href: "/properties" },
+            { title: "Student Hostels", count: "15 Listings", icon: MapPin, href: "/hostel" },
+            { title: "From-Scratch Build", count: "Custom Service", icon: ShieldCheck, href: "/plans" },
           ].map((cat, idx) => (
-            <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-brand-purple/15 shadow-sm hover:border-brand-accent transition-all cursor-pointer group">
+            <Link key={idx} href={cat.href} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-brand-purple/15 shadow-sm hover:border-brand-accent transition-all cursor-pointer group">
               <cat.icon className="text-brand-purple dark:text-brand-magenta mb-2 group-hover:scale-110 transition-transform" size={24} />
               <h4 className="text-xs font-bold">{cat.title}</h4>
               <p className="text-[10px] text-zinc-500 mt-0.5">{cat.count}</p>
-            </div>
+            </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="px-4 mt-6">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Link href="/register" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Register & start</Link>
+          <Link href="/kyc" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Complete KYC</Link>
+          <Link href="/dashboard" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Create listing</Link>
         </div>
       </section>
 

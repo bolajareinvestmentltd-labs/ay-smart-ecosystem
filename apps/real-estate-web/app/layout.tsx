@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata } from 'node_modules/next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
