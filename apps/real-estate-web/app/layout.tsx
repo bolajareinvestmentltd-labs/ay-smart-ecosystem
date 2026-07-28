@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import Footer from './components/Footer';
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-[#09090B] text-[#F9FAFB] min-h-screen antialiased selection:bg-[#581C87] selection:text-white">
         {children}
+        <Footer />
       </body>
     </html>
   );

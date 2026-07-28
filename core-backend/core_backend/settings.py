@@ -1,10 +1,14 @@
 ﻿import os
 from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'django-insecure-aysmart-ecosystem-secret-key-change-in-production'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+load_dotenv(BASE_DIR / '.env')
+
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-aysmart-ecosystem-secret-key-change-in-production')
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 # Application definition
 INSTALLED_APPS = [
@@ -58,10 +62,9 @@ WSGI_APPLICATION = "core_backend.wsgi.application"
 
 # Database Configuration (Default SQLite for local testing, ready for Supabase/Neon URL)
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.parse(
+        os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+    )
 }
 
 # Unified Authentication Configuration (SSO via JWT)
@@ -76,9 +79,14 @@ REST_FRAMEWORK = {
 
 # Allow Next.js Vercel/Localhost frontend domains to communicate without CORS errors
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
+    origin.strip() for origin in os.getenv(
+        'CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:3001'
+    ).split(',') if origin.strip()
 ]
+
+SUPABASE_URL = os.getenv('SUPABASE_URL', '')
+SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')
+SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
