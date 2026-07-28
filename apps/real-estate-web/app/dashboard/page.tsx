@@ -65,6 +65,8 @@ export default function DashboardPage() {
             <Link href="/register" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Register</Link>
             <Link href="/kyc" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">KYC</Link>
             <Link href="/plans" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Plans</Link>
+            <Link href="/payments" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Payments</Link>
+            <Link href="/refer" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Referral</Link>
             <Link href="/hostel" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Hostel</Link>
           </div>
         </section>

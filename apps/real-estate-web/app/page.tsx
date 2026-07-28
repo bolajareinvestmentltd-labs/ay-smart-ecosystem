@@ -111,6 +111,14 @@ export default function RealEstateHome() {
 
       <section className="px-4 mt-6">
         <div className="grid gap-3 md:grid-cols-3">
+          <Link href="/payments" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Paystack checkout</Link>
+          <Link href="/refer" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Refer & earn</Link>
+          <Link href="/auth/profile" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Manage account</Link>
+        </div>
+      </section>
+
+      <section className="px-4 mt-6">
+        <div className="grid gap-3 md:grid-cols-3">
           <Link href="/register" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Register & start</Link>
           <Link href="/kyc" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Complete KYC</Link>
           <Link href="/dashboard" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Create listing</Link>
