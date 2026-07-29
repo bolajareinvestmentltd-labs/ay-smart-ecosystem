@@ -1,6 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Footer from './components/Footer';
+import DockNavbar from './components/DockNavbar';
+import PageTransition from './components/PageTransition';
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
@@ -15,7 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-[#09090B] text-[#F9FAFB] min-h-screen antialiased selection:bg-[#581C87] selection:text-white">
-        {children}
+        <PageTransition>{children}</PageTransition>
+        <DockNavbar />
         <Footer />
       </body>
     </html>

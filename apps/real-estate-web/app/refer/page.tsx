@@ -1,3 +1,101 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+
+export default function ReferPage() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    if (!email || !email.includes("@")) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // NOTE: backend endpoint should be added at /api/referrals to accept POST
+      const res = await fetch("/api/referrals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setMessage(payload?.error || "Unable to submit referral. Try again later.");
+      } else {
+        setEmail("");
+        setMessage("Referral submitted — when confirmed, the referrer earns ₦200 credit.");
+      }
+    } catch (err) {
+      setMessage("Network error. Check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-brand-dark text-white px-4 py-8">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h1 className="text-2xl font-black">Refer & Earn</h1>
+          <p className="mt-2 text-sm text-zinc-300">Invite friends — you earn ₦200 per confirmed referral. Credits can be used for airtime purchases and other services.</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold">How it works</h2>
+          <ol className="mt-3 list-decimal list-inside space-y-2 text-sm text-zinc-300">
+            <li>Share your referral link or invite via email.</li>
+            <li>Friend signs up and completes the required verification.</li>
+            <li>When the referral is confirmed, you receive ₦200 credited to your account.</li>
+            <li>Credits are visible in your wallet and can be used for airtime purchases.</li>
+          </ol>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold">Invite by email</h2>
+          <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="friend@example.com"
+              className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-white placeholder:text-zinc-400"
+            />
+            <button disabled={loading} className="inline-flex items-center justify-center rounded-full bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-magenta">
+              {loading ? "Sending..." : "Send invite"}
+            </button>
+            {message && <p className="text-sm text-zinc-300">{message}</p>}
+          </form>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold">Referral Link</h2>
+          <p className="mt-2 text-sm text-zinc-300">Share this link directly with your friends:</p>
+          <div className="mt-3 flex gap-2">
+            <input readOnly value={typeof window !== 'undefined' ? window.location.origin + '/?ref=YOUR_USER_ID' : '/?ref=YOUR_USER_ID'} className="flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-white" />
+            <Link href="/auth/login" className="rounded-lg bg-white/5 px-3 py-2 text-sm">My referrals</Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold">Assets / Logo</h2>
+          <p className="mt-2 text-sm text-zinc-300">Place your logo files in <strong>apps/real-estate-web/public/assets/</strong>. Recommended filenames:
+            <ul className="ml-4 list-disc">
+              <li><strong>brand-logo.svg</strong> — preferred (scalable, small).</li>
+              <li><strong>brand-logo.png</strong> — fallback (transparent background preferred).</li>
+            </ul>
+          </p>
+          <p className="mt-2 text-sm text-zinc-300">Use the background-removed (transparent) version when overlaying on colored sections. Provide a full-background version only if you need a boxed logo with its own background.</p>
+        </div>
+      </div>
+    </main>
+  );
+}
 'use client';
 import { useState } from 'react';
 import { getStoredProfile } from '../lib/app-state';

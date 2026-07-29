@@ -1,31 +1,29 @@
-'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Building2, Home, ShieldCheck, ArrowRight, MapPin, Sparkles, Star, Tag } from 'lucide-react';
-import DockNavbar from './components/DockNavbar';
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowRight, Tag } from "lucide-react";
 
-const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? 'http://localhost:3001';
+const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? "http://localhost:3001";
 
-// Admin-managed carousel items (synced with Django backend later)
 const carouselImages = [
   {
     title: "Luxury Duplexes & Homes",
     subtitle: "Built from scratch to absolute perfection",
     image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-    badge: "Sponsored & Featured"
+    badge: "Featured",
   },
   {
     title: "Commercial & Corporate Offices",
     subtitle: "Prime business locations for high-flying enterprises",
     image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80",
-    badge: "Verified Listing"
+    badge: "Verified Listing",
   },
   {
     title: "Student Hostels & Apartments",
     subtitle: "Modern, secure, and fully serviced living spaces",
     image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80",
-    badge: "Hot Deal"
-  }
+    badge: "Hot Deal",
+  },
 ];
 
 export default function RealEstateHome() {
@@ -39,107 +37,120 @@ export default function RealEstateHome() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-brand-light dark:bg-brand-dark text-zinc-900 dark:text-zinc-100 pb-28 transition-colors duration-300">
-      
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-brand-dark/90 backdrop-blur-md border-b border-brand-purple/20 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-brand-purple flex items-center justify-center text-white font-black shadow-lg border border-brand-accent/40">
-            AS
+    <main className="min-h-screen bg-brand-dark text-white pb-28 transition-colors duration-300">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-3xl bg-brand-purple text-white shadow-lg shadow-brand-purple/20 ring-1 ring-white/10">
+              AS
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">AY&apos;SMART ECO</p>
+              <p className="text-[11px] text-zinc-400">Real estate, construction, and vehicle services.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xs font-extrabold tracking-tight text-brand-purple dark:text-brand-magenta">AY'SMART ECO</h1>
-            <p className="text-[10px] text-zinc-500 font-medium">Real Estate Hub</p>
+
+          <div className="flex flex-wrap gap-3">
+            <Link href="/properties" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:border-brand-accent hover:text-brand-accent">
+              Explore
+            </Link>
+            <Link href="/auth/login" className="rounded-full bg-brand-purple px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-brand-magenta">
+              Sign in
+            </Link>
           </div>
         </div>
-        <Link href="/auth/login" className="text-xs font-bold px-4 py-2 rounded-full bg-brand-purple text-white shadow-md hover:bg-brand-magenta transition-all">
-          Sign In
-        </Link>
       </header>
 
-      {/* Auto-Scrolling Hero Carousel with Admin Labels */}
-      <section className="relative h-[380px] w-full overflow-hidden">
-        {carouselImages.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-            }`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/50 to-transparent z-10" />
-            <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
-            
-            {/* Admin-Controlled Post Label / Toggle Badge */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-brand-purple text-white text-[10px] font-bold tracking-wider shadow-lg border border-brand-accent/50">
-                <Tag size={12} className="text-brand-accent" /> {slide.badge}
-              </span>
+      <section className="relative overflow-hidden px-4 pt-8 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="space-y-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-brand-accent">Premium property marketplace</p>
+            <h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+              Modern real estate and automotive services in one fast mobile app.
+            </h1>
+            <p className="max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">
+              Discover duplexes, offices, hostels, and vehicles with a clean, responsive experience that feels quick and polished on every screen.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/properties" className="rounded-full bg-brand-purple px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
+                View listings
+              </Link>
+              <Link href="/plans" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-brand-accent hover:text-brand-accent">
+                Pricing plans
+              </Link>
             </div>
-
-            <div className="absolute bottom-6 left-6 right-6 z-20 text-white">
-              <h2 className="text-2xl font-black drop-shadow-md text-white">{slide.title}</h2>
-              <p className="text-xs text-zinc-200 mt-1">{slide.subtitle}</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { label: 'Student hostels', value: '15 Listings' },
+                { label: 'Commercial offices', value: '8 Listings' },
+                { label: 'Verified agents', value: '24+ Professionals' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">{item.label}</p>
+                  <p className="mt-2 text-lg font-black text-white">{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
+
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl ring-1 ring-white/10">
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-purple/30 via-transparent to-transparent" />
+            <div className="relative h-[320px] sm:h-[420px]">
+              {carouselImages.map((slide, index) => (
+                <div
+                  key={slide.title}
+                  className={`absolute inset-0 transition-all duration-700 ease-out ${index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}
+                >
+                  <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/10 to-slate-950/90" />
+                  <div className="absolute bottom-5 left-5 right-5 rounded-3xl bg-black/60 p-4 text-white backdrop-blur-sm">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-brand-purple px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                      <Tag size={12} /> {slide.badge}
+                    </span>
+                    <h2 className="mt-3 text-xl font-black">{slide.title}</h2>
+                    <p className="mt-2 text-sm text-zinc-200">{slide.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Quick Categories Section */}
-      <section className="px-4 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-black tracking-widest uppercase text-brand-purple dark:text-brand-magenta">Explore Categories</h3>
-          <Link href="/properties" className="text-xs text-brand-purple dark:text-brand-magenta font-bold flex items-center gap-1 hover:underline">
-            View All <ArrowRight size={14} />
-          </Link>
+      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
+        <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Cross-platform access</p>
+              <h2 className="mt-2 text-xl font-black text-white">Switch between property and automotive services instantly.</h2>
+            </div>
+            <Link href={AUTOMOTIVE_APP_URL} className="inline-flex items-center justify-center rounded-full bg-brand-accent px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-brand-accent/20 transition hover:bg-yellow-400">
+              Open Automotive Hub
+            </Link>
+          </div>
         </div>
+      </section>
 
-        <div className="grid grid-cols-2 gap-3">
+      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8 pb-20">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { title: "Houses & Duplexes", count: "12 Listings", icon: Home, href: "/properties" },
-            { title: "Commercial Offices", count: "8 Listings", icon: Building2, href: "/properties" },
-            { title: "Student Hostels", count: "15 Listings", icon: MapPin, href: "/hostel" },
-            { title: "From-Scratch Build", count: "Custom Service", icon: ShieldCheck, href: "/plans" },
-          ].map((cat, idx) => (
-            <Link key={idx} href={cat.href} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-brand-purple/15 shadow-sm hover:border-brand-accent transition-all cursor-pointer group">
-              <cat.icon className="text-brand-purple dark:text-brand-magenta mb-2 group-hover:scale-110 transition-transform" size={24} />
-              <h4 className="text-xs font-bold">{cat.title}</h4>
-              <p className="text-[10px] text-zinc-500 mt-0.5">{cat.count}</p>
+            { title: 'Houses & Duplexes', subtitle: '12 Listings', href: '/properties' },
+            { title: 'Commercial Offices', subtitle: '8 Listings', href: '/properties' },
+            { title: 'Student Hostels', subtitle: '15 Listings', href: '/hostel' },
+            { title: 'From-Scratch Build', subtitle: 'Custom service', href: '/plans' },
+          ].map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className="group rounded-[1.65rem] border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-brand-accent/30"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-brand-purple group-hover:text-brand-magenta">{item.title}</p>
+              <p className="mt-3 text-sm text-zinc-400">{item.subtitle}</p>
+              <p className="mt-4 text-sm font-semibold text-white">Explore</p>
             </Link>
           ))}
         </div>
       </section>
-
-      <section className="px-4 mt-6">
-        <div className="grid gap-3 md:grid-cols-3">
-          <Link href="/payments" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Paystack checkout</Link>
-          <Link href="/refer" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Refer & earn</Link>
-          <Link href="/auth/profile" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Manage account</Link>
-        </div>
-      </section>
-
-      <section className="px-4 mt-6">
-        <div className="grid gap-3 md:grid-cols-3">
-          <Link href="/register" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Register & start</Link>
-          <Link href="/kyc" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Complete KYC</Link>
-          <Link href="/dashboard" className="rounded-2xl border border-brand-purple/20 bg-white p-4 text-sm font-semibold text-brand-purple dark:bg-zinc-900 dark:text-brand-magenta">Create listing</Link>
-        </div>
-      </section>
-
-      {/* Cross-Platform Navigation Banner */}
-      <section className="px-4 mt-8">
-        <div className="p-5 rounded-3xl bg-gradient-to-r from-brand-purple to-brand-magenta text-white shadow-xl relative overflow-hidden border border-brand-accent/30">
-          <div className="relative z-10">
-            <h3 className="text-xs font-black uppercase tracking-wider text-brand-accent">Looking for Vehicles?</h3>
-            <p className="text-xs text-zinc-100 mt-1">Explore cars for sale, lease, hire, or trade-in on our Automotive app.</p>
-            <a href={AUTOMOTIVE_APP_URL} className="inline-block mt-3 px-4 py-2 rounded-xl bg-white text-brand-purple text-xs font-bold shadow-md hover:bg-brand-accent hover:text-brand-dark transition-all">
-              Switch to Automotive Hub
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Floating DockMobile Bottom Navigation */}
-      <DockNavbar />
     </main>
   );
 }

@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Tag } from 'lucide-react';
-import DockNavbar from '../components/DockNavbar';
 
 const sampleListings = [
   {
@@ -41,29 +40,29 @@ export default function PropertiesPage() {
   const [filter, setFilter] = useState('All');
 
   return (
-    <main className="min-h-screen bg-brand-light dark:bg-brand-dark text-zinc-900 dark:text-zinc-100 pb-28 transition-colors duration-300">
-      
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-brand-dark/90 backdrop-blur-md border-b border-brand-purple/20 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-sm font-black text-brand-purple dark:text-brand-magenta tracking-wider uppercase">Property Catalog</h1>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-brand-accent animate-pulse" />
-          <span className="text-[10px] text-zinc-500 font-medium">Live Inventory</span>
+    <main className="min-h-screen bg-brand-dark text-white pb-28 transition-colors duration-300">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">Property Catalog</p>
+            <h1 className="mt-2 text-2xl font-black sm:text-3xl">Browse premium listings</h1>
+          </div>
+          <div className="rounded-full bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-zinc-300">Live inventory</div>
         </div>
       </header>
 
-      {/* Search & Filter Bar */}
-      <section className="px-4 mt-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-zinc-400" size={16} />
-          <input 
-            type="text" 
-            placeholder="Search location, duplex, office..." 
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-brand-purple/20 text-xs focus:outline-none focus:border-brand-accent"
-          />
-        </div>
+      <section className="px-4 mt-4 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 text-zinc-500" size={16} />
+            <input
+              type="text"
+              placeholder="Search location, duplex, office..."
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none transition focus:border-brand-accent"
+            />
+          </div>
 
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {['All', 'For Sale', 'Rent/Lease', 'Build from Scratch'].map((cat) => (
             <button 
               key={cat}
@@ -125,9 +124,6 @@ export default function PropertiesPage() {
           </div>
         ))}
       </section>
-
-      {/* Floating DockMobile Bottom Navigation */}
-      <DockNavbar />
     </main>
   );
 }
