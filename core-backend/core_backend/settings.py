@@ -32,6 +32,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware", # CORS Middleware added
+    "core_backend.jwt_cookie_middleware.JWTAuthCookieMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,11 +62,25 @@ TEMPLATES = [
 WSGI_APPLICATION = "core_backend.wsgi.application"
 
 # Database Configuration (Default SQLite for local testing, ready for Supabase/Neon URL)
-DATABASES = {
-    "default": dj_database_url.parse(
-        os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR / "db.sqlite3"}')
-    )
-}
+# Be tolerant of an empty/invalid DATABASE_URL (e.g. '://') and fall back to SQLite.
+raw_db = os.getenv('DATABASE_URL', '').strip()
+if not raw_db:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
+        }
+    }
+else:
+    try:
+        DATABASES = {"default": dj_database_url.parse(raw_db)}
+    except Exception:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": str(BASE_DIR / "db.sqlite3"),
+            }
+        }
 
 # Unified Authentication Configuration (SSO via JWT)
 REST_FRAMEWORK = {
@@ -139,6 +154,10 @@ import os
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Cookie names for JWT when using HttpOnly cookie auth
+ACCESS_COOKIE_NAME = os.getenv('ACCESS_COOKIE_NAME', 'access')
+REFRESH_COOKIE_NAME = os.getenv('REFRESH_COOKIE_NAME', 'refresh')
 
 # --- Render Static Files & Security Configuration ---
 import os

@@ -5,6 +5,7 @@ from .models import (
     Property, InspectionBooking,
     BuildProject, ProjectMilestone
 )
+from .models import Referral, Wallet, SiteBrand
 
 # --- AUTOMOTIVE ADMIN ---
 @admin.register(BranchLocation)
@@ -50,3 +51,31 @@ class BuildProjectAdmin(ModelAdmin):
     list_filter = ('progress_percentage',)
     search_fields = ('project_title', 'client_name')
     inlines = [ProjectMilestoneInline]
+
+
+# Referral & Wallet admin
+@admin.register(Referral)
+class ReferralAdmin(admin.ModelAdmin):
+    list_display = ('id', 'referred_email', 'referrer', 'status', 'created_at', 'confirmed_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('referred_email', 'referrer__username')
+    actions = ['mark_confirmed']
+
+    def mark_confirmed(self, request, queryset):
+        for r in queryset:
+            r.confirm()
+        self.message_user(request, "Selected referrals marked confirmed and referrers credited.")
+
+    mark_confirmed.short_description = "Mark selected referrals as confirmed"
+
+
+@admin.register(Wallet)
+class WalletAdmin(admin.ModelAdmin):
+    list_display = ('user', 'balance', 'currency')
+    search_fields = ('user__username',)
+
+
+@admin.register(SiteBrand)
+class SiteBrandAdmin(admin.ModelAdmin):
+    list_display = ('name', 'updated_at')
+    readonly_fields = ('updated_at',)

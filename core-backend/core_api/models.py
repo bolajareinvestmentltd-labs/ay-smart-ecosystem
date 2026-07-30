@@ -1,5 +1,7 @@
 ﻿from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from decimal import Decimal
 
 # ==========================================
 # 1. AUTOMOTIVE DIVISION MODELS
@@ -106,3 +108,63 @@ class ProjectMilestone(models.Model):
 
     def __str__(self):
         return f"{self.project.project_title} - {self.title}"
+
+
+# ==========================================
+# 4. REFERRALS & WALLET
+# ==========================================
+class Wallet(models.Model):
+    user = models.OneToOneField(User, related_name='wallet', on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    currency = models.CharField(max_length=6, default='NGN')
+
+    def credit(self, amount: Decimal, reason: str = ''):
+        self.balance = (self.balance or Decimal('0.00')) + Decimal(amount)
+        self.save()
+
+    def debit(self, amount: Decimal, reason: str = ''):
+        self.balance = (self.balance or Decimal('0.00')) - Decimal(amount)
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.balance} {self.currency}"
+
+
+class Referral(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('CONFIRMED', 'Confirmed'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    referrer = models.ForeignKey(User, related_name='sent_referrals', on_delete=models.SET_NULL, null=True, blank=True)
+    referred_email = models.EmailField()
+    referred_user = models.ForeignKey(User, related_name='referred_by', on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True, null=True)
+
+    def confirm(self):
+        if self.status == 'CONFIRMED':
+            return
+        self.status = 'CONFIRMED'
+        self.confirmed_at = timezone.now()
+        self.save()
+        # credit the referrer's wallet
+        if self.referrer:
+            wallet, _ = Wallet.objects.get_or_create(user=self.referrer)
+            wallet.credit(Decimal('200.00'), reason=f"Referral {self.id}")
+
+    def __str__(self):
+        return f"Referral {self.id} -> {self.referred_email} ({self.status})"
+
+
+class SiteBrand(models.Model):
+    name = models.CharField(max_length=100, default="AY'SMART")
+    logo = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Primary brand logo (SVG/PNG)')
+    logo_dark = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Optional dark variant')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name

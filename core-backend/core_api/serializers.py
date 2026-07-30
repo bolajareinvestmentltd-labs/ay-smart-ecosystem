@@ -6,6 +6,8 @@ from .models import (
     Property, InspectionBooking,
     BuildProject, ProjectMilestone
 )
+from .models import Referral, Wallet
+
 
 class BranchLocationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -56,3 +58,18 @@ class BuildProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = BuildProject
         fields = '__all__'
+
+
+class WalletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Wallet
+        fields = ['user', 'balance', 'currency']
+
+
+class ReferralSerializer(serializers.ModelSerializer):
+    referrer_username = serializers.CharField(source='referrer.username', read_only=True)
+
+    class Meta:
+        model = Referral
+        fields = ['id', 'referrer', 'referrer_username', 'referred_email', 'referred_user', 'status', 'created_at', 'confirmed_at', 'note']
+        read_only_fields = ['id', 'status', 'created_at', 'confirmed_at']
