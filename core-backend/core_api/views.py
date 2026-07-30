@@ -318,4 +318,16 @@ class PaymentVerifyView(APIView):
 
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
         wallet.credit(transaction.amount, reason=f"Subscription {transaction.plan}")
+        # If this user was referred and the referral is confirmed but not yet rewarded,
+        # credit the referrer with a one-time reward and mark the referral as rewarded.
+        try:
+            referral = Referral.objects.filter(referred_user=request.user, status='CONFIRMED', rewarded=False).first()
+            if referral and referral.referrer:
+                ref_wallet, _ = Wallet.objects.get_or_create(user=referral.referrer)
+                ref_wallet.credit(Decimal('500.00'), reason=f"Referral reward for subscription {request.user.id}")
+                referral.rewarded = True
+                referral.save(update_fields=['rewarded'])
+        except Exception:
+            # avoid failing the verification flow if referral reward logic has issues
+            pass
         return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)

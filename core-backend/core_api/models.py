@@ -243,6 +243,7 @@ class Referral(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     note = models.TextField(blank=True, null=True)
+    rewarded = models.BooleanField(default=False)
 
     def confirm(self):
         if self.status == 'CONFIRMED':

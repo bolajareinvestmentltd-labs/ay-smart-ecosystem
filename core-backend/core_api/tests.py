@@ -215,3 +215,69 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(response.status_code, 200, response.data)
         transaction.refresh_from_db()
         self.assertEqual(transaction.status, "SUCCESS")
+
+    def test_referral_reward_issued_on_first_successful_payment(self):
+        referrer = User.objects.create_user(username="refpay_ref", email="refpay_ref@example.com", password="secret123")
+        referral = Referral.objects.create(referrer=referrer, referred_email="newpayer@example.com")
+
+        # Create the referred user which should confirm the referral and credit initial referral bonus
+        referred = User.objects.create_user(username="newpayer", email="newpayer@example.com", password="secret123")
+        referral.refresh_from_db()
+        referrer.refresh_from_db()
+        # initial referral credit
+        self.assertEqual(referrer.wallet.balance, Decimal('200.00'))
+
+        # create a pending payment for the referred user
+        tx = PaymentTransaction.objects.create(user=referred, plan="basic", amount="3500", provider="paystack", provider_reference="refpay-ref-1", status="PENDING")
+        self.client.force_authenticate(user=referred)
+
+        resp = self.client.post("/api/payments/verify/", {"reference": tx.provider_reference}, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # referrer should receive an additional one-time reward
+        referrer.wallet.refresh_from_db()
+        self.assertEqual(referrer.wallet.balance, Decimal('700.00'))
+        referral.refresh_from_db()
+        self.assertTrue(referral.rewarded)
+
+    def test_payment_verify_is_idempotent_and_credits_only_once(self):
+        user = User.objects.create_user(username="idempotent", email="idem@example.com", password="secret123")
+        # ensure initial wallet balance is zero
+        wallet = Wallet.objects.get(user=user)
+        self.assertEqual(wallet.balance, 0)
+
+        transaction = PaymentTransaction.objects.create(
+            user=user,
+            plan="basic",
+            amount="3500",
+            provider="paystack",
+            provider_reference="idem-ref",
+            status="PENDING",
+        )
+        self.client.force_authenticate(user=user)
+
+        # first verification should succeed and credit wallet
+        resp1 = self.client.post("/api/payments/verify/", {"reference": transaction.provider_reference}, format="json")
+        self.assertEqual(resp1.status_code, 200)
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.status, "SUCCESS")
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal('3500.00'))
+
+        # second verification should be safe (no duplicate credit)
+        resp2 = self.client.post("/api/payments/verify/", {"reference": transaction.provider_reference}, format="json")
+        self.assertEqual(resp2.status_code, 200)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal('3500.00'))
+
+    def test_initiate_payment_rejects_invalid_amounts(self):
+        user = User.objects.create_user(username="badamt", email="badamt@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        # zero amount
+        resp_zero = self.client.post("/api/payments/initiate/", {"plan": "basic", "amount": "0"}, format="json")
+        self.assertEqual(resp_zero.status_code, 400)
+
+        # negative amount
+        resp_neg = self.client.post("/api/payments/initiate/", {"plan": "basic", "amount": "-100"}, format="json")
+        self.assertEqual(resp_neg.status_code, 400)
