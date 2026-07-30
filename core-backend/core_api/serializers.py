@@ -1,4 +1,5 @@
 ﻿from datetime import datetime, time
+from decimal import Decimal
 
 from rest_framework import serializers
 from .models import (
@@ -6,7 +7,7 @@ from .models import (
     Property, InspectionBooking,
     BuildProject, ProjectMilestone
 )
-from .models import Referral, Wallet
+from .models import Listing, PaymentTransaction, Referral, UserProfile, Wallet, WalletTransaction
 
 
 class BranchLocationSerializer(serializers.ModelSerializer):
@@ -66,6 +67,24 @@ class WalletSerializer(serializers.ModelSerializer):
         fields = ['user', 'balance', 'currency']
 
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at', 'is_kyc_verified', 'is_admin_approved']
+
+
+class ListingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Listing
+        fields = ['id', 'user', 'title', 'category', 'location', 'price', 'plan', 'duration_days', 'status', 'cashback', 'created_at']
+        read_only_fields = ['id', 'user', 'cashback', 'created_at']
+
+    def create(self, validated_data):
+        amount = validated_data.get('price', 0)
+        validated_data['cashback'] = amount * Decimal('0.10')
+        return super().create(validated_data)
+
+
 class ReferralSerializer(serializers.ModelSerializer):
     referrer_username = serializers.CharField(source='referrer.username', read_only=True)
 
@@ -73,3 +92,17 @@ class ReferralSerializer(serializers.ModelSerializer):
         model = Referral
         fields = ['id', 'referrer', 'referrer_username', 'referred_email', 'referred_user', 'status', 'created_at', 'confirmed_at', 'note']
         read_only_fields = ['id', 'status', 'created_at', 'confirmed_at']
+
+
+class WalletTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WalletTransaction
+        fields = ['id', 'user', 'amount', 'kind', 'description', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+
+class PaymentTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentTransaction
+        fields = ['id', 'user', 'plan', 'amount', 'provider', 'provider_reference', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'provider_reference', 'status', 'created_at', 'updated_at']

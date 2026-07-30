@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 
-from .models import InspectionBooking, Property
+from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, UserProfile, Wallet, WalletTransaction
 
 
 class InspectionBookingApiTests(TestCase):
@@ -34,3 +37,181 @@ class InspectionBookingApiTests(TestCase):
         self.assertEqual(booking.property_to_view, self.property)
         self.assertEqual(booking.scheduled_date.date().isoformat(), "2026-08-20")
         self.assertEqual(booking.status, "PENDING")
+
+
+class ReferralWalletTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_wallet_is_created_when_user_is_created(self):
+        user = User.objects.create_user(username="newuser", email="new@example.com", password="secret123")
+
+        self.assertTrue(Wallet.objects.filter(user=user).exists())
+
+    def test_pending_referral_is_confirmed_when_matching_user_signs_up(self):
+        referrer = User.objects.create_user(username="referrer", email="referrer@example.com", password="secret123")
+        referral = Referral.objects.create(referrer=referrer, referred_email="new@example.com")
+
+        User.objects.create_user(username="newuser", email="new@example.com", password="secret123")
+
+        referral.refresh_from_db()
+        referrer.refresh_from_db()
+        self.assertEqual(referral.status, "CONFIRMED")
+        self.assertEqual(referrer.wallet.balance, 200.00)
+
+    def test_authenticated_user_can_create_wallet_transaction(self):
+        user = User.objects.create_user(username="walletuser", email="wallet@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/wallets/transactions/",
+            {
+                "amount": "-150.00",
+                "kind": "DEBIT",
+                "description": "Inspection booking",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        wallet = Wallet.objects.get(user=user)
+        self.assertEqual(wallet.balance, -150.00)
+        self.assertTrue(WalletTransaction.objects.filter(user=user, description="Inspection booking").exists())
+
+    def test_registration_endpoint_creates_user_and_wallet(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "username": "newreg",
+                "email": "newreg@example.com",
+                "password": "secret123",
+                "first_name": "New",
+                "last_name": "Reg",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(User.objects.filter(username="newreg").exists())
+        self.assertTrue(Wallet.objects.filter(user__username="newreg").exists())
+
+    def test_authenticated_user_can_update_profile_and_create_listing(self):
+        user = User.objects.create_user(username="profileuser", email="profile@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        profile_response = self.client.put(
+            "/api/auth/profile/",
+            {
+                "phone": "+2348000000000",
+                "location": "Lekki Phase 1",
+                "role": "agent",
+            },
+            format="json",
+        )
+
+        self.assertEqual(profile_response.status_code, 200, profile_response.data)
+
+        listing_response = self.client.post(
+            "/api/listings/",
+            {
+                "title": "Luxury Villa",
+                "category": "Property",
+                "location": "Lekki",
+                "price": "5000000",
+                "plan": "basic",
+                "duration_days": 30,
+            },
+            format="json",
+        )
+
+        self.assertEqual(listing_response.status_code, 201, listing_response.data)
+        self.assertTrue(Listing.objects.filter(user=user).exists())
+
+    def test_checkout_debits_wallet_and_updates_subscription(self):
+        user = User.objects.create_user(username="payuser", email="pay@example.com", password="secret123")
+        wallet = Wallet.objects.get(user=user)
+        wallet.credit(Decimal("10000.00"), reason="Top up")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/payments/checkout/",
+            {
+                "plan": "basic",
+                "amount": "3500",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal("6500.00"))
+
+    def test_authenticated_user_can_approve_kyc(self):
+        user = User.objects.create_user(username="kycuser", email="kyc@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post("/api/kyc/approve/", format="json")
+
+        self.assertEqual(response.status_code, 200, response.data)
+        profile = UserProfile.objects.get(user=user)
+        self.assertTrue(profile.is_kyc_verified)
+        self.assertTrue(profile.is_admin_approved)
+
+    def test_staff_user_can_review_listing(self):
+        owner = User.objects.create_user(username="owner", email="owner@example.com", password="secret123")
+        admin = User.objects.create_user(username="admin", email="admin@example.com", password="secret123", is_staff=True)
+        listing = Listing.objects.create(
+            user=owner,
+            title="Approved Villa",
+            category="Property",
+            location="Lekki",
+            price="5000000",
+            plan="basic",
+            duration_days=30,
+        )
+        self.client.force_authenticate(user=admin)
+
+        response = self.client.post(
+            f"/api/listings/{listing.id}/review/",
+            {"decision": "APPROVE"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        listing.refresh_from_db()
+        self.assertEqual(listing.status, "LIVE")
+
+    def test_authenticated_user_can_initiate_provider_payment(self):
+        user = User.objects.create_user(username="payone", email="payone@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/payments/initiate/",
+            {"plan": "basic", "amount": "3500"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(PaymentTransaction.objects.filter(user=user, plan="basic").exists())
+
+    def test_authenticated_user_can_verify_provider_payment(self):
+        user = User.objects.create_user(username="paytwo", email="paytwo@example.com", password="secret123")
+        transaction = PaymentTransaction.objects.create(
+            user=user,
+            plan="standard",
+            amount="5000",
+            provider="paystack",
+            provider_reference="mock-ref",
+            status="PENDING",
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/payments/verify/",
+            {"reference": transaction.provider_reference},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.status, "SUCCESS")

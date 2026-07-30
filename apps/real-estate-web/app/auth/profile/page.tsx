@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { authFetch } from '../../lib/auth';
 import { getStoredProfile, saveStoredProfile, type SellerProfile } from '../../lib/app-state';
 
 export default function ProfilePage() {
@@ -11,19 +12,71 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    async function loadProfile() {
+      const res = await authFetch('/api/auth/profile/');
+      if (!res.ok) return;
+      const payload = await res.json().catch(() => null);
+      if (!payload) return;
+      const nextProfile = {
+        ...getStoredProfile(),
+        name: payload.name || '',
+        username: payload.username || '',
+        email: payload.email || '',
+        phone: payload.phone || '',
+        location: payload.location || '',
+        role: (payload.role as SellerProfile['role']) || 'seller',
+        subscriptionPlan: (payload.subscription_plan as SellerProfile['subscriptionPlan']) || 'basic',
+        subscriptionStatus: (payload.subscription_status as SellerProfile['subscriptionStatus']) || 'none',
+        isKycVerified: Boolean(payload.is_kyc_verified),
+        adminApproved: Boolean(payload.is_admin_approved),
+      };
+      saveStoredProfile(nextProfile);
+      setProfile(nextProfile);
+      setLocation(payload.location || '');
+    }
+
+    loadProfile();
     setProfile(getStoredProfile());
     setLocation(getStoredProfile().location || '');
   }, []);
 
-  function handleSaveProfile(e: React.FormEvent) {
+  async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
-    const nextProfile = { ...profile, location };
+    setIsSaving(true);
+    setError('');
+    setMessage('');
+
+    const res = await authFetch('/api/auth/profile/', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: profile.phone, location, role: profile.role }),
+    });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload?.detail || 'Unable to save profile right now.');
+      setIsSaving(false);
+      return;
+    }
+
+    const payload = await res.json().catch(() => null);
+    const nextProfile = {
+      ...profile,
+      location,
+      phone: payload?.phone || profile.phone,
+      role: (payload?.role as SellerProfile['role']) || profile.role,
+      subscriptionPlan: (payload?.subscription_plan as SellerProfile['subscriptionPlan']) || profile.subscriptionPlan,
+      subscriptionStatus: (payload?.subscription_status as SellerProfile['subscriptionStatus']) || profile.subscriptionStatus,
+      isKycVerified: Boolean(payload?.is_kyc_verified ?? profile.isKycVerified),
+      adminApproved: Boolean(payload?.is_admin_approved ?? profile.adminApproved),
+    };
     saveStoredProfile(nextProfile);
     setProfile(nextProfile);
     setMessage('Profile saved successfully. Username and email remain unchanged.');
-    setError('');
+    setIsSaving(false);
   }
 
   function handleResetPassword(e: React.FormEvent) {
@@ -89,9 +142,9 @@ export default function ProfilePage() {
                 <p className="font-semibold">Email</p>
                 <p className="text-zinc-500">{profile.email || 'Not set'}</p>
               </div>
-              <input readOnly value={profile.phone} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-400" placeholder="Phone number" />
+              <input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Phone number" />
               <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Current location / address" />
-              <button type="submit" className="rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Save profile</button>
+              <button type="submit" disabled={isSaving} className="rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{isSaving ? 'Saving...' : 'Save profile'}</button>
             </div>
           </form>
 

@@ -1,21 +1,43 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 import { getStoredProfile, saveStoredProfile } from '../lib/app-state';
 
 export default function KycPage() {
   const [profile, setProfile] = useState(getStoredProfile());
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    async function loadProfile() {
+      const res = await authFetch('/api/auth/profile/');
+      if (!res.ok) return;
+      const payload = await res.json().catch(() => null);
+      if (!payload) return;
+      const nextProfile = { ...getStoredProfile(), name: payload.name || '', username: payload.username || '', email: payload.email || '', isKycVerified: payload.is_kyc_verified || false, adminApproved: payload.is_admin_approved || false };
+      saveStoredProfile(nextProfile);
+      setProfile(nextProfile);
+    }
+
+    loadProfile();
     setProfile(getStoredProfile());
   }, []);
 
-  function handleVerify() {
-    const nextProfile = { ...profile, isKycVerified: true };
+  async function handleVerify() {
+    setLoading(true);
+    const res = await authFetch('/api/kyc/approve/', { method: 'POST' });
+    if (!res.ok) {
+      setMessage('Unable to approve KYC right now.');
+      setLoading(false);
+      return;
+    }
+    const payload = await res.json().catch(() => null);
+    const nextProfile = { ...profile, isKycVerified: payload?.is_kyc_verified || true, adminApproved: payload?.is_admin_approved || true };
     saveStoredProfile(nextProfile);
     setProfile(nextProfile);
     setMessage('KYC approved. Your dashboard is now unlocked.');
+    setLoading(false);
   }
 
   return (
@@ -34,7 +56,7 @@ export default function KycPage() {
           <div className="text-sm text-zinc-400">Email: {profile.email || 'Pending'}</div>
         </div>
 
-        <button onClick={handleVerify} className="mt-6 rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Approve KYC locally</button>
+        <button disabled={loading} onClick={handleVerify} className="mt-6 rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Approving...' : 'Approve KYC'}</button>
         {message && <p className="mt-3 text-sm text-emerald-400">{message}</p>}
 
         <div className="mt-6 flex flex-wrap gap-3">

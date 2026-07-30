@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 
 const paymentPlans: Array<{ key: ListingPlan; label: string; price: string; description: string }> = [
@@ -12,6 +13,7 @@ export default function PaymentsPage() {
   const [profile, setProfile] = useState(getStoredProfile());
   const [selectedPlan, setSelectedPlan] = useState<ListingPlan>(profile.subscriptionPlan ?? 'basic');
   const [message, setMessage] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const currentProfile = getStoredProfile();
@@ -19,18 +21,49 @@ export default function PaymentsPage() {
     setSelectedPlan(currentProfile.subscriptionPlan ?? 'basic');
   }, []);
 
-  function handlePay(plan: ListingPlan) {
+  async function handlePay(plan: ListingPlan) {
+    setProcessing(true);
+    setMessage('');
+    const amount = Number(paymentPlans.find((p) => p.key === plan)?.price.replace(/[₦,]/g, '') ?? 0);
+    const initiateRes = await authFetch('/api/payments/initiate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, amount }),
+    });
+
+    if (!initiateRes.ok) {
+      const payload = await initiateRes.json().catch(() => ({}));
+      setMessage(payload?.detail || 'Checkout failed.');
+      setProcessing(false);
+      return;
+    }
+
+    const transaction = await initiateRes.json().catch(() => null);
+    const verifyRes = await authFetch('/api/payments/verify/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference: transaction?.provider_reference }),
+    });
+
+    if (!verifyRes.ok) {
+      const payload = await verifyRes.json().catch(() => ({}));
+      setMessage(payload?.detail || 'Payment verification failed.');
+      setProcessing(false);
+      return;
+    }
+
     const nextProfile = {
       ...profile,
       subscriptionPlan: plan,
       selectedPlan: plan,
       subscriptionStatus: 'active' as const,
       subscriptionExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      walletBalance: profile.walletBalance - Number(paymentPlans.find((p) => p.key === plan)?.price.replace(/[₦,]/g, '') ?? 0),
+      walletBalance: profile.walletBalance + 0,
     };
     saveStoredProfile(nextProfile);
     setProfile(nextProfile);
     setMessage(`Payment completed for the ${plan.toUpperCase()} plan. Subscription active for 7 days.`);
+    setProcessing(false);
   }
 
   return (
@@ -48,7 +81,7 @@ export default function PaymentsPage() {
               <h2 className="text-xl font-black">{plan.label}</h2>
               <p className="mt-2 text-sm text-zinc-400">{plan.description}</p>
               <p className="mt-4 text-3xl font-black">{plan.price}</p>
-              <button onClick={() => handlePay(plan.key)} className="mt-5 w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Pay with Paystack</button>
+              <button disabled={processing} onClick={() => handlePay(plan.key)} className="mt-5 w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{processing ? 'Processing...' : 'Pay with Paystack'}</button>
             </div>
           ))}
         </section>

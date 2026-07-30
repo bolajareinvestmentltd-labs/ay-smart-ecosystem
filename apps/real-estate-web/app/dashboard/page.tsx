@@ -1,11 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 import { getPlanCashback, getStoredListings, getStoredProfile, saveStoredListings, type ListingDraft, type ListingPlan } from '../lib/app-state';
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState(getStoredProfile());
   const [listings, setListings] = useState<ListingDraft[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Property');
   const [location, setLocation] = useState('');
@@ -14,16 +16,46 @@ export default function DashboardPage() {
   const [durationDays, setDurationDays] = useState(30);
 
   useEffect(() => {
+    async function loadProfile() {
+      const res = await authFetch('/api/auth/profile/');
+      if (res.ok) {
+        const payload = await res.json().catch(() => null);
+        if (payload) {
+          const nextProfile = {
+            ...getStoredProfile(),
+            name: payload.name || '',
+            username: payload.username || '',
+            email: payload.email || '',
+            phone: payload.phone || '',
+            location: payload.location || '',
+            role: payload.role || 'seller',
+            isKycVerified: Boolean(payload.is_kyc_verified),
+            adminApproved: Boolean(payload.is_admin_approved),
+          };
+          saveStoredListings(getStoredListings());
+          setProfile(nextProfile);
+        }
+      }
+    }
+
+    loadProfile();
     setProfile(getStoredProfile());
     setListings(getStoredListings());
   }, []);
 
-  function handleCreateListing(e: React.FormEvent) {
+  async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
     if (!profile.isKycVerified) {
       alert('Please complete KYC before publishing listings.');
       return;
     }
+    setSubmitting(true);
+    const res = await authFetch('/api/listings/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, category, location, price, plan, duration_days: durationDays }),
+    });
+
     const listing: ListingDraft = {
       id: Date.now(),
       title,
@@ -36,6 +68,16 @@ export default function DashboardPage() {
       createdAt: new Date().toLocaleString(),
       cashback: getPlanCashback(plan, durationDays),
     };
+
+    if (res.ok) {
+      const payload = await res.json().catch(() => null);
+      if (payload) {
+        listing.id = payload.id;
+        listing.status = payload.status === 'LIVE' ? 'Live' : 'Pending Review';
+        listing.cashback = Number(payload.cashback || getPlanCashback(plan, durationDays));
+      }
+    }
+
     const nextListings = [listing, ...listings];
     setListings(nextListings);
     saveStoredListings(nextListings);
@@ -43,6 +85,7 @@ export default function DashboardPage() {
     setCategory('Property');
     setLocation('');
     setPrice('');
+    setSubmitting(false);
   }
 
   return (
@@ -93,7 +136,7 @@ export default function DashboardPage() {
                 <option value={30}>30 days</option>
                 <option value={60}>60 days</option>
               </select>
-              <button className="rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Submit for review</button>
+              <button disabled={submitting} className="rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : 'Submit for review'}</button>
             </div>
           </form>
 

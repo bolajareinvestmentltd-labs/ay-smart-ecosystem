@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Tag } from "lucide-react";
+import { authFetch } from "./lib/auth";
 
 const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? "http://localhost:3001";
 
@@ -28,11 +29,36 @@ const carouselImages = [
 
 export default function RealEstateHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [approvalStatus, setApprovalStatus] = useState("Checking status...");
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
     }, 4500);
+
+    async function loadApprovalState() {
+      const res = await authFetch('/api/auth/profile/');
+      if (!res.ok) {
+        setApprovalStatus('Login to see your verification status');
+        return;
+      }
+
+      const payload = await res.json().catch(() => null);
+      if (!payload) {
+        setApprovalStatus('Verification status unavailable');
+        return;
+      }
+
+      if (payload.is_admin_approved) {
+        setApprovalStatus('Admin approved · ready for live listings');
+      } else if (payload.is_kyc_verified) {
+        setApprovalStatus('KYC verified · awaiting admin review');
+      } else {
+        setApprovalStatus('Verification pending');
+      }
+    }
+
+    loadApprovalState();
     return () => clearInterval(timer);
   }, []);
 
@@ -65,6 +91,9 @@ export default function RealEstateHome() {
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-5">
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-brand-accent">Premium property marketplace</p>
+            <div className="inline-flex w-fit items-center rounded-full border border-brand-accent/30 bg-brand-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">
+              {approvalStatus}
+            </div>
             <h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
               Modern real estate and automotive services in one fast mobile app.
             </h1>

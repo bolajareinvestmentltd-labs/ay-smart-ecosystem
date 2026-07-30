@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 
 const planOptions: Array<{ key: ListingPlan; label: string; price: string }> = [
@@ -10,6 +11,7 @@ const planOptions: Array<{ key: ListingPlan; label: string; price: string }> = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +25,7 @@ export default function RegisterPage() {
   const [isAgent, setIsAgent] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const profile = getStoredProfile();
@@ -36,7 +39,7 @@ export default function RegisterPage() {
     setIsAgent(profile.role === 'agent');
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
@@ -55,33 +58,60 @@ export default function RegisterPage() {
       return;
     }
 
-    const profile = getStoredProfile();
-    const nextProfile = {
-      ...profile,
-      name,
-      username: username || email.split('@')[0],
-      email,
-      phone,
-      role,
-      location,
-      subscriptionPlan: isAgent ? plan : profile.subscriptionPlan,
-      selectedPlan: isAgent ? plan : profile.selectedPlan,
-      isRegistered: true,
-      isKycVerified: false,
-      adminApproved: false,
-      freeListingsRemaining: isAgent ? 3 : profile.freeListingsRemaining,
-      subscriptionStatus: 'none' as const,
-      walletBalance: profile.walletBalance,
-      listingsCount: profile.listingsCount,
-      failedLoginAttempts: profile.failedLoginAttempts,
-      referralCode: profile.referralCode || `AYS-${Date.now().toString().slice(-5)}`,
-      referralRewards: profile.referralRewards,
-      password,
-      plateNumber: isAgent ? plateNumber : '',
-    };
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/auth/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: username || email.split('@')[0],
+          email,
+          password,
+          first_name: name.split(' ')[0] || '',
+          last_name: name.split(' ').slice(1).join(' ') || '',
+        }),
+      });
 
-    saveStoredProfile(nextProfile);
-    setSaved(true);
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(payload?.detail || 'Registration failed.');
+        return;
+      }
+
+      const profile = getStoredProfile();
+      const nextProfile = {
+        ...profile,
+        name,
+        username: username || email.split('@')[0],
+        email,
+        phone,
+        role,
+        location,
+        subscriptionPlan: isAgent ? plan : profile.subscriptionPlan,
+        selectedPlan: isAgent ? plan : profile.selectedPlan,
+        isRegistered: true,
+        isKycVerified: false,
+        adminApproved: false,
+        freeListingsRemaining: isAgent ? 3 : profile.freeListingsRemaining,
+        subscriptionStatus: 'none' as const,
+        walletBalance: profile.walletBalance,
+        listingsCount: profile.listingsCount,
+        failedLoginAttempts: profile.failedLoginAttempts,
+        referralCode: profile.referralCode || `AYS-${Date.now().toString().slice(-5)}`,
+        referralRewards: profile.referralRewards,
+        password,
+        plateNumber: isAgent ? plateNumber : '',
+      };
+
+      saveStoredProfile(nextProfile);
+      setSaved(true);
+      router.push('/auth/login');
+    } catch (err) {
+      setError('Network error while creating your account.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -131,7 +161,7 @@ export default function RegisterPage() {
             </>
           )}
 
-          <button className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Create account</button>
+          <button disabled={submitting} className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Creating account...' : 'Create account'}</button>
         </form>
 
         {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}

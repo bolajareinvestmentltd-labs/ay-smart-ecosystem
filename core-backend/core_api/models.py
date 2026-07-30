@@ -1,7 +1,11 @@
-﻿from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
+﻿from datetime import timedelta
 from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
 
 # ==========================================
 # 1. AUTOMOTIVE DIVISION MODELS
@@ -121,13 +125,108 @@ class Wallet(models.Model):
     def credit(self, amount: Decimal, reason: str = ''):
         self.balance = (self.balance or Decimal('0.00')) + Decimal(amount)
         self.save()
+        WalletTransaction.objects.create(user=self.user, amount=amount, kind='CREDIT', description=reason or 'Wallet credit')
 
     def debit(self, amount: Decimal, reason: str = ''):
         self.balance = (self.balance or Decimal('0.00')) - Decimal(amount)
         self.save()
+        WalletTransaction.objects.create(user=self.user, amount=-abs(Decimal(amount)), kind='DEBIT', description=reason or 'Wallet debit')
 
     def __str__(self):
         return f"{self.user.username} - {self.balance} {self.currency}"
+
+
+class WalletTransaction(models.Model):
+    KIND_CHOICES = [
+        ('CREDIT', 'Credit'),
+        ('DEBIT', 'Debit'),
+    ]
+
+    user = models.ForeignKey(User, related_name='wallet_transactions', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    description = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} {self.kind} {self.amount}"
+
+
+class PaymentTransaction(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+    ]
+
+    user = models.ForeignKey(User, related_name='payment_transactions', on_delete=models.CASCADE)
+    plan = models.CharField(max_length=20, default='basic')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    provider = models.CharField(max_length=20, default='paystack')
+    provider_reference = models.CharField(max_length=120, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} {self.plan} {self.status}"
+
+
+class UserProfile(models.Model):
+    ROLE_CHOICES = [
+        ('seller', 'Seller'),
+        ('student', 'Student'),
+        ('agent', 'Agent'),
+        ('both', 'Seller + Student'),
+    ]
+
+    user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
+    phone = models.CharField(max_length=20, blank=True)
+    location = models.CharField(max_length=200, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='seller')
+    subscription_plan = models.CharField(max_length=20, default='basic')
+    subscription_status = models.CharField(max_length=20, default='none')
+    subscription_expires_at = models.DateTimeField(null=True, blank=True)
+    is_kyc_verified = models.BooleanField(default=False)
+    is_admin_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} profile"
+
+
+class Listing(models.Model):
+    CATEGORY_CHOICES = [
+        ('Property', 'Property'),
+        ('Automotive', 'Automotive'),
+        ('Hostel', 'Hostel'),
+    ]
+    PLAN_CHOICES = [
+        ('basic', 'Basic'),
+        ('standard', 'Standard'),
+        ('premium', 'Premium'),
+    ]
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Review'),
+        ('LIVE', 'Live'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    user = models.ForeignKey(User, related_name='listings', on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Property')
+    location = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='basic')
+    duration_days = models.PositiveIntegerField(default=30)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    cashback = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
 
 
 class Referral(models.Model):
@@ -158,6 +257,26 @@ class Referral(models.Model):
 
     def __str__(self):
         return f"Referral {self.id} -> {self.referred_email} ({self.status})"
+
+
+@receiver(post_save, sender=User)
+def manage_user_wallet_and_referrals(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    UserProfile.objects.get_or_create(user=instance)
+    Wallet.objects.get_or_create(user=instance)
+
+    if not instance.email:
+        return
+
+    pending_referrals = Referral.objects.filter(
+        referred_email__iexact=instance.email,
+        status='PENDING',
+    )
+    for referral in pending_referrals:
+        referral.referred_user = instance
+        referral.confirm()
 
 
 class SiteBrand(models.Model):

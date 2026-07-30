@@ -15,7 +15,7 @@ export async function loginWithPassword(identifier: string, password: string) {
 }
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
-  const opts = { ...init, credentials: 'include' };
+  const opts: RequestInit = { ...init, credentials: 'include' };
   let res = await fetch(input, opts);
   if (res.status === 401) {
     const refreshed = await refreshToken();

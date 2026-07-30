@@ -63,19 +63,20 @@ export default function PropertiesPage() {
           </div>
 
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {['All', 'For Sale', 'Rent/Lease', 'Build from Scratch'].map((cat) => (
-            <button 
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                filter === cat 
-                  ? 'bg-brand-purple text-white shadow-md border border-brand-accent/40' 
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+            {['All', 'For Sale', 'Rent/Lease', 'Build from Scratch'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                  filter === cat
+                    ? 'bg-brand-purple text-white shadow-md border border-brand-accent/40'
+                    : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
