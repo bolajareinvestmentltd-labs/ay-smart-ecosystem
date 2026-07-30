@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { getStoredProfile, saveStoredProfile } from '../../lib/app-state';
+import { useRouter } from 'next/navigation';
 import { loginWithPassword } from '../../lib/auth';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -15,18 +16,14 @@ export default function LoginPage() {
     setError('');
     setMessage('');
 
-    // Call backend token endpoint
     const result = await loginWithPassword(identifier, password);
     if (!result.ok) {
       setError(result.payload?.detail || 'Login failed');
       return;
     }
 
-    // mark profile as logged-in locally
-    const profile = getStoredProfile();
-    const nextProfile = { ...profile, isLoggedIn: true };
-    saveStoredProfile(nextProfile);
-    setMessage('Login successful. You can now view your wallet.');
+    setMessage('Login successful. Redirecting...');
+    router.push('/refer');
   }
 
   return (

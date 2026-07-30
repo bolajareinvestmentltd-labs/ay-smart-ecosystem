@@ -15,11 +15,9 @@ export async function loginWithPassword(identifier: string, password: string) {
 }
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
-  // Try request, on 401 attempt a single refresh then retry once.
   const opts = { ...init, credentials: 'include' };
   let res = await fetch(input, opts);
   if (res.status === 401) {
-    // try refresh
     const refreshed = await refreshToken();
     if (refreshed) {
       res = await fetch(input, opts);
@@ -28,7 +26,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   return res;
 }
 
-export default { loginWithPassword, authFetch };
+export default { loginWithPassword, authFetch, refreshToken, logout, getCurrentUser };
 
 export async function refreshToken() {
   try {
@@ -48,13 +46,17 @@ export async function logout() {
   }
 }
 
-export async function isAuthenticated() {
+export async function getCurrentUser() {
   try {
     const res = await fetch('/api/auth/me/', { credentials: 'include' });
-    if (!res.ok) return false;
-    const payload = await res.json().catch(() => null);
-    return !!payload?.id;
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
   } catch (e) {
-    return false;
+    return null;
   }
+}
+
+export async function isAuthenticated() {
+  const user = await getCurrentUser();
+  return !!user?.id;
 }

@@ -98,6 +98,9 @@ CORS_ALLOWED_ORIGINS = [
         'CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:3001'
     ).split(',') if origin.strip()
 ]
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = not DEBUG
 
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')

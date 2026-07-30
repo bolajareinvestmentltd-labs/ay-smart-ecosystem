@@ -1,29 +1,42 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { isAuthenticated, logout } from '../lib/auth';
+import { getCurrentUser, logout, refreshToken } from '../lib/auth';
+
+type UserInfo = { id: number; username: string; email: string } | null;
 
 export default function AuthHeader() {
-  const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState<UserInfo>(null);
 
   useEffect(() => {
     let mounted = true;
-    isAuthenticated().then((ok) => { if (mounted) setAuthed(ok); });
-    // silent refresh every 10 minutes
-    const id = setInterval(() => { fetch('/api/auth/refresh-cookie/', { method: 'POST', credentials: 'include' }); }, 10 * 60 * 1000);
+    getCurrentUser().then((currentUser) => {
+      if (mounted) setUser(currentUser);
+    });
+
+    const id = setInterval(async () => {
+      const success = await refreshToken();
+      if (!success && mounted) {
+        setUser(null);
+      }
+    }, 10 * 60 * 1000);
+
     return () => { mounted = false; clearInterval(id); };
   }, []);
 
   async function handleLogout() {
     await logout();
-    setAuthed(false);
+    setUser(null);
     window.location.href = '/';
   }
 
   return (
     <div className="flex items-center gap-3">
-      {authed ? (
-        <button onClick={handleLogout} className="rounded-md bg-white/5 px-3 py-1 text-sm">Logout</button>
+      {user ? (
+        <>
+          <span className="text-sm text-zinc-200">Hi, {user.username}</span>
+          <button onClick={handleLogout} className="rounded-md bg-white/5 px-3 py-1 text-sm">Logout</button>
+        </>
       ) : (
         <Link href="/auth/login" className="rounded-md bg-white/5 px-3 py-1 text-sm">Login</Link>
       )}
