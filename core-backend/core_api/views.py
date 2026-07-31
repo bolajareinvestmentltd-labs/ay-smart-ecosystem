@@ -2,6 +2,8 @@
 from datetime import timedelta
 from decimal import Decimal
 
+import requests
+
 from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -310,7 +312,51 @@ class PaymentInitiateView(APIView):
             provider_reference=reference,
             status='PENDING',
         )
-        return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_201_CREATED)
+
+        paystack_secret_key = os.getenv('PAYSTACK_SECRET_KEY', '').strip()
+        paystack_public_key = os.getenv('PAYSTACK_PUBLIC_KEY', '').strip()
+        use_test_mode = os.getenv('PAYSTACK_USE_TEST_MODE', 'true').lower() in {'1', 'true', 'yes', 'on'}
+
+        if paystack_secret_key and paystack_public_key:
+            try:
+                response = requests.post(
+                    'https://api.paystack.co/transaction/initialize',
+                    headers={'Authorization': f'Bearer {paystack_secret_key}', 'Content-Type': 'application/json'},
+                    json={
+                        'email': request.user.email,
+                        'amount': int(amount_value * 100),
+                        'reference': reference,
+                        'currency': 'NGN',
+                        'channels': ['card', 'bank', 'ussd', 'qr', 'mobile_money'],
+                        'metadata': {'plan': plan, 'user_id': request.user.id},
+                    },
+                    timeout=10,
+                )
+                if response.ok:
+                    payload = response.json().get('data', {})
+                    transaction.provider_reference = payload.get('reference', reference)
+                    transaction.save(update_fields=['provider_reference', 'updated_at'])
+                    return Response({
+                        'id': transaction.id,
+                        'provider_reference': transaction.provider_reference,
+                        'access_code': payload.get('access_code'),
+                        'authorization_url': payload.get('authorization_url'),
+                        'amount': str(amount_value),
+                        'plan': plan,
+                        'test_mode': use_test_mode,
+                    }, status=status.HTTP_201_CREATED)
+            except requests.RequestException:
+                pass
+
+        return Response({
+            'id': transaction.id,
+            'provider_reference': reference,
+            'amount': str(amount_value),
+            'plan': plan,
+            'authorization_url': None,
+            'test_mode': use_test_mode,
+            'message': 'Paystack not configured; using local test-mode checkout flow.',
+        }, status=status.HTTP_201_CREATED)
 
 
 class PaymentVerifyView(APIView):

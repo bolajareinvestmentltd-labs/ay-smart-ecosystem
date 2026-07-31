@@ -19,6 +19,7 @@ export default function PaymentsPage() {
   const [message, setMessage] = useState('');
   const [processing, setProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ListingPlan>('basic');
+  const [testMode, setTestMode] = useState(true);
 
   async function handlePay(plan: ListingPlan) {
     setSelectedPlan(plan);
@@ -39,6 +40,7 @@ export default function PaymentsPage() {
     }
 
     const transaction = await initiateRes.json().catch(() => null);
+    setTestMode(Boolean(transaction?.test_mode ?? true));
     const verifyRes = await authFetch('/api/payments/verify/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -94,7 +96,7 @@ export default function PaymentsPage() {
               <p className="mt-2 text-sm text-zinc-400">Subscriptions activate instantly after verification and include 7 days of listing support.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300">
-              Secure checkout • Wallet updates • Admin support
+              {testMode ? 'Paystack test mode • Sandbox-ready checkout' : 'Production-ready checkout'} • Wallet updates • Admin support
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
