@@ -52,7 +52,7 @@ export async function getCurrentUser() {
     const res = await fetch('/api/auth/me/', { credentials: 'include' });
     if (!res.ok) return null;
     return res.json().catch(() => null);
-  } catch (e) {
+  } catch {
     return null;
   }
 }

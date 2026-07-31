@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, MapPin, Tag } from 'lucide-react';
 
 const sampleListings = [
@@ -85,7 +86,7 @@ export default function PropertiesPage() {
         {sampleListings.map((prop) => (
           <div key={prop.id} className="rounded-2xl bg-white dark:bg-zinc-900 border border-brand-purple/15 overflow-hidden shadow-sm hover:border-brand-accent transition-all">
             <div className="relative h-48 w-full">
-              <img src={prop.image} alt={prop.title} className="w-full h-full object-cover" />
+              <Image src={prop.image} alt={prop.title} fill className="object-cover" />
               
               {/* Admin-Managed Toggles / Badges */}
               <div className="absolute top-3 left-3 flex gap-1.5">

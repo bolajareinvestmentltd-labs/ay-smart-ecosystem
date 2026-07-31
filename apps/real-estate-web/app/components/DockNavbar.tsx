@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Home, Search, Heart, Calendar, User, Sun, Moon } from 'lucide-react';
+import { Home, Search, Calendar, User, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 

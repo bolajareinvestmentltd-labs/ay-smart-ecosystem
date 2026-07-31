@@ -39,10 +39,10 @@ export default function Footer() {
         <div className="grid gap-10 xl:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">AY'SMART ECO</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">AY&#39;SMART ECO</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-white">Luxury property & automotive ecosystem.</h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-400">
-                AY'SMART ECO delivers premium real estate housing, student hostel support, and automotive fleet services with a unified, trustworthy marketplace experience.
+                AY&apos;SMART ECO delivers premium real estate housing, student hostel support, and automotive fleet services with a unified, trustworthy marketplace experience.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -177,7 +177,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10 bg-[#07070A] px-6 py-6 lg:px-10">
         <div className="mx-auto flex flex-col gap-4 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 AY'SMART INVESTMENT LTD. All rights reserved.</p>
+          <p>© 2026 AY&apos;SMART INVESTMENT LTD. All rights reserved.</p>
           <p>Built with premium service and integrity.</p>
           <button onClick={scrollToTop} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white transition hover:bg-[#A855F7] hover:text-white">
             <ChevronUp size={16} /> Back to Top
