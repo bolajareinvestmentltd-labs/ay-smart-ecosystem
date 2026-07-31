@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 type Wallet = { user: number; balance: string; currency: string };
 type Referral = { id: number; referrer: number | null; referred_email: string; status: string };
@@ -51,7 +50,7 @@ export default function ReferPage() {
     try {
       const res = await fetch('/api/wallets/me/', { credentials: 'include' });
       if (res.ok) setWallets(await res.json());
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -60,14 +59,17 @@ export default function ReferPage() {
     try {
       const res = await fetch('/api/referrals/', { credentials: 'include' });
       if (res.ok) setReferrals(await res.json());
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
 
   useEffect(() => {
-    fetchWallets();
-    fetchReferrals();
+    async function loadData() {
+      await fetchWallets();
+      await fetchReferrals();
+    }
+    loadData();
   }, []);
 
   return (

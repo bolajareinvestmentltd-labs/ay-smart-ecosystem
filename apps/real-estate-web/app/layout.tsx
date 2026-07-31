@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Footer from './components/Footer';
 import DockNavbar from './components/DockNavbar';
 import PageTransition from './components/PageTransition';
@@ -21,7 +22,7 @@ export default function RootLayout({
       <body className="bg-[#09090B] text-[#F9FAFB] min-h-screen antialiased selection:bg-[#581C87] selection:text-white">
         <header className="fixed left-4 top-4 z-50 hidden items-center gap-3 rounded-lg bg-black/40 p-2 backdrop-blur-md md:flex">
           <Link href="/">
-            <img src="/assets/brand-logo.svg" alt="AY'SMART ECO" className="h-10 w-auto" />
+            <Image src="/assets/brand-logo.svg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-auto" />
           </Link>
           <AuthHeader />
         </header>

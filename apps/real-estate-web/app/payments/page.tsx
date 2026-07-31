@@ -1,7 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { authFetch } from '../lib/auth';
 import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
+
+function getSubscriptionExpiry() {
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+}
 
 const paymentPlans: Array<{ key: ListingPlan; label: string; price: string; description: string }> = [
   { key: 'basic', label: 'Basic', price: '₦3,500', description: '3 free agent listings for one week then paid listing support' },
@@ -11,15 +15,8 @@ const paymentPlans: Array<{ key: ListingPlan; label: string; price: string; desc
 
 export default function PaymentsPage() {
   const [profile, setProfile] = useState(getStoredProfile());
-  const [selectedPlan, setSelectedPlan] = useState<ListingPlan>(profile.subscriptionPlan ?? 'basic');
   const [message, setMessage] = useState('');
   const [processing, setProcessing] = useState(false);
-
-  useEffect(() => {
-    const currentProfile = getStoredProfile();
-    setProfile(currentProfile);
-    setSelectedPlan(currentProfile.subscriptionPlan ?? 'basic');
-  }, []);
 
   async function handlePay(plan: ListingPlan) {
     setProcessing(true);
@@ -57,7 +54,7 @@ export default function PaymentsPage() {
       subscriptionPlan: plan,
       selectedPlan: plan,
       subscriptionStatus: 'active' as const,
-      subscriptionExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      subscriptionExpiresAt: getSubscriptionExpiry(),
       walletBalance: profile.walletBalance + 0,
     };
     saveStoredProfile(nextProfile);

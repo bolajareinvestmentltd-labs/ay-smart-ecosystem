@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import { authFetch } from "./lib/auth";
 
 const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? "http://localhost:3001";
@@ -130,7 +131,9 @@ export default function RealEstateHome() {
                   key={slide.title}
                   className={`absolute inset-0 transition-all duration-700 ease-out ${index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}
                 >
-                  <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+                  <div className="relative h-full w-full">
+                    <Image src={slide.image} alt={slide.title} fill className="object-cover" />
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/10 to-slate-950/90" />
                   <div className="absolute bottom-5 left-5 right-5 rounded-3xl bg-black/60 p-4 text-white backdrop-blur-sm">
                     <span className="inline-flex items-center gap-2 rounded-full bg-brand-purple px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white">

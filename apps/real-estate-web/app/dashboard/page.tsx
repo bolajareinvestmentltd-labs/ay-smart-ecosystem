@@ -6,7 +6,7 @@ import { getPlanCashback, getStoredListings, getStoredProfile, saveStoredListing
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState(getStoredProfile());
-  const [listings, setListings] = useState<ListingDraft[]>([]);
+  const [listings, setListings] = useState<ListingDraft[]>(() => getStoredListings());
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Property');
@@ -39,8 +39,6 @@ export default function DashboardPage() {
     }
 
     loadProfile();
-    setProfile(getStoredProfile());
-    setListings(getStoredListings());
   }, []);
 
   async function handleCreateListing(e: React.FormEvent) {

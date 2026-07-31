@@ -57,7 +57,7 @@ test.describe('Registration -> Payment (mocked API)', () => {
     try {
       await page.waitForResponse((res) => (res.url().includes('/api/auth/register') || res.url().includes('/api/auth/register/')) && (res.status() === 201 || res.status() === 200), { timeout: 10000 });
       await expect(page).toHaveURL(/.*\/auth\/login/, { timeout: 10000 });
-    } catch (err) {
+    } catch {
       // If the client-side submit did not fire in this environment, fall back to calling the mocked API directly
       console.log('[pw:debug] register POST not observed; falling back to direct API call');
       await page.request.post('/api/auth/register/', { data: { username: 'testuser', email: 'testuser@example.com', password: 'secret123' } });

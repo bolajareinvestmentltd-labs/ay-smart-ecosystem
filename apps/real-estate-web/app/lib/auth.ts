@@ -9,7 +9,7 @@ export async function loginWithPassword(identifier: string, password: string) {
     });
     const payload = await res.json().catch(() => ({}));
     return { ok: res.ok, payload };
-  } catch (err) {
+  } catch {
     return { ok: false, payload: { detail: 'Network error' } };
   }
 }
@@ -26,13 +26,14 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   return res;
 }
 
-export default { loginWithPassword, authFetch, refreshToken, logout, getCurrentUser };
+const auth = { loginWithPassword, authFetch, refreshToken, logout, getCurrentUser };
+export default auth;
 
 export async function refreshToken() {
   try {
     const res = await fetch('/api/auth/refresh-cookie/', { method: 'POST', credentials: 'include' });
     return res.ok;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -41,7 +42,7 @@ export async function logout() {
   try {
     const res = await fetch('/api/auth/logout/', { method: 'POST', credentials: 'include' });
     return res.ok;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

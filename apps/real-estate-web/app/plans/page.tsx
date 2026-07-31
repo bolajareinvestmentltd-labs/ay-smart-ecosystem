@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getPlanBenefits, getPlanPrice, getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 
 const plans: Array<{ key: ListingPlan; name: string; subtitle: string; accent: string }> = [
@@ -16,10 +16,6 @@ function formatPlanPrice(plan: ListingPlan, durationDays: number) {
 export default function PlansPage() {
   const [profile, setProfile] = useState(getStoredProfile());
   const [selectedPlan, setSelectedPlan] = useState<ListingPlan>(profile.selectedPlan ?? 'basic');
-
-  useEffect(() => {
-    setProfile(getStoredProfile());
-  }, []);
 
   function choosePlan(plan: ListingPlan) {
     const nextProfile = { ...profile, selectedPlan: plan, walletBalance: profile.walletBalance + 1000 };

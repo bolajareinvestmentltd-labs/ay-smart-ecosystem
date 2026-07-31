@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getStoredHostelRequests, saveStoredHostelRequests, type HostelRequest } from '../lib/app-state';
 
 export default function HostelPage() {
@@ -8,41 +8,8 @@ export default function HostelPage() {
   const [matriculationNumber, setMatriculationNumber] = useState('');
   const [institution, setInstitution] = useState('');
   const [academicLevel, setAcademicLevel] = useState('100L');
-  const [requests, setRequests] = useState<HostelRequest[]>([]);
+  const [requests, setRequests] = useState<HostelRequest[]>(() => getStoredHostelRequests());
   const [message, setMessage] = useState('');
-
-  const inputStyle: React.CSSProperties = {
-    background: '#09090B',
-    color: '#F9FAFB',
-    border: '1px solid #222',
-    padding: '12px',
-    borderRadius: 12,
-    width: '100%',
-    boxSizing: 'border-box',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    background: '#F59E0B',
-    color: '#071014',
-    border: 'none',
-    padding: '12px',
-    borderRadius: 12,
-    fontWeight: 700,
-    width: '100%',
-  };
-
-  const linkStyle: React.CSSProperties = {
-    display: 'inline-block',
-    padding: '8px 14px',
-    borderRadius: 9999,
-    border: '1px solid #2b2b2b',
-    textDecoration: 'none',
-    color: '#F9FAFB',
-  };
-
-  useEffect(() => {
-    setRequests(getStoredHostelRequests());
-  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,17 +36,17 @@ export default function HostelPage() {
           <p className="mt-2 text-sm text-zinc-400">Fill in your matric number, institution, and academic level for a fast hostel application flow.</p>
 
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-            <input required value={fullName} onChange={(e) => setFullName(e.target.value)} style={inputStyle} className="appearance-none w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Full name" />
-            <input required value={matriculationNumber} onChange={(e) => setMatriculationNumber(e.target.value)} style={inputStyle} className="appearance-none w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Matriculation number" />
-            <input required value={institution} onChange={(e) => setInstitution(e.target.value)} style={inputStyle} className="appearance-none w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Institution name" />
-            <select value={academicLevel} onChange={(e) => setAcademicLevel(e.target.value)} style={inputStyle} className="appearance-none w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+            <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-100" placeholder="Full name" />
+            <input required value={matriculationNumber} onChange={(e) => setMatriculationNumber(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-100" placeholder="Matriculation number" />
+            <input required value={institution} onChange={(e) => setInstitution(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-100" placeholder="Institution name" />
+            <select value={academicLevel} onChange={(e) => setAcademicLevel(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-100">
               <option value="100L">100 Level</option>
               <option value="200L">200 Level</option>
               <option value="300L">300 Level</option>
               <option value="400L">400 Level</option>
               <option value="500L">500 Level</option>
             </select>
-            <button type="submit" style={buttonStyle} className="md:col-span-2 appearance-none w-full rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Submit hostel request</button>
+            <button type="submit" className="md:col-span-2 w-full rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Submit hostel request</button>
           </form>
 
           {message && <p className="mt-4 text-sm text-emerald-400">{message}</p>}
@@ -100,8 +67,8 @@ export default function HostelPage() {
         </section>
 
         <div className="flex flex-wrap gap-3">
-          <Link href="/register" style={linkStyle}>Register</Link>
-          <Link href="/dashboard" style={linkStyle}>Open dashboard</Link>
+          <Link href="/register" className="inline-flex rounded-full border border-zinc-700 px-4 py-2 text-sm text-white transition hover:bg-white/5">Register</Link>
+          <Link href="/dashboard" className="inline-flex rounded-full border border-zinc-700 px-4 py-2 text-sm text-white transition hover:bg-white/5">Open dashboard</Link>
         </div>
       </div>
     </main>

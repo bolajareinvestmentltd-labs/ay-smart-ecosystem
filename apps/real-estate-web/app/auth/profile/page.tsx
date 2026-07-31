@@ -39,8 +39,6 @@ export default function ProfilePage() {
     }
 
     loadProfile();
-    setProfile(getStoredProfile());
-    setLocation(getStoredProfile().location || '');
   }, []);
 
   async function handleSaveProfile(e: React.FormEvent) {

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 
@@ -12,32 +12,21 @@ const planOptions: Array<{ key: ListingPlan; label: string; price: string }> = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const profile = getStoredProfile();
+  const [name, setName] = useState(profile.name || '');
+  const [username, setUsername] = useState(profile.username || '');
+  const [email, setEmail] = useState(profile.email || '');
+  const [phone, setPhone] = useState(profile.phone || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [location, setLocation] = useState('');
-  const [role, setRole] = useState<UserRole>('seller');
-  const [plan, setPlan] = useState<ListingPlan>('basic');
+  const [location, setLocation] = useState(profile.location || '');
+  const [role, setRole] = useState<UserRole>(profile.role || 'seller');
+  const [plan, setPlan] = useState<ListingPlan>(profile.subscriptionPlan || 'basic');
   const [plateNumber, setPlateNumber] = useState('');
-  const [isAgent, setIsAgent] = useState(false);
+  const [isAgent, setIsAgent] = useState(profile.role === 'agent');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const profile = getStoredProfile();
-    setName(profile.name || '');
-    setUsername(profile.username || '');
-    setEmail(profile.email || '');
-    setPhone(profile.phone || '');
-    setLocation(profile.location || '');
-    setRole(profile.role || 'seller');
-    setPlan(profile.subscriptionPlan || 'basic');
-    setIsAgent(profile.role === 'agent');
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -107,7 +96,7 @@ export default function RegisterPage() {
       saveStoredProfile(nextProfile);
       setSaved(true);
       router.push('/auth/login');
-    } catch (err) {
+    } catch {
       setError('Network error while creating your account.');
     } finally {
       setSubmitting(false);
