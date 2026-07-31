@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#09090B] text-[#F9FAFB] antialiased selection:bg-[#581C87] selection:text-white">
+      <body className="min-h-screen bg-brand-dark text-white antialiased selection:bg-brand-purple selection:text-white">
         <PageTransition>{children}</PageTransition>
         <DockNavbar />
         <Footer />

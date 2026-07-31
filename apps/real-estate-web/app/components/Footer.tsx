@@ -44,12 +44,12 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-[#09090B] border-t border-white/10 text-[#F9FAFB]">
+    <footer className="bg-brand-dark border-t border-brand-border text-white">
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
         <div className="grid gap-10 xl:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">AY&#39;SMART ECO</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-violet">AY&#39;SMART ECO</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-white">Luxury property & automotive ecosystem.</h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-400">
                 AY&apos;SMART ECO delivers premium real estate housing, student hostel support, and automotive fleet services with a unified, trustworthy marketplace experience.
@@ -130,9 +130,9 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-white placeholder:text-zinc-500 focus:border-[#A855F7] focus:outline-none focus:ring-2 focus:ring-[#A855F7]/20"
+                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-brand-surface-2 px-4 py-3 text-white placeholder:text-zinc-500 focus:border-brand-magenta focus:outline-none focus:ring-2 focus:ring-brand-magenta/20"
                 />
-                <button type="submit" className="rounded-2xl bg-[#A855F7] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9333ea]">Subscribe</button>
+                <button type="submit" className="rounded-2xl bg-brand-magenta px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-purple">Subscribe</button>
               </form>
               {subscribed && <p className="mt-3 text-sm text-emerald-400">Thank you! You are now subscribed.</p>}
             </section>

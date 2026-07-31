@@ -15,6 +15,10 @@ const config: Config = {
           purple: "var(--brand-purple)",
           magenta: "var(--brand-magenta)",
           accent: "var(--brand-accent)",
+          surface: "var(--brand-surface)",
+          surface2: "var(--brand-surface-2)",
+          border: "var(--brand-border)",
+          violet: "var(--brand-violet)",
         },
         purple: {
           600: "#701A75",
