@@ -5,8 +5,6 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { authFetch } from "./lib/auth";
 
-const AUTOMOTIVE_APP_URL = process.env.NEXT_PUBLIC_AUTOMOTIVE_APP_URL ?? "http://localhost:3001";
-
 const carouselImages = [
   {
     title: "Luxury Duplexes & Homes",
@@ -25,6 +23,21 @@ const carouselImages = [
     subtitle: "Modern, secure, and fully serviced living spaces",
     image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80",
     badge: "Hot Deal",
+  },
+];
+
+const premiumHighlights = [
+  {
+    title: "Verified listings",
+    text: "Every high-value property is reviewed for clarity, quality, and trust.",
+  },
+  {
+    title: "Fast inspection flow",
+    text: "Book walkthroughs quickly with a simple, polished experience.",
+  },
+  {
+    title: "Premium support",
+    text: "Get reliable guidance for purchasing, leasing, or building from scratch.",
   },
 ];
 
@@ -150,16 +163,35 @@ export default function RealEstateHome() {
       </section>
 
       <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
-        <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Cross-platform access</p>
-              <h2 className="mt-2 text-xl font-black text-white">Switch between property and automotive services instantly.</h2>
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 shadow-2xl backdrop-blur-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Premium content section</p>
+            <h2 className="mt-3 text-2xl font-black text-white">A cleaner marketplace experience built for trust, speed, and clarity.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300">
+              Discover premium homes, verified commercial spaces, and service-led listings in one polished experience designed for quick decisions and confident browsing.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {premiumHighlights.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-white/10 bg-[#07070D]/70 p-4">
+                  <p className="text-sm font-semibold text-white">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">{item.text}</p>
+                </div>
+              ))}
             </div>
-            <Link href={AUTOMOTIVE_APP_URL} className="inline-flex items-center justify-center rounded-full bg-brand-accent px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-brand-accent/20 transition hover:bg-yellow-400">
-              Open Automotive Hub
-            </Link>
           </div>
+
+          <aside className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Ad-ready placement</p>
+            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-[#09090B]/70 p-4">
+              <p className="text-sm font-semibold text-white">Sponsored space</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                This block is intentionally separated from core navigation and CTAs so it stays readable and AdSense-safe on desktop and mobile.
+              </p>
+            </div>
+            <p className="mt-4 text-xs leading-6 text-zinc-500">
+              This slot is ready for a future AdSense unit and uses a neutral, content-first layout with no misleading redirects.
+            </p>
+          </aside>
         </div>
       </section>
 

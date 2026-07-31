@@ -41,25 +41,25 @@ export default function PropertiesPage() {
   const [filter, setFilter] = useState('All');
 
   return (
-    <main className="min-h-screen bg-brand-dark text-white pb-28 transition-colors duration-300">
+    <main className="min-h-screen bg-[#07070D] text-white pb-28 transition-colors duration-300">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">Property Catalog</p>
             <h1 className="mt-2 text-2xl font-black sm:text-3xl">Browse premium listings</h1>
           </div>
-          <div className="rounded-full bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-zinc-300">Live inventory</div>
+          <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-zinc-300">Live inventory</div>
         </div>
       </header>
 
       <section className="px-4 mt-4 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4 shadow-2xl backdrop-blur-xl">
           <div className="relative">
             <Search className="absolute left-3 top-3 text-zinc-500" size={16} />
             <input
               type="text"
               placeholder="Search location, duplex, office..."
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none transition focus:border-brand-accent"
+              className="w-full rounded-2xl border border-white/10 bg-[#09090B] px-10 py-3 text-sm text-white outline-none transition focus:border-brand-purple"
             />
           </div>
 
@@ -71,7 +71,7 @@ export default function PropertiesPage() {
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                   filter === cat
                     ? 'bg-brand-purple text-white shadow-md border border-brand-accent/40'
-                    : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800'
+                    : 'bg-white/5 text-zinc-300 border border-white/10'
                 }`}
               >
                 {cat}
@@ -81,14 +81,12 @@ export default function PropertiesPage() {
         </div>
       </section>
 
-      {/* Property Cards Grid */}
       <section className="px-4 mt-4 space-y-4">
         {sampleListings.map((prop) => (
-          <div key={prop.id} className="rounded-2xl bg-white dark:bg-zinc-900 border border-brand-purple/15 overflow-hidden shadow-sm hover:border-brand-accent transition-all">
+          <div key={prop.id} className="mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl transition-all hover:border-brand-accent/40">
             <div className="relative h-48 w-full">
               <Image src={prop.image} alt={prop.title} fill className="object-cover" />
-              
-              {/* Admin-Managed Toggles / Badges */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#07070D]/70 via-transparent to-transparent" />
               <div className="absolute top-3 left-3 flex gap-1.5">
                 {prop.isSponsored && (
                   <span className="px-2.5 py-1 rounded-md bg-brand-accent text-brand-dark text-[10px] font-black uppercase shadow">
@@ -102,22 +100,22 @@ export default function PropertiesPage() {
                 )}
               </div>
 
-              <span className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-brand-dark/80 backdrop-blur-md text-white text-xs font-bold">
+              <span className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-[#09090B]/80 backdrop-blur-md text-white text-xs font-bold">
                 {prop.type}
               </span>
             </div>
 
             <div className="p-4">
-              <h3 className="text-xs font-extrabold text-zinc-900 dark:text-zinc-100">{prop.title}</h3>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 mt-1">
-                <MapPin size={12} className="text-brand-purple dark:text-brand-magenta" /> {prop.location}
+              <h3 className="text-xs font-extrabold text-white">{prop.title}</h3>
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-400">
+                <MapPin size={12} className="text-brand-purple" /> {prop.location}
               </p>
 
-              <div className="mt-3 flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                <span className="text-sm font-black text-brand-purple dark:text-brand-magenta">{prop.price}</span>
+              <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
+                <span className="text-sm font-black text-brand-purple">{prop.price}</span>
                 <Link 
                   href={`/properties/${prop.id}`}
-                  className="px-3.5 py-1.5 rounded-xl bg-brand-purple text-white text-xs font-bold shadow hover:bg-brand-magenta transition-all"
+                  className="rounded-xl bg-brand-purple px-3.5 py-1.5 text-xs font-bold text-white shadow transition hover:bg-brand-magenta"
                 >
                   Book Inspection
                 </Link>

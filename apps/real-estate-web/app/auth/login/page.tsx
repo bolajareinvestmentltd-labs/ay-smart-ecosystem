@@ -27,29 +27,33 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Sign in</p>
-        <h1 className="mt-2 text-3xl font-black">Access your AY&apos;SMART account</h1>
-        <p className="mt-3 text-sm text-zinc-400">Sign in with your email or username and password.</p>
-
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
-          <input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Email or username" />
-          <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Password" />
-          <button className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Sign in</button>
-        </form>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/auth/forgot-password" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Forgot password?</Link>
-          <Link href="/register" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Create account</Link>
+    <main className="min-h-screen bg-[#07070D] px-4 py-8 text-zinc-100">
+      <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl">
+        <div className="border-b border-white/10 bg-[#09090B]/70 p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-accent">Sign in</p>
+          <h1 className="mt-2 text-3xl font-black">Access your AY&apos;SMART account</h1>
+          <p className="mt-3 text-sm text-zinc-400">Sign in with your email or username and password.</p>
         </div>
 
-        <div className="mt-6 space-y-3">
-          <button className="w-full rounded-2xl border border-zinc-700 px-4 py-3 text-sm">Continue with Google</button>
-        </div>
+        <div className="p-8">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#09090B] px-4 py-3 text-white outline-none transition focus:border-brand-purple" placeholder="Email or username" />
+            <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#09090B] px-4 py-3 text-white outline-none transition focus:border-brand-purple" placeholder="Password" />
+            <button className="w-full rounded-2xl bg-brand-purple px-4 py-3 font-semibold text-white transition hover:bg-brand-magenta">Sign in</button>
+          </form>
 
-        {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
-        {message && <p className="mt-4 text-sm text-emerald-400">{message}</p>}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/auth/forgot-password" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:border-brand-accent hover:text-brand-accent">Forgot password?</Link>
+            <Link href="/register" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:border-brand-accent hover:text-brand-accent">Create account</Link>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-[#09090B]/70 p-4">
+            <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm transition hover:border-brand-accent hover:text-brand-accent">Continue with Google</button>
+          </div>
+
+          {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
+          {message && <p className="mt-4 text-sm text-emerald-400">{message}</p>}
+        </div>
       </div>
     </main>
   );
