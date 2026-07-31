@@ -5,7 +5,7 @@ from .models import (
     Property, InspectionBooking,
     BuildProject, ProjectMilestone
 )
-from .models import Referral, Wallet, SiteBrand
+from .models import Referral, SupportRequest, Wallet, SiteBrand
 
 # --- AUTOMOTIVE ADMIN ---
 @admin.register(BranchLocation)
@@ -73,6 +73,13 @@ class ReferralAdmin(admin.ModelAdmin):
 class WalletAdmin(admin.ModelAdmin):
     list_display = ('user', 'balance', 'currency')
     search_fields = ('user__username',)
+
+
+@admin.register(SupportRequest)
+class SupportRequestAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'category', 'subject', 'status', 'created_at')
+    list_filter = ('category', 'status', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
 
 
 @admin.register(SiteBrand)

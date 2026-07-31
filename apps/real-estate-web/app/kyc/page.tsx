@@ -8,6 +8,8 @@ export default function KycPage() {
   const [profile, setProfile] = useState(getStoredProfile());
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const isAgent = profile.role === 'agent';
+  const isStudent = profile.role === 'student' || profile.role === 'both';
 
   useEffect(() => {
     async function loadProfile() {
@@ -44,7 +46,7 @@ export default function KycPage() {
       <div className="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">KYC verification</p>
         <h1 className="mt-2 text-3xl font-black">Verify your identity before listings go live</h1>
-        <p className="mt-2 text-sm text-zinc-400">Only verified sellers can publish property or automotive listings. Admin review happens after upload.</p>
+        <p className="mt-2 text-sm text-zinc-400">{isAgent ? 'Agents can complete verification for service and listing visibility.' : isStudent ? 'Students must verify their matric number and school or personal email before reservation requests are accepted.' : 'Only verified sellers can publish property or automotive listings. Admin review happens after upload.'}</p>
 
         <div className="mt-6 space-y-4 rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
           <div className="flex items-center justify-between">
@@ -53,6 +55,8 @@ export default function KycPage() {
           </div>
           <div className="text-sm text-zinc-400">Name: {profile.name || 'Please register first'}</div>
           <div className="text-sm text-zinc-400">Email: {profile.email || 'Pending'}</div>
+          {isStudent && <div className="text-sm text-zinc-400">Matric number: {profile.matricNumber || 'Pending'}</div>}
+          {isStudent && <div className="text-sm text-zinc-400">Student email: {profile.studentEmail || 'Pending'}</div>}
         </div>
 
         <button disabled={loading} onClick={handleVerify} className="mt-6 rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Approving...' : 'Approve KYC'}</button>

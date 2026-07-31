@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
-from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, UserProfile, Wallet, WalletTransaction
+from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
 
 
 class InspectionBookingApiTests(TestCase):
@@ -87,6 +87,11 @@ class ReferralWalletTests(TestCase):
                 "password": "secret123",
                 "first_name": "New",
                 "last_name": "Reg",
+                "phone": "+2348000000000",
+                "location": "Lagos",
+                "role": "student",
+                "matric_number": "20231001",
+                "student_email": "student@example.com",
             },
             format="json",
         )
@@ -94,6 +99,27 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         self.assertTrue(User.objects.filter(username="newreg").exists())
         self.assertTrue(Wallet.objects.filter(user__username="newreg").exists())
+        profile = UserProfile.objects.get(user__username="newreg")
+        self.assertEqual(profile.role, "student")
+        self.assertEqual(profile.phone, "+2348000000000")
+        self.assertEqual(profile.location, "Lagos")
+
+    def test_support_request_can_be_created(self):
+        response = self.client.post(
+            "/api/support/requests/",
+            {
+                "name": "Ada Lovelace",
+                "email": "ada@example.com",
+                "phone": "+2348000000000",
+                "category": "complaint",
+                "subject": "Payment issue",
+                "message": "I need help with my subscription.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(SupportRequest.objects.filter(subject="Payment issue").exists())
 
     def test_authenticated_user_can_update_profile_and_create_listing(self):
         user = User.objects.create_user(username="profileuser", email="profile@example.com", password="secret123")

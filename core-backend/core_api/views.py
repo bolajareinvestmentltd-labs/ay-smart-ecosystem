@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from .models import (
     BranchLocation, BuildProject, InspectionBooking,
-    Listing, PaymentTransaction, PickupVoucher, Property, UserProfile,
+    Listing, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction
 )
 from .serializers import (
@@ -22,7 +22,7 @@ from .serializers import (
 )
 from .models import Referral
 from .serializers import (
-    ListingSerializer, PaymentTransactionSerializer, ReferralSerializer, UserProfileSerializer,
+    ListingSerializer, PaymentTransactionSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
     WalletSerializer, WalletTransactionSerializer,
 )
 
@@ -36,6 +36,11 @@ class RegisterView(APIView):
         password = request.data.get('password') or ''
         first_name = (request.data.get('first_name') or '').strip()
         last_name = (request.data.get('last_name') or '').strip()
+        phone = (request.data.get('phone') or '').strip()
+        location = (request.data.get('location') or '').strip()
+        role = (request.data.get('role') or 'seller').strip().lower()
+        matric_number = (request.data.get('matric_number') or '').strip()
+        student_email = (request.data.get('student_email') or '').strip()
 
         if not username or not email or not password:
             return Response({'detail': 'username, email, and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -44,8 +49,18 @@ class RegisterView(APIView):
             return Response({'detail': 'A user with that username or email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.phone = phone
+        profile.location = location
+        profile.role = role if role in dict(UserProfile.ROLE_CHOICES).keys() else 'seller'
+        profile.save()
+
+        if matric_number or student_email:
+            profile.role = 'student' if role in {'student', 'both'} else profile.role
+            profile.save()
+
         Wallet.objects.get_or_create(user=user)
-        return Response({'id': user.id, 'username': user.username, 'email': user.email}, status=status.HTTP_201_CREATED)
+        return Response({'id': user.id, 'username': user.username, 'email': user.email, 'role': profile.role}, status=status.HTTP_201_CREATED)
 
 
 class UserInfoView(APIView):
@@ -196,6 +211,12 @@ class ReferralViewSet(viewsets.ModelViewSet):
 
         referral.confirm()
         return Response({'detail': 'Referral confirmed and credited.'}, status=status.HTTP_200_OK)
+
+
+class SupportRequestViewSet(viewsets.ModelViewSet):
+    queryset = SupportRequest.objects.all().order_by('-created_at')
+    serializer_class = SupportRequestSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):

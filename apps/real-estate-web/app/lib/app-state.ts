@@ -28,6 +28,8 @@ export interface SellerProfile {
   password?: string;
   referralCode?: string;
   referralRewards: number;
+  matricNumber?: string;
+  studentEmail?: string;
 }
 
 export interface ListingDraft {

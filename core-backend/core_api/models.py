@@ -280,6 +280,27 @@ def manage_user_wallet_and_referrals(sender, instance, created, **kwargs):
         referral.confirm()
 
 
+class SupportRequest(models.Model):
+    CATEGORY_CHOICES = [
+        ('complaint', 'Complaint'),
+        ('inquiry', 'Inquiry'),
+        ('request', 'Service Request'),
+    ]
+
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='inquiry')
+    subject = models.CharField(max_length=160)
+    message = models.TextField()
+    status = models.CharField(max_length=20, default='NEW')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.subject} ({self.get_category_display()})"
+
+
 class SiteBrand(models.Model):
     name = models.CharField(max_length=100, default="AY'SMART")
     logo = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Primary brand logo (SVG/PNG)')

@@ -13,14 +13,22 @@ const navItems = [
 
 export default function DockNavbar() {
   const pathname = usePathname();
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('aysmart-theme');
+    return stored ? stored === 'dark' : true;
+  });
 
   useEffect(() => {
+    const root = document.documentElement;
     if (darkMode) {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
+      root.style.colorScheme = 'light';
     }
+    window.localStorage.setItem('aysmart-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
   return (

@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useState } from 'react';
 import {
   ShieldCheck,
@@ -11,10 +12,19 @@ import {
   Share2,
   Send,
   MessageCircle,
+  CreditCard,
+  Landmark,
+  Smartphone,
+  Building2,
 } from 'lucide-react';
 
 const companyLinks = ['About Us', 'Our Services', 'Shop', 'Brands', 'Blog', 'Careers'];
-const supportLinks = ['Help Center', 'Contact Us', 'FAQ', 'Shipping Information', 'Track Order', 'Returns & Refunds', 'Warranty Policy'];
+const supportLinks = [
+  { label: 'Support Center', href: '/support' },
+  { label: 'Contact Us', href: '/support' },
+  { label: 'Complaints', href: '/support' },
+  { label: 'Service Requests', href: '/support' },
+];
 const legalLinks = ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Refund Policy', 'Disclaimer'];
 const resourceLinks = ['Buying Guide', 'Properties Care Tips', 'Promotions', 'Affiliate Program'];
 
@@ -70,7 +80,9 @@ export default function Footer() {
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Customer Support</h3>
               <ul className="mt-5 space-y-3 text-sm text-zinc-400">
                 {supportLinks.map((item) => (
-                  <li key={item} className="hover:text-white transition-colors">{item}</li>
+                  <li key={item.label} className="transition-colors hover:text-white">
+                    <Link href={item.href}>{item.label}</Link>
+                  </li>
                 ))}
               </ul>
             </section>
@@ -157,9 +169,22 @@ export default function Footer() {
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Accepted Payment Methods</p>
             <div className="grid gap-3 sm:grid-cols-3">
-              {['Visa', 'Mastercard', 'Verve', 'Bank Transfer', 'Opay', 'Moniepoint'].map((method) => (
-                <div key={method} className="rounded-3xl border border-white/10 bg-white/5 p-4 text-center text-sm text-zinc-300">{method}</div>
-              ))}
+              {[
+                { name: 'Visa', icon: CreditCard },
+                { name: 'Mastercard', icon: CreditCard },
+                { name: 'Verve', icon: Landmark },
+                { name: 'Bank Transfer', icon: Landmark },
+                { name: 'Opay', icon: Smartphone },
+                { name: 'Moniepoint', icon: Building2 },
+              ].map((method) => {
+                const Icon = method.icon;
+                return (
+                  <div key={method.name} className="flex items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 p-4 text-center text-sm text-zinc-300">
+                    <Icon className="h-4 w-4 text-[#A855F7]" />
+                    <span>{method.name}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

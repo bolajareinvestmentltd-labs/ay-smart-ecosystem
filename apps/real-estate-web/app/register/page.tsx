@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 
+const studentEmailHint = 'Use your school email or a personal email that matches your student records.';
+
 const planOptions: Array<{ key: ListingPlan; label: string; price: string }> = [
   { key: 'basic', label: 'Basic', price: '₦3,500 / week' },
   { key: 'standard', label: 'Standard', price: '₦5,000 / week' },
@@ -23,7 +25,10 @@ export default function RegisterPage() {
   const [role, setRole] = useState<UserRole>(profile.role || 'seller');
   const [plan, setPlan] = useState<ListingPlan>(profile.subscriptionPlan || 'basic');
   const [plateNumber, setPlateNumber] = useState('');
+  const [matricNumber, setMatricNumber] = useState('');
+  const [studentEmail, setStudentEmail] = useState('');
   const [isAgent, setIsAgent] = useState(profile.role === 'agent');
+  const [isStudent, setIsStudent] = useState(profile.role === 'student' || profile.role === 'both');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +52,16 @@ export default function RegisterPage() {
       return;
     }
 
+    if (isStudent && (!matricNumber || !studentEmail)) {
+      setError('Students must provide a matric number and a school or personal email.');
+      return;
+    }
+
+    if (isStudent && matricNumber && studentEmail && !studentEmail.includes('@')) {
+      setError('Please provide a valid email address for verification.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await fetch('/api/auth/register/', {
@@ -59,6 +74,11 @@ export default function RegisterPage() {
           password,
           first_name: name.split(' ')[0] || '',
           last_name: name.split(' ').slice(1).join(' ') || '',
+          role,
+          phone,
+          location,
+          matric_number: isStudent ? matricNumber : '',
+          student_email: isStudent ? studentEmail : '',
         }),
       });
 
@@ -77,6 +97,8 @@ export default function RegisterPage() {
         phone,
         role,
         location,
+        matricNumber: isStudent ? matricNumber : '',
+        studentEmail: isStudent ? studentEmail : '',
         subscriptionPlan: isAgent ? plan : profile.subscriptionPlan,
         selectedPlan: isAgent ? plan : profile.selectedPlan,
         isRegistered: true,
@@ -127,7 +149,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <select value={role} onChange={(e) => { const value = e.target.value as UserRole; setRole(value); setIsAgent(value === 'agent'); }} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+            <select value={role} onChange={(e) => { const value = e.target.value as UserRole; setRole(value); setIsAgent(value === 'agent'); setIsStudent(value === 'student' || value === 'both'); }} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
               <option value="seller">Seller</option>
               <option value="student">Student</option>
               <option value="agent">Agent</option>
@@ -135,6 +157,15 @@ export default function RegisterPage() {
             </select>
             <input required value={location} onChange={(e) => setLocation(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Location / Address" />
           </div>
+
+          {isStudent && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <input required value={matricNumber} onChange={(e) => setMatricNumber(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Matric number" />
+              <input required type="email" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="School or personal email" />
+            </div>
+          )}
+
+          {isStudent && <p className="text-sm text-zinc-400">{studentEmailHint}</p>}
 
           {isAgent && (
             <>

@@ -7,7 +7,7 @@ from .models import (
     Property, InspectionBooking,
     BuildProject, ProjectMilestone
 )
-from .models import Listing, PaymentTransaction, Referral, UserProfile, Wallet, WalletTransaction
+from .models import Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
 
 
 class BranchLocationSerializer(serializers.ModelSerializer):
@@ -92,6 +92,13 @@ class ReferralSerializer(serializers.ModelSerializer):
         model = Referral
         fields = ['id', 'referrer', 'referrer_username', 'referred_email', 'referred_user', 'status', 'created_at', 'confirmed_at', 'note']
         read_only_fields = ['id', 'status', 'created_at', 'confirmed_at']
+
+
+class SupportRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SupportRequest
+        fields = ['id', 'name', 'email', 'phone', 'category', 'subject', 'message', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'created_at', 'updated_at']
 
 
 class WalletTransactionSerializer(serializers.ModelSerializer):

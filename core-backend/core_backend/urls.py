@@ -7,7 +7,7 @@ from core_api.views import (
     BranchLocationViewSet, BuildProjectViewSet, CheckoutView,
     InspectionBookingViewSet, KycApprovalView, ListingViewSet, PaymentInitiateView,
     PaymentVerifyView, ProfileView, PropertyViewSet, RegisterView, ReferralViewSet,
-    UserInfoView, VehicleViewSet, WalletViewSet,
+    SupportRequestViewSet, UserInfoView, VehicleViewSet, WalletViewSet,
 )
 
 # Explicit High-Contrast Branding Overrides
@@ -25,6 +25,7 @@ router.register(r'build-tracker', BuildProjectViewSet, basename='build-tracker')
 router.register(r'listings', ListingViewSet, basename='listing')
 router.register(r'referrals', ReferralViewSet, basename='referral')
 router.register(r'wallets', WalletViewSet, basename='wallet')
+router.register(r'support/requests', SupportRequestViewSet, basename='support-request')
 
 urlpatterns = [
     path("", RedirectView.as_view(url="/admin/", permanent=False)),
