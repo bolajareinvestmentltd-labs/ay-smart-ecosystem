@@ -49,6 +49,8 @@ export interface HostelRequest {
   matriculationNumber: string;
   institution: string;
   academicLevel: string;
+  selectedHostels: string[];
+  reservationSummary?: string;
   createdAt: string;
 }
 

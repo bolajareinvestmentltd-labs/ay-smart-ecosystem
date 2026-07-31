@@ -81,9 +81,9 @@ export default function RealEstateHome() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-4 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-3xl bg-brand-purple text-white shadow-lg shadow-brand-purple/20 ring-1 ring-white/10">
-              AS
-            </div>
+            <Link href="/" className="flex h-11 w-11 items-center justify-center rounded-3xl bg-brand-purple text-white shadow-lg shadow-brand-purple/20 ring-1 ring-white/10">
+              <Image src="/assets/brand-logo.svg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-10 rounded-2xl object-cover" />
+            </Link>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">AY&apos;SMART ECO</p>
               <p className="text-[11px] text-zinc-400">Real estate, construction, and vehicle services.</p>
