@@ -117,7 +117,8 @@ export default function RegisterPage() {
 
       saveStoredProfile(nextProfile);
       setSaved(true);
-      router.push('/auth/login');
+      // Redirect user to verification landing with email param so they can resend if needed
+      router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}`);
     } catch {
       setError('Network error while creating your account.');
     } finally {
@@ -185,7 +186,7 @@ export default function RegisterPage() {
         </form>
 
         {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
-        {saved && <p className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-400">Account created. Proceed to KYC and wait for admin approval.</p>}
+        {saved && <p className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-400">Account created. Check your email for a verification link before signing in.</p>}
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/auth/login" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Already have an account?</Link>

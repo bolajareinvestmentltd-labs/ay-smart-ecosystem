@@ -5,12 +5,22 @@ from decimal import Decimal
 import requests
 
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import SimpleRateThrottle
+import hashlib
+import hmac
+import base64
+import logging
+from django.conf import settings
 
 from .models import (
     BranchLocation, BuildProject, InspectionBooking,
@@ -27,6 +37,31 @@ from .serializers import (
     ListingSerializer, PaymentTransactionSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
     WalletSerializer, WalletTransactionSerializer,
 )
+
+
+def send_verification_email(user: User):
+    from django.conf import settings
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    verify_url = f"{settings.FRONTEND_URL.rstrip('/')}/auth/verify-email?uid={uid}&token={token}"
+
+    subject = "Verify your AY'SMART email"
+    message = (
+        f"Hello {user.get_full_name() or user.username},\n\n"
+        "Welcome to AY'SMART. Please verify your email address by clicking the link below:\n\n"
+        f"{verify_url}\n\n"
+        "If you did not create this account, you can safely ignore this message.\n\n"
+        "Thank you,\nAY'SMART Team"
+    )
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    # Record timestamp on profile for server-side cooldown and clear bounce flag
+    try:
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.last_verification_sent_at = timezone.now()
+        profile.email_bounced = False
+        profile.save(update_fields=['last_verification_sent_at', 'email_bounced'])
+    except Exception:
+        pass
 
 
 class RegisterView(APIView):
@@ -62,15 +97,115 @@ class RegisterView(APIView):
             profile.save()
 
         Wallet.objects.get_or_create(user=user)
+        try:
+            send_verification_email(user)
+        except Exception as exc:
+            # Keep registration successful but surface an error if email delivery is not configured.
+            return Response(
+                {'detail': 'User created, but verification email could not be sent. Check email configuration.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response({'id': user.id, 'username': user.username, 'email': user.email, 'role': profile.role}, status=status.HTTP_201_CREATED)
 
 
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
+class EmailVerificationView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        uidb64 = request.data.get('uid') or ''
+        token = request.data.get('token') or ''
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'detail': 'Invalid verification token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if default_token_generator.check_token(user, token):
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.email_verified = True
+            profile.save(update_fields=['email_verified'])
+            return Response({'detail': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+
+        return Response({'detail': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResendVerificationView(APIView):
+    permission_classes = [permissions.AllowAny]
+    from rest_framework.throttling import SimpleRateThrottle
+
+    class _ResendRateThrottle(SimpleRateThrottle):
+        scope = 'resend_verification'
+
+        def get_cache_key(self, request, view):
+            # Prefer per-email throttling; fall back to IP when not provided
+            try:
+                email = (request.data.get('email') or '').strip().lower()
+            except Exception:
+                email = ''
+            if email:
+                ident = email
+            else:
+                ident = self.get_ident(request)
+            return self.cache_format % {'scope': self.scope, 'ident': ident}
+
+    throttle_classes = [_ResendRateThrottle]
+
+    def post(self, request):
+        email = (request.data.get('email') or '').strip()
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'detail': 'No user found with that email.'}, status=status.HTTP_404_NOT_FOUND)
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        if getattr(profile, 'email_verified', False):
+            return Response({'detail': 'Email already verified.'}, status=status.HTTP_200_OK)
+        # Enforce server-side cooldown (60s)
+        cooldown_seconds = 60
+        last = getattr(profile, 'last_verification_sent_at', None)
+        if last:
+            delta = timezone.now() - last
+            if delta.total_seconds() < cooldown_seconds:
+                remaining = int(cooldown_seconds - delta.total_seconds())
+                return Response({'detail': f'Please wait {remaining} seconds before resending.'}, status=429)
+
+        try:
+            send_verification_email(user)
+        except Exception:
+            return Response({'detail': 'Failed to send verification email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'detail': 'Verification email sent.'}, status=status.HTTP_200_OK)
 
     def get(self, request):
         user = request.user
         return Response({'id': user.id, 'username': user.username, 'email': user.email})
+
+
+class EmailVerificationView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        uidb64 = request.data.get('uid') or ''
+        token = request.data.get('token') or ''
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'detail': 'Invalid verification token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if default_token_generator.check_token(user, token):
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.email_verified = True
+            profile.save(update_fields=['email_verified'])
+            return Response({'detail': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+
+        return Response({'detail': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(APIView):
@@ -86,6 +221,102 @@ class ProfileView(APIView):
             'name': ' '.join(filter(None, [request.user.first_name, request.user.last_name])).strip(),
         })
         return Response(data)
+
+
+class EmailWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        # Basic webhook receiver for SendGrid / Mailgun bounce events.
+        payload = request.data
+        logger = logging.getLogger(__name__)
+
+        # Verify Mailgun signature when present
+        try:
+            if isinstance(payload, dict) and 'signature' in payload:
+                sig = payload.get('signature') or {}
+                timestamp = sig.get('timestamp')
+                token = sig.get('token')
+                signature = sig.get('signature')
+                key = os.getenv('MAILGUN_WEBHOOK_KEY', '') or getattr(settings, 'MAILGUN_WEBHOOK_KEY', '')
+                if key and timestamp and token and signature:
+                    mac = hmac.new(key.encode('utf-8'), f"{timestamp}{token}".encode('utf-8'), hashlib.sha256).hexdigest()
+                    if not hmac.compare_digest(mac, signature):
+                        logger.warning('Mailgun webhook signature mismatch')
+                        return Response({'detail': 'Invalid webhook signature'}, status=status.HTTP_403_FORBIDDEN)
+
+        except Exception as e:
+            logger.exception('Error verifying mailgun signature')
+            return Response({'detail': 'Webhook verification error'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify SendGrid signed event webhook when headers and public key present
+        try:
+            sg_sig = request.headers.get('X-Twilio-Email-Event-Webhook-Signature')
+            sg_ts = request.headers.get('X-Twilio-Email-Event-Webhook-Timestamp')
+            sg_key = os.getenv('SENDGRID_WEBHOOK_PUBLIC_KEY', '') or getattr(settings, 'SENDGRID_WEBHOOK_PUBLIC_KEY', '')
+            if sg_sig and sg_ts and sg_key:
+                # SendGrid signature is ed25519 over timestamp + body
+                try:
+                    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+                    from cryptography.hazmat.primitives import serialization
+                    body = request.body or b''
+                    signed = (sg_ts + body.decode('utf-8')).encode('utf-8')
+                    signature_bytes = base64.b64decode(sg_sig)
+                    # Load public key (PEM or raw base64). Try PEM first.
+                    try:
+                        pub = serialization.load_pem_public_key(sg_key.encode('utf-8'))
+                    except Exception:
+                        # Try raw base64 public key
+                        try:
+                            raw = base64.b64decode(sg_key)
+                            pub = Ed25519PublicKey.from_public_bytes(raw)
+                        except Exception:
+                            raise
+                    pub.verify(signature_bytes, signed)
+                except Exception:
+                    logger.warning('SendGrid webhook signature verification failed')
+                    return Response({'detail': 'Invalid webhook signature'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception:
+            logger.exception('Error verifying SendGrid signature')
+            return Response({'detail': 'Webhook verification error'}, status=status.HTTP_400_BAD_REQUEST)
+        # Try SendGrid-style event array
+        try:
+            if isinstance(payload, list):
+                for ev in payload:
+                    if ev.get('event') in ('bounce', 'dropped'):
+                        email = ev.get('email') or ev.get('to')
+                        if email:
+                            try:
+                                user = User.objects.filter(email__iexact=email).first()
+                                if user:
+                                    profile, _ = UserProfile.objects.get_or_create(user=user)
+                                    profile.email_bounced = True
+                                    profile.save(update_fields=['email_bounced'])
+                            except Exception:
+                                pass
+                return Response({'detail': 'Processed events'}, status=status.HTTP_200_OK)
+
+            # Mailgun style
+            if 'event-data' in payload:
+                ed = payload['event-data']
+                if ed.get('event') in ('bounced', 'failed'):
+                    recipients = ed.get('recipient') or ed.get('recipients')
+                    if isinstance(recipients, str):
+                        recipients = [recipients]
+                    for email in recipients or []:
+                        try:
+                            user = User.objects.filter(email__iexact=email).first()
+                            if user:
+                                profile, _ = UserProfile.objects.get_or_create(user=user)
+                                profile.email_bounced = True
+                                profile.save(update_fields=['email_bounced'])
+                        except Exception:
+                            pass
+                return Response({'detail': 'Processed mailgun event'}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({'detail': 'Webhook processing error'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'detail': 'No recognized event'}, status=status.HTTP_200_OK)
 
     def put(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)

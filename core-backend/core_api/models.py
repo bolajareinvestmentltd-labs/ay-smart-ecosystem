@@ -189,6 +189,11 @@ class UserProfile(models.Model):
     subscription_expires_at = models.DateTimeField(null=True, blank=True)
     is_kyc_verified = models.BooleanField(default=False)
     is_admin_approved = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)  # Added email verification field
+    # Timestamp the last time a verification email was sent (for server-side cooldown)
+    last_verification_sent_at = models.DateTimeField(null=True, blank=True)
+    # Flag set when provider reports a hard bounce for this email
+    email_bounced = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

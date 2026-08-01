@@ -1,13 +1,23 @@
+from django.conf import settings
+from django.db.models import Q
+from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
-from django.conf import settings
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
     """Return tokens and set them as HttpOnly cookies."""
 
     def post(self, request, *args, **kwargs):
+        identifier = (request.data.get('username') or '').strip()
+        if identifier:
+            user = User.objects.filter(Q(username__iexact=identifier) | Q(email__iexact=identifier)).first()
+            if user and not getattr(user.profile, 'email_verified', False):
+                return Response({'detail': 'Please verify your email before signing in.'}, status=status.HTTP_401_UNAUTHORIZED)
+            if user and identifier.lower() != user.username.lower():
+                request.data['username'] = user.username
+
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
             data = response.data

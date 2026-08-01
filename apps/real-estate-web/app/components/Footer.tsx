@@ -17,6 +17,7 @@ import {
   Smartphone,
   Building2,
 } from 'lucide-react';
+import { SITE } from '../config/site';
 
 const companyLinks = ['About Us', 'Our Services', 'Shop', 'Brands', 'Blog', 'Careers'];
 const supportLinks = [
@@ -49,10 +50,10 @@ export default function Footer() {
         <div className="grid gap-10 xl:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-violet">AY&#39;SMART ECO</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-violet">{SITE.name}</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-white">Luxury property & automotive ecosystem.</h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-400">
-                AY&apos;SMART ECO delivers premium real estate housing, student hostel support, and automotive fleet services with a unified, trustworthy marketplace experience.
+                {SITE.name} delivers premium real estate housing, student hostel support, and automotive fleet services with a unified, trustworthy marketplace experience.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

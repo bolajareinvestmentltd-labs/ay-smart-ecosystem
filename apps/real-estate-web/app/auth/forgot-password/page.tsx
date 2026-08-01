@@ -10,25 +10,33 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  function handleReset(e: React.FormEvent) {
+  async function handleReset(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setMessage('');
-
-    const profile = getStoredProfile();
-    if (profile.email !== email) {
-      setError('Email not found.');
-      return;
-    }
 
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    const nextProfile = { ...profile, password: newPassword, failedLoginAttempts: 0 };
-    saveStoredProfile(nextProfile);
-    setMessage('Password reset successfully. Please sign in with your new password.');
+    try {
+      const response = await fetch('/api/auth/password-reset/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, new_password: newPassword }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setError(payload?.detail || 'Unable to reset password right now.');
+        return;
+      }
+
+      setMessage('Password reset request submitted. Check your email for confirmation.');
+    } catch {
+      setError('Network error while resetting password.');
+    }
   }
 
   return (

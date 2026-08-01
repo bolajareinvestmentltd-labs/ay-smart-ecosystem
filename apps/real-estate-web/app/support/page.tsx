@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
+import { API } from '../config/site';
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://ay-smart-backend.onrender.com/api';
+const apiBase = API.base;
 
 const categories = [
   { value: 'complaint', label: 'Complaint' },

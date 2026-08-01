@@ -131,7 +131,9 @@ export function getStoredProfile(): SellerProfile {
 
 export function saveStoredProfile(profile: SellerProfile) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  const safeProfile = { ...profile };
+  delete safeProfile.password;
+  window.localStorage.setItem(PROFILE_KEY, JSON.stringify(safeProfile));
 }
 
 export function getStoredListings(): ListingDraft[] {

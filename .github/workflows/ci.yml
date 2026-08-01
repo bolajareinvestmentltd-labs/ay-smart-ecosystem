@@ -22,7 +22,10 @@ jobs:
       - name: Run Django tests
         working-directory: core-backend
         run: |
+          # Run unit tests
           python manage.py test core_api.tests
+          # Run email smoke test using in-memory backend
+          EMAIL_BACKEND=django.core.mail.backends.locmem.EmailBackend python manage.py test_email_flow
 
   frontend:
     runs-on: ubuntu-latest
