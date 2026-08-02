@@ -21,18 +21,16 @@ export default function DockNavbar() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add('dark');
-      root.style.colorScheme = 'dark';
-    } else {
-      root.classList.remove('dark');
-      root.style.colorScheme = 'light';
-    }
-    window.localStorage.setItem('aysmart-theme', darkMode ? 'dark' : 'light');
+    const nextTheme = darkMode ? 'dark' : 'light';
+    root.dataset.theme = nextTheme;
+    document.body.dataset.theme = nextTheme;
+    root.classList.toggle('dark', darkMode);
+    root.style.colorScheme = nextTheme;
+    window.localStorage.setItem('aysmart-theme', nextTheme);
   }, [darkMode]);
 
   return (
-    <nav className="fixed bottom-4 left-1/2 z-50 w-[min(96vw,720px)] -translate-x-1/2 rounded-full border border-brand-border bg-brand-dark/95 p-2 shadow-2xl backdrop-blur-xl">
+    <nav className="fixed bottom-4 left-1/2 z-50 w-[min(96vw,720px)] -translate-x-1/2 rounded-full border border-[color:var(--brand-border)] bg-[color:var(--brand-surface-2)]/95 p-2 shadow-2xl backdrop-blur-xl">
       <div className="grid grid-cols-5 gap-2">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href));
@@ -41,7 +39,9 @@ export default function DockNavbar() {
               key={href}
               href={href}
               className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[10px] uppercase tracking-[0.22em] transition-all ${
-                active ? 'bg-brand-purple text-white shadow-sm shadow-brand-purple/20' : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                active
+                  ? 'bg-brand-purple text-white shadow-sm shadow-brand-purple/20'
+                  : 'text-[color:var(--text-muted)] hover:bg-[color:var(--brand-surface)]/10 hover:text-[color:var(--text-primary)]'
               }`}
               aria-label={label}
             >
@@ -54,7 +54,7 @@ export default function DockNavbar() {
         <button
           type="button"
           onClick={() => setDarkMode(!darkMode)}
-          className="rounded-2xl border border-white/10 bg-white/5 p-2 text-zinc-300 transition hover:border-brand-accent hover:text-white"
+          className="rounded-2xl border border-[color:var(--brand-border)] bg-[color:var(--brand-surface)]/10 p-2 text-[color:var(--text-muted)] transition hover:border-brand-accent hover:text-[color:var(--text-primary)]"
           aria-label="Toggle theme"
         >
           {darkMode ? <Sun size={16} /> : <Moon size={16} />}
