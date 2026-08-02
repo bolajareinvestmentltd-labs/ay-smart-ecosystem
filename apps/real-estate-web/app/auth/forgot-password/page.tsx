@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { getStoredProfile, saveStoredProfile } from '../../lib/app-state';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');

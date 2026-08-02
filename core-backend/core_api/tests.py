@@ -1,10 +1,12 @@
 from decimal import Decimal
+from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
 from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
+from .views import send_verification_email
 
 
 class InspectionBookingApiTests(TestCase):
@@ -103,6 +105,34 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(profile.role, "student")
         self.assertEqual(profile.phone, "+2348000000000")
         self.assertEqual(profile.location, "Lagos")
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    @patch('core_api.views.send_mail')
+    def test_verification_email_uses_resend_configured_sender(self, mock_send_mail):
+        user = User.objects.create_user(username='resendtest', email='resendtest@example.com', password='secret123')
+
+        send_verification_email(user)
+
+        self.assertTrue(mock_send_mail.called)
+        args, kwargs = mock_send_mail.call_args
+        self.assertEqual(args[2], 'noreply@resend.dev')
+        self.assertIn('verify your', args[0].lower())
+
+    def test_password_reset_endpoint_updates_user_password(self):
+        user = User.objects.create_user(username='resetuser', email='resetuser@example.com', password='oldsecret123')
+
+        response = self.client.post(
+            '/api/auth/password-reset/',
+            {
+                'email': 'resetuser@example.com',
+                'new_password': 'newsecret456',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password('newsecret456'))
 
     def test_support_request_can_be_created(self):
         response = self.client.post(

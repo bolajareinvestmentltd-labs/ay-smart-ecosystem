@@ -53,7 +53,30 @@ def send_verification_email(user: User):
         "If you did not create this account, you can safely ignore this message.\n\n"
         "Thank you,\nAY'SMART Team"
     )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev')
+    resend_api_key = getattr(settings, 'RESEND_API_KEY', '') or os.getenv('RESEND_API_KEY', '')
+    if resend_api_key:
+        try:
+            payload = {
+                'from': from_email,
+                'to': [user.email],
+                'subject': subject,
+                'text': message,
+            }
+            response = requests.post(
+                'https://api.resend.com/emails',
+                headers={
+                    'Authorization': f'Bearer {resend_api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json=payload,
+                timeout=10,
+            )
+            response.raise_for_status()
+        except Exception:
+            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+    else:
+        send_mail(subject, message, from_email, [user.email], fail_silently=False)
     # Record timestamp on profile for server-side cooldown and clear bounce flag
     try:
         profile, _ = UserProfile.objects.get_or_create(user=user)
@@ -130,6 +153,34 @@ class EmailVerificationView(APIView):
             return Response({'detail': 'Email verified successfully.'}, status=status.HTTP_200_OK)
 
         return Response({'detail': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = (request.data.get('email') or '').strip().lower()
+        new_password = request.data.get('new_password') or request.data.get('password') or ''
+
+        if not email or not new_password:
+            return Response({'detail': 'Email and a new password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email__iexact=email).first()
+        if user:
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+            try:
+                send_mail(
+                    'Your AY\'SMART password was updated',
+                    'Your password was successfully updated. If you did not request this change, contact support immediately.',
+                    getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'),
+                    [user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
+        return Response({'detail': 'If an account exists for that email, the password has been updated.'}, status=status.HTTP_200_OK)
 
 
 class ResendVerificationView(APIView):
@@ -222,14 +273,63 @@ class ProfileView(APIView):
         })
         return Response(data)
 
+    def put(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(instance=profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        data = UserProfileSerializer(profile).data
+        data.update({
+            'id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'name': ' '.join(filter(None, [request.user.first_name, request.user.last_name])).strip(),
+        })
+        return Response(data)
+
 
 class EmailWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        # Basic webhook receiver for SendGrid / Mailgun bounce events.
+        # Basic webhook receiver for Resend and legacy provider bounce events.
         payload = request.data
         logger = logging.getLogger(__name__)
+
+        # Verify Resend signature when present
+        try:
+            secret = os.getenv('RESEND_WEBHOOK_SIGNING_SECRET', '') or getattr(settings, 'RESEND_WEBHOOK_SIGNING_SECRET', '')
+            if secret:
+                signature_headers = [
+                    request.headers.get('resend-signature'),
+                    request.headers.get('X-Resend-Signature'),
+                ]
+                timestamp_headers = [
+                    request.headers.get('resend-timestamp'),
+                    request.headers.get('X-Resend-Timestamp'),
+                ]
+                timestamp = next((value for value in timestamp_headers if value), '')
+                for header_value in signature_headers:
+                    if not header_value:
+                        continue
+                    sig_value = header_value
+                    if sig_value.startswith('v1,'):
+                        sig_value = sig_value.split('=', 1)[1] if '=' in sig_value else sig_value.split(',', 1)[1]
+                    elif 'v1=' in sig_value:
+                        sig_value = sig_value.split('v1=', 1)[1].split(',', 1)[0]
+                    elif sig_value.startswith('sha256='):
+                        sig_value = sig_value.split('=', 1)[1]
+                    body = request.body or b''
+                    signed_payload = f"{timestamp}.{body.decode('utf-8')}" if timestamp else body.decode('utf-8')
+                    expected = hmac.new(secret.encode('utf-8'), signed_payload.encode('utf-8'), hashlib.sha256).hexdigest()
+                    if hmac.compare_digest(expected, sig_value):
+                        break
+                    else:
+                        logger.warning('Resend webhook signature mismatch')
+                        return Response({'detail': 'Invalid webhook signature'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception:
+            logger.exception('Error verifying resend signature')
+            return Response({'detail': 'Webhook verification error'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Verify Mailgun signature when present
         try:

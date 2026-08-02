@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/auth/logout/", LogoutView.as_view(), name="token_logout"),
     path("api/auth/register/", RegisterView.as_view(), name="auth_register"),
     path("api/auth/verify-email/", __import__('core_api.views', fromlist=['']).EmailVerificationView.as_view(), name="auth_verify_email"),
+    path("api/auth/password-reset/", __import__('core_api.views', fromlist=['']).PasswordResetView.as_view(), name="auth_password_reset"),
     path("api/auth/resend-verification/", __import__('core_api.views', fromlist=['']).ResendVerificationView.as_view(), name="auth_resend_verification"),
     path("api/auth/email-webhook/", __import__('core_api.views', fromlist=['']).EmailWebhookView.as_view(), name="auth_email_webhook"),
     path("api/auth/me/", UserInfoView.as_view(), name="auth_me"),

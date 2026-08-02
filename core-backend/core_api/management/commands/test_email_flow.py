@@ -3,7 +3,7 @@ import re
 import time
 import random
 from django.core.management.base import BaseCommand
-from django.test import Client
+from django.test import Client, override_settings
 from django.core import mail
 from django.contrib.auth import get_user_model
 from core_api.models import UserProfile
@@ -13,6 +13,7 @@ User = get_user_model()
 class Command(BaseCommand):
     help = 'Run a registration -> email verification smoke test using the Django test client and locmem email backend.'
 
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def handle(self, *args, **options):
         client = Client()
         timestamp = int(time.time())
