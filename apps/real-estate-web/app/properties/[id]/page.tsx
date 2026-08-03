@@ -1,22 +1,60 @@
 'use client';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PropertyGallery from '../../components/PropertyGallery';
 
-export default function PropertyDetailPage() {
+export default function PropertyDetailPage({ params }: any) {
+  const router = useRouter();
+  const [property, setProperty] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/properties/${params.id}/`);
+        if (res.ok) {
+          const data = await res.json();
+          setProperty(data);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [params.id]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!property) return <div className="min-h-screen flex items-center justify-center">Property not found</div>;
+
+  const openMap = () => {
+    if (property.latitude && property.longitude) {
+      window.open(`https://www.google.com/maps?q=${property.latitude},${property.longitude}`, '_blank');
+    } else {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location_address)}`, '_blank');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
-      <div className="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Inspection booking</p>
-        <h1 className="mt-2 text-3xl font-black">Book a private viewing for this property</h1>
-        <p className="mt-3 text-sm text-zinc-400">The booking experience is ready for live backend integration and currently collects the information needed for the inspection request.</p>
-        <div className="mt-6 space-y-3">
-          <input className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Full name" />
-          <input className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Phone number" />
-          <input className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Preferred date" />
-          <textarea className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" rows={4} placeholder="Message for the agent" />
-          <button className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Request inspection</button>
-        </div>
-        <div className="mt-6">
-          <Link href="/properties" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Back to catalog</Link>
+      <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
+        <h1 className="text-3xl font-black">{property.title}</h1>
+        <div className="mt-4 grid gap-6 md:grid-cols-2">
+          <div>
+            <PropertyGallery images={property.images && property.images.length ? property.images : [{ id: 0, url: property.main_image_url }]} />
+            {property.virtual_tour_url && (
+              <a href={property.virtual_tour_url} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full border border-zinc-700 px-4 py-2">Open Virtual Tour</a>
+            )}
+          </div>
+          <div>
+            <div className="text-sm text-zinc-400">{property.property_type_display}</div>
+            <div className="mt-2 text-2xl font-black">₦{Number(property.price).toLocaleString()}</div>
+            <button onClick={openMap} className="mt-4 rounded-full border border-zinc-700 px-4 py-2">{property.location_address}</button>
+            <p className="mt-4 text-zinc-300">{property.location_address}</p>
+            <div className="mt-6">
+              <button onClick={() => router.push(`/properties/${params.id}#book`)} className="rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Book inspection</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>

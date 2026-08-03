@@ -177,6 +177,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Cookie names for JWT when using HttpOnly cookie auth
 ACCESS_COOKIE_NAME = os.getenv('ACCESS_COOKIE_NAME', 'access')
 REFRESH_COOKIE_NAME = os.getenv('REFRESH_COOKIE_NAME', 'refresh')

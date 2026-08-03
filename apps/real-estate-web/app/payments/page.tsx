@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { authFetch } from '../lib/auth';
 import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 
@@ -20,6 +21,7 @@ export default function PaymentsPage() {
   const [processing, setProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ListingPlan>('basic');
   const [testMode, setTestMode] = useState(true);
+  const router = useRouter();
 
   async function handlePay(plan: ListingPlan) {
     setSelectedPlan(plan);
@@ -33,6 +35,10 @@ export default function PaymentsPage() {
     });
 
     if (!initiateRes.ok) {
+      if (initiateRes.status === 401) {
+        router.push('/auth/login');
+        return;
+      }
       const payload = await initiateRes.json().catch(() => ({}));
       setMessage(payload?.detail || 'Checkout failed.');
       setProcessing(false);
@@ -48,6 +54,10 @@ export default function PaymentsPage() {
     });
 
     if (!verifyRes.ok) {
+      if (verifyRes.status === 401) {
+        router.push('/auth/login');
+        return;
+      }
       const payload = await verifyRes.json().catch(() => ({}));
       setMessage(payload?.detail || 'Payment verification failed.');
       setProcessing(false);

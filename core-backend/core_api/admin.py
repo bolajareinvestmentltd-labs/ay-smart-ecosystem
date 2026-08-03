@@ -3,6 +3,7 @@ from unfold.admin import ModelAdmin
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking,
+    PropertyImage,
     BuildProject, ProjectMilestone
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
@@ -27,12 +28,19 @@ class PickupVoucherAdmin(ModelAdmin):
 
 
 # --- REAL ESTATE ADMIN ---
+
+class PropertyImageInline(admin.TabularInline):
+    model = PropertyImage
+    extra = 1
+
 @admin.register(Property)
 class PropertyAdmin(ModelAdmin):
     list_display = ('title', 'property_type', 'price', 'is_for_lease', 'is_available')
     list_filter = ('property_type', 'is_for_lease', 'is_available')
     search_fields = ('title', 'location_address')
+    inlines = [PropertyImageInline]
 
+admin.site.register(PropertyImage)
 @admin.register(InspectionBooking)
 class InspectionBookingAdmin(ModelAdmin):
     list_display = ('client_name', 'client_phone', 'property_to_view', 'scheduled_date', 'status', 'payment_unlocked')

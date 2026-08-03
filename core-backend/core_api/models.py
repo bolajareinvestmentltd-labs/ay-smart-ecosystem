@@ -67,10 +67,29 @@ class Property(models.Model):
     is_for_lease = models.BooleanField(default=False, help_text="Check if available for rent/lease")
     virtual_tour_url = models.URLField(blank=True, null=True, help_text="360 Virtual Tour Link")
     main_image_url = models.URLField()
+    # Optional geolocation for map linking (latitude / longitude)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_available = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title
+
+
+class PropertyImage(models.Model):
+    property = models.ForeignKey(Property, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='property_images/', blank=True, null=True)
+    url = models.URLField(blank=True, null=True, help_text='Fallback image URL when media file is not available')
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0, help_text='Lower values appear first')
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        title = self.property.title
+        filename = self.image.name if self.image else self.url or 'unassigned image'
+        return f"Image for {title} ({filename})"
 
 class InspectionBooking(models.Model):
     STATUS_CHOICES = [

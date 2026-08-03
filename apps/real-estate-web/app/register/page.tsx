@@ -117,6 +117,10 @@ export default function RegisterPage() {
 
       saveStoredProfile(nextProfile);
       setSaved(true);
+      // If backend returned a non-fatal warning (e.g., email delivery not configured), show it to the user.
+      if (payload?.warning) {
+        setError(payload.warning);
+      }
       // Redirect user to verification landing with email param so they can resend if needed
       router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}`);
     } catch {

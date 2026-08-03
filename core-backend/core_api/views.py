@@ -120,16 +120,20 @@ class RegisterView(APIView):
             profile.save()
 
         Wallet.objects.get_or_create(user=user)
+        email_sent = True
         try:
             send_verification_email(user)
-        except Exception as exc:
-            # Keep registration successful but surface an error if email delivery is not configured.
-            return Response(
-                {'detail': 'User created, but verification email could not be sent. Check email configuration.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        except Exception:
+            # Log the exception and continue — registration should succeed even if email isn't sent.
+            logging.exception('Failed to send verification email for user %s', user.username)
+            email_sent = False
 
-        return Response({'id': user.id, 'username': user.username, 'email': user.email, 'role': profile.role}, status=status.HTTP_201_CREATED)
+        response_payload = {'id': user.id, 'username': user.username, 'email': user.email, 'role': profile.role}
+        if not email_sent:
+            # Include a non-fatal warning so the frontend can inform the user without treating it as a failure.
+            response_payload['warning'] = 'Verification email could not be sent. Check email configuration.'
+
+        return Response(response_payload, status=status.HTTP_201_CREATED)
 
 
 class UserInfoView(APIView):
@@ -458,6 +462,7 @@ class PropertyViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Property.objects.filter(is_available=True).order_by('-id')
     serializer_class = PropertySerializer
     permission_classes = [permissions.AllowAny]
+    lookup_field = 'id'
 
 class InspectionBookingViewSet(viewsets.ModelViewSet):
     queryset = InspectionBooking.objects.all().order_by('-id')

@@ -25,10 +25,24 @@ class VehicleSerializer(serializers.ModelSerializer):
 
 class PropertySerializer(serializers.ModelSerializer):
     property_type_display = serializers.CharField(source='get_property_type_display', read_only=True)
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        imgs = getattr(obj, 'images').all()
+        return [
+            {
+                'id': img.id,
+                'url': img.image.url if getattr(img, 'image', None) else img.url,
+                'caption': img.caption,
+                'order': img.order,
+            }
+            for img in imgs
+        ]
 
     class Meta:
         model = Property
-        fields = '__all__'
+        # expose lat/lng and images for frontend detail pages
+        fields = ['id', 'title', 'property_type', 'property_type_display', 'price', 'location_address', 'latitude', 'longitude', 'is_for_lease', 'virtual_tour_url', 'main_image_url', 'is_available', 'images']
 
 class InspectionBookingSerializer(serializers.ModelSerializer):
     property = serializers.PrimaryKeyRelatedField(
