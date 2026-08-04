@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Tag } from "lucide-react";
 import { authFetch } from "./lib/auth";
+import PromoCarousel from "./components/PromoCarousel";
 
 const carouselImages = [
   {
@@ -82,7 +83,7 @@ export default function RealEstateHome() {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-3xl bg-brand-purple text-white shadow-lg shadow-brand-purple/20 ring-1 ring-brand-border/20">
-              <img src="/assets/brand-logo.svg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-10 object-contain" />
+              <Image src="/assets/ay-smart-logo.jpeg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-10 object-contain" priority />
             </Link>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">AY&apos;SMART ECO</p>
@@ -160,6 +161,10 @@ export default function RealEstateHome() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
+        <PromoCarousel />
       </section>
 
       <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">

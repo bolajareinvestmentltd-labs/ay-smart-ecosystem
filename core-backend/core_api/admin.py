@@ -2,8 +2,8 @@
 from unfold.admin import ModelAdmin
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
-    Property, InspectionBooking,
-    PropertyImage,
+    Property, InspectionBooking, InspectionBookingMessage,
+    PropertyImage, Promotion,
     BuildProject, ProjectMilestone
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
@@ -41,11 +41,28 @@ class PropertyAdmin(ModelAdmin):
     inlines = [PropertyImageInline]
 
 admin.site.register(PropertyImage)
+
+@admin.register(Promotion)
+class PromotionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'discount_text', 'audience', 'is_active', 'display_order', 'updated_at')
+    list_filter = ('audience', 'is_active')
+    search_fields = ('title', 'subtitle', 'discount_text')
+    ordering = ('display_order', '-updated_at')
+
+class InspectionBookingMessageInline(admin.TabularInline):
+    model = InspectionBookingMessage
+    extra = 0
+    fields = ('sender_name', 'sender_role', 'text', 'created_at')
+    readonly_fields = ('created_at',)
+
 @admin.register(InspectionBooking)
 class InspectionBookingAdmin(ModelAdmin):
-    list_display = ('client_name', 'client_phone', 'property_to_view', 'scheduled_date', 'status', 'payment_unlocked')
-    list_filter = ('status', 'payment_unlocked', 'scheduled_date')
-    search_fields = ('client_name', 'client_phone')
+    list_display = (
+        'client_name', 'client_phone', 'property_to_view', 'assigned_agent', 'agent_response', 'status', 'payment_unlocked', 'admin_approved', 'contact_released'
+    )
+    list_filter = ('status', 'payment_unlocked', 'agent_response', 'admin_approved')
+    search_fields = ('client_name', 'client_phone', 'property_to_view__title', 'assigned_agent__username')
+    inlines = [InspectionBookingMessageInline]
 
 
 # --- BUILD TRACKER ADMIN ---

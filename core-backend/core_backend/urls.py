@@ -8,7 +8,7 @@ from core_api.auth_views import CookieTokenObtainPairView, CookieTokenRefreshVie
 from core_api.views import (
     BranchLocationViewSet, BuildProjectViewSet, CheckoutView,
     InspectionBookingViewSet, KycApprovalView, ListingViewSet, PaymentInitiateView,
-    PaymentVerifyView, ProfileView, PropertyViewSet, RegisterView, ReferralViewSet,
+    PaymentVerifyView, ProfileView, PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
     SupportRequestViewSet, UserInfoView, VehicleViewSet, WalletViewSet,
 )
 
@@ -22,6 +22,7 @@ router = DefaultRouter()
 router.register(r'branches', BranchLocationViewSet, basename='branch')
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
 router.register(r'properties', PropertyViewSet, basename='property')
+router.register(r'promotions', PromotionViewSet, basename='promotion')
 router.register(r'inspections', InspectionBookingViewSet, basename='inspection')
 router.register(r'build-tracker', BuildProjectViewSet, basename='build-tracker')
 router.register(r'listings', ListingViewSet, basename='listing')

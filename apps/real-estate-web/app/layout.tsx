@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import DockNavbar from './components/DockNavbar';
 import PageTransition from './components/PageTransition';
 import ThemeProvider from './components/ThemeProvider';
+import NewsletterSlideUp from './components/NewsletterSlideUp';
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
@@ -22,6 +23,7 @@ export default function RootLayout({
           <PageTransition>{children}</PageTransition>
           <DockNavbar />
           <Footer />
+          <NewsletterSlideUp />
         </ThemeProvider>
       </body>
     </html>

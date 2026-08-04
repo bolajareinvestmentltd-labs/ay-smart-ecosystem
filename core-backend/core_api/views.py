@@ -10,11 +10,13 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.db import models
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.throttling import SimpleRateThrottle
 import hashlib
 import hmac
@@ -23,14 +25,14 @@ import logging
 from django.conf import settings
 
 from .models import (
-    BranchLocation, BuildProject, InspectionBooking,
+    BranchLocation, BuildProject, InspectionBooking, Promotion,
     Listing, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction
 )
 from .serializers import (
     BranchLocationSerializer, VehicleSerializer,
-    PropertySerializer, InspectionBookingSerializer,
-    BuildProjectSerializer
+    PropertySerializer, InspectionBookingSerializer, PropertyImageUploadSerializer,
+    BuildProjectSerializer, PromotionSerializer
 )
 from .models import Referral
 from .serializers import (
@@ -463,11 +465,117 @@ class PropertyViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PropertySerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = 'id'
+    parser_classes = [MultiPartParser, FormParser]
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], parser_classes=[MultiPartParser, FormParser])
+    def upload_image(self, request, pk=None):
+        property_obj = self.get_object()
+        serializer = PropertyImageUploadSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(property=property_obj)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PromotionViewSet(viewsets.ModelViewSet):
+    queryset = Promotion.objects.filter(is_active=True).order_by('display_order', '-updated_at')
+    serializer_class = PromotionSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        return Promotion.objects.filter(is_active=True).order_by('display_order', '-updated_at')
 
 class InspectionBookingViewSet(viewsets.ModelViewSet):
     queryset = InspectionBooking.objects.all().order_by('-id')
     serializer_class = InspectionBookingSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return InspectionBooking.objects.all().order_by('-id')
+        if self.request.user.is_authenticated:
+            return InspectionBooking.objects.filter(
+                models.Q(client_user=self.request.user) |
+                models.Q(assigned_agent=self.request.user)
+            ).order_by('-id')
+        return InspectionBooking.objects.filter(status='AGENT_OFFERED').order_by('-id')
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def respond(self, request, pk=None):
+        booking = self.get_object()
+        if booking.assigned_agent != request.user:
+            return Response({'detail': 'Only the assigned agent can respond.'}, status=status.HTTP_403_FORBIDDEN)
+
+        decision = (request.data.get('decision') or '').strip().upper()
+        if decision not in {'YES', 'NO'}:
+            return Response({'detail': 'decision must be YES or NO.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.agent_response = 'ACCEPTED' if decision == 'YES' else 'REJECTED'
+        booking.status = 'CONFIRMED' if decision == 'YES' else 'PENDING'
+        booking.save(update_fields=['agent_response', 'status'])
+
+        if decision == 'YES':
+            booking.agent_confirmed = True
+            booking.save(update_fields=['agent_confirmed'])
+            try:
+                send_mail(
+                    'Inspection Agent Accepted',
+                    f"Your inspection booking for {booking.property_to_view.title} has been accepted by {request.user.get_full_name() or request.user.username}.",
+                    getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'),
+                    [booking.client_user.email] if booking.client_user and booking.client_user.email else [],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
+        return Response(InspectionBookingSerializer(booking).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def send_message(self, request, pk=None):
+        booking = self.get_object()
+        role = 'ADMIN' if request.user.is_staff else ('AGENT' if booking.assigned_agent == request.user else 'CLIENT')
+        message = request.data.get('text', '').strip()
+        if not message:
+            return Response({'detail': 'text is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = InspectionBookingMessage.objects.create(
+            booking=booking,
+            sender=request.user,
+            sender_name=request.user.get_full_name() or request.user.username,
+            sender_role=role,
+            text=message,
+        )
+        return Response(InspectionBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def conclude(self, request, pk=None):
+        booking = self.get_object()
+        if booking.client_user != request.user and booking.assigned_agent != request.user and not request.user.is_staff:
+            return Response({'detail': 'Not authorized to conclude this inspection.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if booking.client_user == request.user:
+            booking.client_confirmed = True
+        if booking.assigned_agent == request.user:
+            booking.agent_confirmed = True
+        booking.save(update_fields=['client_confirmed', 'agent_confirmed'])
+        return Response(InspectionBookingSerializer(booking).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def approve(self, request, pk=None):
+        booking = self.get_object()
+        if not booking.client_confirmed or not booking.agent_confirmed:
+            return Response({'detail': 'Both client and agent must confirm before admin approval.'}, status=status.HTTP_400_BAD_REQUEST)
+        booking.admin_approved = True
+        booking.contact_released = True
+        booking.status = 'COMPLETED'
+        booking.save(update_fields=['admin_approved', 'contact_released', 'status'])
+        return Response(InspectionBookingSerializer(booking).data, status=status.HTTP_200_OK)
 
 class BuildProjectViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BuildProject.objects.all()

@@ -91,21 +91,84 @@ class PropertyImage(models.Model):
         filename = self.image.name if self.image else self.url or 'unassigned image'
         return f"Image for {title} ({filename})"
 
+class Promotion(models.Model):
+    AUDIENCE_CHOICES = [
+        ('all', 'All visitors'),
+        ('student', 'Students'),
+        ('agent', 'Agents'),
+        ('buyer', 'Buyers'),
+    ]
+
+    title = models.CharField(max_length=120, help_text='Short promo title')
+    subtitle = models.CharField(max_length=180, blank=True, help_text='Brief supporting copy')
+    discount_text = models.CharField(max_length=80, help_text='Offer text such as 5% off or First 50 students', default='5% off')
+    cta_text = models.CharField(max_length=40, default='Learn more')
+    target_url = models.URLField(blank=True, null=True, help_text='Optional target URL for the promo action')
+    is_active = models.BooleanField(default=True)
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='all')
+    display_order = models.PositiveIntegerField(default=0, help_text='Lower values appear first in the carousel')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-updated_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.discount_text})"
+
 class InspectionBooking(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending Walkthrough'),
+        ('AGENT_OFFERED', 'Agent Offered'),
+        ('CONFIRMED', 'Confirmed by Agent'),
+        ('AWAITING_ADMIN', 'Awaiting Admin Approval'),
         ('COMPLETED', 'Inspection Verified'),
         ('CANCELLED', 'Cancelled'),
     ]
+    RESPONSE_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    client_user = models.ForeignKey(User, related_name='inspection_requests', null=True, blank=True, on_delete=models.SET_NULL)
     client_name = models.CharField(max_length=100)
     client_phone = models.CharField(max_length=20)
     property_to_view = models.ForeignKey(Property, on_delete=models.CASCADE)
     scheduled_date = models.DateTimeField()
+    assigned_agent = models.ForeignKey(User, related_name='assigned_inspections', null=True, blank=True, on_delete=models.SET_NULL)
+    agent_response = models.CharField(max_length=20, choices=RESPONSE_CHOICES, default='PENDING')
+    client_confirmed = models.BooleanField(default=False)
+    agent_confirmed = models.BooleanField(default=False)
+    admin_approved = models.BooleanField(default=False)
+    contact_released = models.BooleanField(default=False)
+    agreed_date = models.DateField(null=True, blank=True)
+    agreed_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     payment_unlocked = models.BooleanField(default=False, help_text="Check to allow client to make online payment")
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return f"Inspection: {self.property_to_view.title} by {self.client_name}"
+
+
+class InspectionBookingMessage(models.Model):
+    ROLE_CHOICES = [
+        ('CLIENT', 'Client'),
+        ('AGENT', 'Agent'),
+        ('ADMIN', 'Admin'),
+    ]
+
+    booking = models.ForeignKey(InspectionBooking, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    sender_name = models.CharField(max_length=100, blank=True)
+    sender_role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='CLIENT')
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message by {self.sender_name or self.sender_id or 'Unknown'} on {self.booking}"
 
 
 # ==========================================

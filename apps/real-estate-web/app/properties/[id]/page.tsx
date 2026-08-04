@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PropertyGallery from '../../components/PropertyGallery';
+import InspectionBookingForm from '../../components/InspectionBookingForm';
 
 export default function PropertyDetailPage({ params }: any) {
   const router = useRouter();
@@ -52,7 +53,9 @@ export default function PropertyDetailPage({ params }: any) {
             <button onClick={openMap} className="mt-4 rounded-full border border-zinc-700 px-4 py-2">{property.location_address}</button>
             <p className="mt-4 text-zinc-300">{property.location_address}</p>
             <div className="mt-6">
-              <button onClick={() => router.push(`/properties/${params.id}#book`)} className="rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Book inspection</button>
+              <div id="book">
+                <InspectionBookingForm propertyId={Number(params.id)} />
+              </div>
             </div>
           </div>
         </div>
