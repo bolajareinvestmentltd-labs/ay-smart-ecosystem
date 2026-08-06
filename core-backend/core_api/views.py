@@ -16,7 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.throttling import SimpleRateThrottle
 import hashlib
 import hmac
@@ -281,7 +281,7 @@ class EmailVerificationView(APIView):
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -489,7 +489,7 @@ class PropertyViewSet(viewsets.ReadOnlyModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], parser_classes=[MultiPartParser, FormParser])
-    def upload_image(self, request, pk=None):
+    def upload_image(self, request, id=None):
         property_obj = self.get_object()
         serializer = PropertyImageUploadSerializer(data=request.data)
         if serializer.is_valid():

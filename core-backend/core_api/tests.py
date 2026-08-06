@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
@@ -337,3 +338,41 @@ class ReferralWalletTests(TestCase):
         # negative amount
         resp_neg = self.client.post("/api/payments/initiate/", {"plan": "basic", "amount": "-100"}, format="json")
         self.assertEqual(resp_neg.status_code, 400)
+
+    def test_student_kyc_approval_requires_student_fields(self):
+        user = User.objects.create_user(username="studuser", email="stud@example.com", password="secret123")
+        profile = UserProfile.objects.get(user=user)
+        profile.role = "student"
+        profile.save()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post("/api/kyc/approve/", format="json")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("matric number", str(response.data.get("detail", "")).lower())
+
+    def test_authenticated_user_can_upload_property_image(self):
+        user = User.objects.create_user(username="imageuser", email="image@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+        property_obj = Property.objects.create(
+            title="Image Villa",
+            property_type="RESIDENTIAL",
+            price="2500000",
+            location_address="Ikoyi",
+            virtual_tour_url="https://example.com/tour",
+            main_image_url="https://example.com/main.jpg",
+        )
+
+        image_file = SimpleUploadedFile(
+            "test.jpg",
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xFF\xFF\xFF\x21\xF9\x04\x01\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B",
+            content_type="image/gif",
+        )
+
+        response = self.client.post(
+            f"/api/properties/{property_obj.id}/upload_image/",
+            {"image": image_file},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(property_obj.images.filter(image__isnull=False).exists())
