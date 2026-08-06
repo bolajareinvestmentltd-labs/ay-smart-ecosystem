@@ -162,7 +162,11 @@ class WalletSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at', 'is_kyc_verified', 'is_admin_approved', 'email_verified']
+        fields = [
+            'phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at',
+            'is_kyc_verified', 'is_admin_approved', 'email_verified',
+            'student_matric_number', 'student_email', 'student_id_image',
+        ]
 
 
 class ListingSerializer(serializers.ModelSerializer):

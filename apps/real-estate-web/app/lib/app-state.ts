@@ -30,6 +30,7 @@ export interface SellerProfile {
   referralRewards: number;
   matricNumber?: string;
   studentEmail?: string;
+  studentIdImage?: string;
 }
 
 export interface ListingDraft {
@@ -115,6 +116,7 @@ export function getStoredProfile(): SellerProfile {
     isLoggedIn: false,
     referralCode: '',
     referralRewards: 0,
+    studentIdImage: '',
     selectedPlan: 'basic' as ListingPlan,
   };
 

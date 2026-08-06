@@ -1,12 +1,15 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { authFetch } from '../lib/auth';
 import { getPlanCashback, getStoredListings, getStoredProfile, saveStoredListings, type ListingDraft, type ListingPlan } from '../lib/app-state';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState(getStoredProfile());
   const [listings, setListings] = useState<ListingDraft[]>(() => getStoredListings());
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Property');
@@ -18,28 +21,35 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadProfile() {
       const res = await authFetch('/api/auth/profile/');
-      if (res.ok) {
-        const payload = await res.json().catch(() => null);
-        if (payload) {
-          const nextProfile = {
-            ...getStoredProfile(),
-            name: payload.name || '',
-            username: payload.username || '',
-            email: payload.email || '',
-            phone: payload.phone || '',
-            location: payload.location || '',
-            role: payload.role || 'seller',
-            isKycVerified: Boolean(payload.is_kyc_verified),
-            adminApproved: Boolean(payload.is_admin_approved),
-          };
-          saveStoredListings(getStoredListings());
-          setProfile(nextProfile);
-        }
+      if (!res.ok) {
+        router.replace('/auth/login');
+        return;
       }
+
+      const payload = await res.json().catch(() => null);
+      if (!payload) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      const nextProfile = {
+        ...getStoredProfile(),
+        name: payload.name || '',
+        username: payload.username || '',
+        email: payload.email || '',
+        phone: payload.phone || '',
+        location: payload.location || '',
+        role: payload.role || 'seller',
+        isKycVerified: Boolean(payload.is_kyc_verified),
+        adminApproved: Boolean(payload.is_admin_approved),
+      };
+      saveStoredListings(getStoredListings());
+      setProfile(nextProfile);
+      setLoading(false);
     }
 
     loadProfile();
-  }, []);
+  }, [router]);
 
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +96,18 @@ export default function DashboardPage() {
     setSubmitting(false);
   }
 
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#07070D] px-4 py-8 text-zinc-100">
+        <div className="mx-auto flex min-h-[60vh] max-w-4xl items-center justify-center">
+          <div className="rounded-3xl border border-white/10 bg-[#09090B]/80 p-10 text-center shadow-2xl">
+            <p className="text-sm text-zinc-400">Checking your account...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#07070D] px-4 py-8 text-zinc-100">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -116,6 +138,11 @@ export default function DashboardPage() {
           <form onSubmit={handleCreateListing} className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 shadow-2xl backdrop-blur-xl">
             <h2 className="text-xl font-black">Create a listing</h2>
             <p className="mt-2 text-sm text-zinc-400">All uploads stay pending until admin verifies them before appearing on the home screen.</p>
+            {!profile.isKycVerified && (
+              <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
+                Complete KYC before submitting a listing. Click "Complete KYC" above to proceed.
+              </div>
+            )}
             <div className="mt-4 grid gap-4">
               <input required value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-2xl border border-white/10 bg-[#09090B] px-4 py-3 text-white outline-none transition focus:border-brand-purple" placeholder="Listing title" />
               <input required value={location} onChange={(e) => setLocation(e.target.value)} className="rounded-2xl border border-white/10 bg-[#09090B] px-4 py-3 text-white outline-none transition focus:border-brand-purple" placeholder="Location" />
@@ -134,7 +161,7 @@ export default function DashboardPage() {
                 <option value={30}>30 days</option>
                 <option value={60}>60 days</option>
               </select>
-              <button disabled={submitting} className="rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white transition hover:bg-brand-magenta disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : 'Submit for review'}</button>
+              <button disabled={submitting || !profile.isKycVerified} className="rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white transition hover:bg-brand-magenta disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : profile.isKycVerified ? 'Submit for review' : 'Complete KYC first'}</button>
             </div>
           </form>
 

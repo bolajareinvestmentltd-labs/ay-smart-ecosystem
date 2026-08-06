@@ -119,6 +119,8 @@ class RegisterView(APIView):
 
         if matric_number or student_email:
             profile.role = 'student' if role in {'student', 'both'} else profile.role
+            profile.student_matric_number = matric_number
+            profile.student_email = student_email
             profile.save()
 
         Wallet.objects.get_or_create(user=user)
@@ -279,6 +281,7 @@ class EmailVerificationView(APIView):
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -456,6 +459,12 @@ class KycApprovalView(APIView):
 
     def post(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        if profile.role in {'student', 'both'} and (not profile.student_matric_number or not profile.student_email):
+            return Response(
+                {'detail': 'Student accounts must provide matric number and student email before KYC approval.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         profile.is_kyc_verified = True
         profile.is_admin_approved = True
         profile.save()

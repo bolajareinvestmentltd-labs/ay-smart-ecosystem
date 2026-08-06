@@ -276,6 +276,9 @@ class UserProfile(models.Model):
     last_verification_sent_at = models.DateTimeField(null=True, blank=True)
     # Flag set when provider reports a hard bounce for this email
     email_bounced = models.BooleanField(default=False)
+    student_matric_number = models.CharField(max_length=100, blank=True)
+    student_email = models.EmailField(blank=True)
+    student_id_image = models.ImageField(upload_to='student_id_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
