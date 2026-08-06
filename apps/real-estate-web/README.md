@@ -16,9 +16,19 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project now uses a shared root `.env` file at the repository root for both frontend and backend configuration.
+For development, create a root `.env` file with values like:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_APP_NAME=AY'Smart Properties & Construction
+```
+
+Then restart both the frontend and backend so the shared env values are loaded.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit it.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing-fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 

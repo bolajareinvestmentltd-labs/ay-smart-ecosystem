@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+ROOT_ENV_FILE = BASE_DIR.parent / '.env'
+load_dotenv(ROOT_ENV_FILE)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-aysmart-ecosystem-secret-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
@@ -107,10 +108,14 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-EMAIL_BACKEND = os.getenv(
-    'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend',
-)
+email_backend_env = os.getenv('EMAIL_BACKEND', '').strip()
+if email_backend_env:
+    EMAIL_BACKEND = email_backend_env
+elif os.getenv('RESEND_API_KEY') or os.getenv('EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = os.getenv('EMAIL_HOST', os.getenv('RESEND_SMTP_HOST', 'smtp.resend.com'))
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', os.getenv('RESEND_SMTP_PORT', '587')))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', os.getenv('RESEND_SMTP_USERNAME', 'resend'))

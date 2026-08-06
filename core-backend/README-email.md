@@ -2,13 +2,22 @@
 
 This document explains how to wire Resend for verification emails and how to test the AY'SMART backend email flow.
 
-1) Local development
-- Recommended: use Django's in-memory email backend for fast, zero-config tests:
-  - Set `EMAIL_BACKEND=django.core.mail.backends.locmem.EmailBackend` in `.env` or the environment.
-  - The smoke test `python manage.py test_email_flow` uses this backend and validates the registration→verification→resend flow.
+1) Local development with real email delivery
+- To send real email during development, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`.
+- Configure a real SMTP provider or Resend SMTP credentials in `.env`.
+- Example `.env` values:
+  - `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`
+  - `EMAIL_HOST=smtp.resend.com`
+  - `EMAIL_PORT=587`
+  - `EMAIL_HOST_USER=resend`
+  - `EMAIL_HOST_PASSWORD=<your-resend-api-key>`
+  - `EMAIL_USE_TLS=True`
+  - `DEFAULT_FROM_EMAIL=noreply@resend.dev`
+  - `RESEND_API_KEY=<your-resend-api-key>`
+- When these values are set, the backend will send real emails instead of using the in-memory or console simulators.
 
 2) Console backend
-- For debugging locally and to see email contents in logs, use:
+- For troubleshooting email contents in logs only, use:
   - `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend`
 
 3) Resend (recommended)

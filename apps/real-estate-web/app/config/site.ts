@@ -9,5 +9,5 @@ export const SITE = {
 };
 
 export const API = {
-  base: process.env.NEXT_PUBLIC_API_URL || '/api',
+  base: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
 };
