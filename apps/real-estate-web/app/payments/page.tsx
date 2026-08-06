@@ -91,43 +91,6 @@ export default function PaymentsPage() {
     );
   }, [authorizationUrl, pendingPlan, pendingReference, selectedPlan]);
 
-  const handleVerify = useCallback(async (reference: string) => {
-    setProcessing(true);
-    setMessage('Verifying payment...');
-
-    const verifyRes = await authFetch('/api/payments/verify/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reference }),
-    });
-
-    if (!verifyRes.ok) {
-      if (verifyRes.status === 401) {
-        router.push('/auth/login');
-        return;
-      }
-      const payload = await verifyRes.json().catch(() => ({}));
-      setMessage(payload?.detail || 'Payment verification failed.');
-      setProcessing(false);
-      return;
-    }
-
-    const nextProfile = {
-      ...profile,
-      subscriptionPlan: pendingPlan ?? selectedPlan,
-      selectedPlan: pendingPlan ?? selectedPlan,
-      subscriptionStatus: 'active' as const,
-      subscriptionExpiresAt: getSubscriptionExpiry(),
-      walletBalance: profile.walletBalance + 0,
-    };
-    saveStoredProfile(nextProfile);
-    setProfile(nextProfile);
-    setMessage(`Payment completed for the ${selectedPlan.toUpperCase()} plan. Subscription active for 7 days.`);
-    setAuthorizationUrl(null);
-    setPendingReference(null);
-    setProcessing(false);
-  }, [profile, pendingPlan, router, selectedPlan]);
-
   useEffect(() => {
     if (!authorizationUrl || !pendingReference) return;
 
