@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { API } from '../config/site';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 
 const studentEmailHint = 'Use your school email or a personal email that matches your student records.';
@@ -64,7 +65,7 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/auth/register/', {
+      const response = await fetch(`${API.base}/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

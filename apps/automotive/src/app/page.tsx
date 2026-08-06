@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import Image from "next/image";
 import { getVehicles } from "../lib/api";
 import VehicleCarousel from "../components/VehicleCarousel";
 
@@ -10,6 +11,15 @@ export default async function AutomotiveLandingPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white p-4 sm:p-6 lg:p-8">
       <section className="max-w-7xl mx-auto pt-4">
+        <div className="mb-8 flex items-center gap-4 rounded-3xl border border-slate-800 bg-white/5 p-5 shadow-2xl">
+          <div className="relative h-14 w-14 rounded-3xl overflow-hidden bg-slate-900">
+            <Image src="/assets/ay-smart-logo.jpeg" alt="AY'SMART Auto" fill className="object-contain" />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-400">AY&apos;SMART Automotive</p>
+            <h1 className="text-2xl font-black">Luxury vehicle leasing with trusted fleet service.</h1>
+          </div>
+        </div>
         <VehicleCarousel vehicles={vehicles} />
       </section>
 

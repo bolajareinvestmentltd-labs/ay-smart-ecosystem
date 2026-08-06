@@ -19,7 +19,7 @@ export default function PromoCarousel() {
   useEffect(() => {
     async function loadPromotions() {
       try {
-        const res = await fetch('/api/promotions/');
+        const res = await fetch(`${API.base}/promotions/`);
         if (!res.ok) return;
         const data = (await res.json()) as Promotion[];
         setPromos(data);

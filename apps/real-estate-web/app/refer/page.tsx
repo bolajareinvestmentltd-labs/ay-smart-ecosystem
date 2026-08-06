@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
-
+import { useEffect, useState } from "react";import { API } from '../config/site';
 type Wallet = { user: number; balance: string; currency: string };
 type Referral = { id: number; referrer: number | null; referred_email: string; status: string };
 
@@ -22,7 +21,7 @@ export default function ReferPage() {
     setLoading(true);
     try {
       // POST using `referred_email` to match backend serializer
-      const res = await fetch("/api/referrals/", {
+      const res = await fetch(`${API.base}/referrals/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ referred_email: email }),
@@ -48,7 +47,7 @@ export default function ReferPage() {
 
   async function fetchWallets() {
     try {
-      const res = await fetch('/api/wallets/me/', { credentials: 'include' });
+      const res = await fetch(`${API.base}/wallets/me/`, { credentials: 'include' });
       if (res.ok) setWallets(await res.json());
     } catch {
       // ignore
@@ -57,7 +56,7 @@ export default function ReferPage() {
 
   async function fetchReferrals() {
     try {
-      const res = await fetch('/api/referrals/', { credentials: 'include' });
+      const res = await fetch(`${API.base}/referrals/`, { credentials: 'include' });
       if (res.ok) setReferrals(await res.json());
     } catch {
       // ignore

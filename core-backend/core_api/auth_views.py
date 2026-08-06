@@ -24,6 +24,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             access = data.get('access')
             refresh = data.get('refresh')
             secure = not settings.DEBUG
+            same_site = 'None' if secure else 'Lax'
             # Set cookies
             if access:
                 response.set_cookie(
@@ -31,7 +32,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                     access,
                     httponly=True,
                     secure=secure,
-                    samesite='Lax',
+                    samesite=same_site,
                     path='/',
                 )
             if refresh:
@@ -40,7 +41,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                     refresh,
                     httponly=True,
                     secure=secure,
-                    samesite='Lax',
+                    samesite=same_site,
                     path='/',
                 )
         return response
@@ -61,12 +62,13 @@ class CookieTokenRefreshView(TokenRefreshView):
             access = response.data.get('access')
             if access:
                 secure = not settings.DEBUG
+                same_site = 'None' if secure else 'Lax'
                 response.set_cookie(
                     settings.ACCESS_COOKIE_NAME,
                     access,
                     httponly=True,
                     secure=secure,
-                    samesite='Lax',
+                    samesite=same_site,
                     path='/',
                 )
         return response

@@ -15,7 +15,7 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/inspections/', {
+      const res = await authFetch('/api/inspections/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -28,6 +28,10 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/auth/login';
+          return;
+        }
         setError(payload?.detail || 'Failed to create booking.');
         setLoading(false);
         return;

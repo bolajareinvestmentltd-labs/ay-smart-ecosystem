@@ -30,11 +30,20 @@ class PropertySerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
 
     def get_images(self, obj):
+        request = self.context.get('request') if hasattr(self, 'context') else None
+
+        def absolute_url(url):
+            if not url:
+                return url
+            if request and url.startswith('/'):
+                return request.build_absolute_uri(url)
+            return url
+
         imgs = getattr(obj, 'images').all()
         return [
             {
                 'id': img.id,
-                'url': img.image.url if getattr(img, 'image', None) else img.url,
+                'url': absolute_url(img.image.url if getattr(img, 'image', None) else img.url),
                 'caption': img.caption,
                 'order': img.order,
             }

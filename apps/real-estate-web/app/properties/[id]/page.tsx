@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API } from '../../config/site';
 import PropertyGallery from '../../components/PropertyGallery';
 import InspectionBookingForm from '../../components/InspectionBookingForm';
 
@@ -13,7 +14,7 @@ export default function PropertyDetailPage({ params }: any) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/properties/${params.id}/`);
+        const res = await fetch(`${API.base}/properties/${params.id}/`);
         if (res.ok) {
           const data = await res.json();
           setProperty(data);

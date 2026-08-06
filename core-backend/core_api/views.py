@@ -140,6 +140,18 @@ class RegisterView(APIView):
 
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        data = UserProfileSerializer(profile).data
+        data.update({
+            'id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'name': ' '.join(filter(None, [request.user.first_name, request.user.last_name])).strip(),
+        })
+        return Response(data)
+
 class EmailVerificationView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -757,9 +769,9 @@ class PaymentInitiateView(APIView):
             status='PENDING',
         )
 
-        paystack_secret_key = os.getenv('PAYSTACK_SECRET_KEY', '').strip()
-        paystack_public_key = os.getenv('PAYSTACK_PUBLIC_KEY', '').strip()
-        use_test_mode = os.getenv('PAYSTACK_USE_TEST_MODE', 'true').lower() in {'1', 'true', 'yes', 'on'}
+        paystack_secret_key = getattr(settings, 'PAYSTACK_SECRET_KEY', '').strip()
+        paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', '').strip()
+        use_test_mode = getattr(settings, 'PAYSTACK_USE_TEST_MODE', True)
 
         if paystack_secret_key and paystack_public_key:
             try:
@@ -818,8 +830,30 @@ class PaymentVerifyView(APIView):
         if transaction.status == 'SUCCESS':
             return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
-        transaction.status = 'SUCCESS'
-        transaction.save(update_fields=['status', 'updated_at'])
+        paystack_secret_key = getattr(settings, 'PAYSTACK_SECRET_KEY', '').strip()
+        use_test_mode = getattr(settings, 'PAYSTACK_USE_TEST_MODE', False)
+
+        if use_test_mode or not paystack_secret_key:
+            transaction.status = 'SUCCESS'
+            transaction.save(update_fields=['status', 'updated_at'])
+        else:
+            try:
+                response = requests.get(
+                    f'https://api.paystack.co/transaction/verify/{reference}',
+                    headers={'Authorization': f'Bearer {paystack_secret_key}'},
+                    timeout=10,
+                )
+                if response.ok:
+                    data = response.json().get('data', {})
+                    if data.get('status') in {'success', 'settled'}:
+                        transaction.status = 'SUCCESS'
+                        transaction.save(update_fields=['status', 'updated_at'])
+                    else:
+                        return Response({'detail': 'Payment not completed yet.'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'detail': 'Failed to verify payment with Paystack.'}, status=status.HTTP_502_BAD_GATEWAY)
+            except requests.RequestException:
+                return Response({'detail': 'Payment verification service unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         profile.subscription_plan = transaction.plan
