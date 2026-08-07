@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { authFetch } from "./lib/auth";
 import PromoCarousel from "./components/PromoCarousel";
+import BrandSplashScreen from "./components/BrandSplashScreen";
 
 const carouselImages = [
   {
@@ -45,6 +46,28 @@ const premiumHighlights = [
 export default function RealEstateHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [approvalStatus, setApprovalStatus] = useState("Checking status...");
+  const [showSplash, setShowSplash] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasSeenSplash = window.localStorage.getItem("aysmart-splash-seen");
+      if (hasSeenSplash === "true") {
+        setShowSplash(false);
+        return;
+      }
+
+      const splashTimer = window.setTimeout(() => {
+        setIsTransitioning(true);
+        window.setTimeout(() => {
+          window.localStorage.setItem("aysmart-splash-seen", "true");
+          setShowSplash(false);
+        }, 300);
+      }, 3200);
+
+      return () => window.clearTimeout(splashTimer);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -76,6 +99,14 @@ export default function RealEstateHome() {
     loadApprovalState();
     return () => clearInterval(timer);
   }, []);
+
+  if (showSplash) {
+    return (
+      <div className={`transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+        <BrandSplashScreen />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-brand-surface text-[var(--text-primary)] pb-28 transition-colors duration-300">

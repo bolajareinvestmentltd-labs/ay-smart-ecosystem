@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, MapPin, Tag } from 'lucide-react';
+import AdSlot from '../components/AdSlot';
 
 const sampleListings = [
   {
@@ -82,46 +83,48 @@ export default function PropertiesPage() {
       </section>
 
       <section className="px-4 mt-4 space-y-4">
+        <AdSlot title="Google AdSense placeholder - leaderboard slot" size="728x90" />
         {sampleListings.map((prop) => (
-          <div key={prop.id} className="mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl transition-all hover:border-brand-accent/40">
-            <div className="relative h-48 w-full">
-              <Image src={prop.image} alt={prop.title} fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07070D]/70 via-transparent to-transparent" />
-              <div className="absolute top-3 left-3 flex gap-1.5">
-                {prop.isSponsored && (
-                  <span className="px-2.5 py-1 rounded-md bg-brand-accent text-brand-dark text-[10px] font-black uppercase shadow">
-                    Sponsored
-                  </span>
-                )}
-                {prop.isFeatured && (
-                  <span className="px-2.5 py-1 rounded-md bg-brand-purple text-white text-[10px] font-bold uppercase shadow border border-brand-accent/40">
-                    Featured
-                  </span>
-                )}
-              </div>
+          <Link
+          key={prop.id}
+          href={`/properties/${prop.id}`}
+          className="group mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl transition-all hover:border-brand-accent/40"
+        >
+          <div className="relative h-48 w-full">
+            <Image src={prop.image} alt={prop.title} fill className="object-cover transition duration-300 group-hover:scale-[1.02]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#07070D]/70 via-transparent to-transparent" />
+            <div className="absolute top-3 left-3 flex gap-1.5">
+              {prop.isSponsored && (
+                <span className="px-2.5 py-1 rounded-md bg-brand-accent text-brand-dark text-[10px] font-black uppercase shadow">
+                  Sponsored
+                </span>
+              )}
+              {prop.isFeatured && (
+                <span className="px-2.5 py-1 rounded-md bg-brand-purple text-white text-[10px] font-bold uppercase shadow border border-brand-accent/40">
+                  Featured
+                </span>
+              )}
+            </div>
 
-              <span className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-[#09090B]/80 backdrop-blur-md text-white text-xs font-bold">
-                {prop.type}
+            <span className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-[#09090B]/80 backdrop-blur-md text-white text-xs font-bold">
+              {prop.type}
+            </span>
+          </div>
+
+          <div className="p-4">
+            <h3 className="text-xs font-extrabold text-white">{prop.title}</h3>
+            <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-400">
+              <MapPin size={12} className="text-brand-purple" /> {prop.location}
+            </p>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
+              <span className="text-sm font-black text-brand-purple">{prop.price}</span>
+              <span className="rounded-xl bg-brand-purple px-3.5 py-1.5 text-xs font-bold text-white shadow transition group-hover:bg-brand-magenta">
+                Book Inspection
               </span>
             </div>
-
-            <div className="p-4">
-              <h3 className="text-xs font-extrabold text-white">{prop.title}</h3>
-              <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-400">
-                <MapPin size={12} className="text-brand-purple" /> {prop.location}
-              </p>
-
-              <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
-                <span className="text-sm font-black text-brand-purple">{prop.price}</span>
-                <Link 
-                  href={`/properties/${prop.id}`}
-                  className="rounded-xl bg-brand-purple px-3.5 py-1.5 text-xs font-bold text-white shadow transition hover:bg-brand-magenta"
-                >
-                  Book Inspection
-                </Link>
-              </div>
-            </div>
           </div>
+        </Link>
         ))}
       </section>
     </main>

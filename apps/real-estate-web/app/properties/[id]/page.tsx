@@ -81,7 +81,19 @@ export default function PropertyDetailPage({ params }: any) {
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
       <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
-        <h1 className="text-3xl font-black">{property.title}</h1>
+        <div className="mb-6 flex items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.28em] text-brand-accent">Property detail</p>
+            <h1 className="mt-2 text-3xl font-black">{property.title}</h1>
+          </div>
+          <Link
+            href="/properties"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            Back to listings
+          </Link>
+        </div>
+
         <div className="mt-4 grid gap-6 md:grid-cols-2">
           <div>
             <PropertyGallery images={property.images && property.images.length ? property.images : [{ id: 0, url: property.main_image_url }]} />

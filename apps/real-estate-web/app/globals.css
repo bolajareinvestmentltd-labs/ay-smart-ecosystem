@@ -4,23 +4,23 @@
 :root {
   color-scheme: light;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #F8FAFC;
-  color: #0F172A;
-  --brand-light: #F8FAFC;
-  --brand-dark: #E2E8F0;
-  --brand-purple: #581C87;
-  --brand-magenta: #7E22CE;
-  --brand-accent: #F59E0B;
-  --brand-surface: #FFFFFF;
-  --brand-surface-2: #F1F5F9;
-  --brand-border: rgba(15, 23, 42, 0.08);
+  background-color: #FBF0E7;
+  color: #382419;
+  --brand-light: #FBF0E7;
+  --brand-dark: #4E3021;
+  --brand-purple: #5E2879;
+  --brand-magenta: #8C2F8F;
+  --brand-accent: #B45309;
+  --brand-surface: #F9F0E3;
+  --brand-surface-2: #ECD8C4;
+  --brand-border: rgba(120, 64, 25, 0.14);
   --brand-violet: #A855F7;
-  --bg-start: #F8FAFC;
-  --bg-end: #E2E8F0;
-  --text-primary: #0F172A;
-  --text-muted: #475569;
-  --selection-bg: rgba(88, 28, 135, 0.18);
-  --selection-text: #0F172A;
+  --bg-start: #FBF0E7;
+  --bg-end: #E9D6C5;
+  --text-primary: #382419;
+  --text-muted: #6E5847;
+  --selection-bg: rgba(180, 83, 9, 0.18);
+  --selection-text: #3E1F0D;
 }
 
 .dark {
@@ -55,7 +55,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(134, 102, 255, 0.16), transparent 28%), linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  background: radial-gradient(circle at top, rgba(180, 83, 9, 0.16), transparent 28%), linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
   color: var(--text-primary);
 }
 
@@ -91,4 +91,27 @@ textarea {
 ::selection {
   background: rgba(88, 28, 135, 0.9);
   color: white;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes floatLogo {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.03);
+  }
+}
+
+.splash-logo {
+  animation: floatLogo 2.8s ease-in-out infinite;
 }

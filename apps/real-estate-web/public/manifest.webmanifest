@@ -1,0 +1,22 @@
+{
+  "name": "AY'SMART ECO",
+  "short_name": "AY'SMART",
+  "description": "Luxury property, hostel, and automotive marketplace.",
+  "icons": [
+    {
+      "src": "/assets/ay-smart-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/ay-smart-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07070D",
+  "theme_color": "#0f172a"
+}
