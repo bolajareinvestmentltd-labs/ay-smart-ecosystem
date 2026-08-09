@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API } from '../../config/site';
 import PropertyGallery from '../../components/PropertyGallery';
 import InspectionBookingForm from '../../components/InspectionBookingForm';
 import { authFetch } from '../../lib/auth';
+import { buildApiUrl } from '../../lib/api';
 
 export default function PropertyDetailPage({ params }: any) {
   const router = useRouter();
@@ -18,14 +18,6 @@ export default function PropertyDetailPage({ params }: any) {
   useEffect(() => {
     async function load() {
       try {
-        const buildApiUrl = (input: RequestInfo) => {
-          if (typeof input !== 'string') return input;
-          // If a relative API path is provided, use it as-is so Next can proxy
-          if (input.startsWith('/api/')) return input;
-          const base = (API.base || '').replace(/\/+$/, '');
-          return `${base}${input.startsWith('/') ? input : '/' + input}`;
-        };
-
         const res = await fetch(buildApiUrl(`/properties/${params.id}/`));
         if (res.ok) {
           const data = await res.json();
@@ -60,13 +52,6 @@ export default function PropertyDetailPage({ params }: any) {
     setUploadMessage('');
     const formData = new FormData();
     formData.append('image', selectedFile);
-
-    const buildApiUrl = (input: RequestInfo) => {
-      if (typeof input !== 'string') return input;
-      if (input.startsWith('/api/')) return input;
-      const base = (API.base || '').replace(/\/+$/, '');
-      return `${base}${input.startsWith('/') ? input : '/' + input}`;
-    };
 
     const res = await authFetch(buildApiUrl(`/properties/${params.id}/upload_image/`), {
       method: 'POST',

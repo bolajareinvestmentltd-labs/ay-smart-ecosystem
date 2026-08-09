@@ -1,8 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { API } from '../config/site';
-
-const apiBase = API.base;
+import { buildApiUrl } from '../lib/api';
 
 const categories = [
   { value: 'complaint', label: 'Complaint' },
@@ -30,7 +28,7 @@ export default function SupportPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${apiBase}/support/requests/`, {
+      const res = await fetch(buildApiUrl('/support/requests/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

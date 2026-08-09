@@ -1,14 +1,4 @@
-import { API } from '../config/site';
-
-const apiBase = API.base.replace(/\/+$/, '');
-const buildApiUrl = (input: RequestInfo) => {
-  if (typeof input !== 'string') return input;
-  if (input.startsWith('/api/')) {
-    const path = input.replace(/^\/api/, '');
-    return `${apiBase}${path}`;
-  }
-  return input;
-};
+import { buildApiUrl } from './api';
 
 // Cookie-based auth: login will set HttpOnly cookies; use credentials: 'include'.
 export async function loginWithPassword(identifier: string, password: string) {

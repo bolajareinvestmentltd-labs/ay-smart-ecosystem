@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { API } from "../config/site";
+import { buildApiUrl } from "../lib/api";
 
 type Promotion = {
   id: number;
@@ -20,7 +20,7 @@ export default function PromoCarousel() {
   useEffect(() => {
     async function loadPromotions() {
       try {
-        const res = await fetch(`${API.base}/promotions/`);
+        const res = await fetch(buildApiUrl('/promotions/'));
         if (!res.ok) return;
         const data = (await res.json()) as Promotion[];
         setPromos(data);

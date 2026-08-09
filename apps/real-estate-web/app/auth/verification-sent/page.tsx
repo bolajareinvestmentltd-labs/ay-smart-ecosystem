@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { API } from '../../config/site';
+import { buildApiUrl } from '../../lib/api';
 
 export default function VerificationSentPage() {
   const searchParams = useSearchParams();
@@ -30,7 +30,7 @@ export default function VerificationSentPage() {
     setStatus('sending');
     setMessage('Sending verification email...');
     try {
-      const res = await fetch(`${API.base}/auth/resend-verification/`, {
+      const res = await fetch(buildApiUrl('/auth/resend-verification/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

@@ -44,3 +44,53 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production deployment setup
+
+This repo shares configuration via the repository root `.env` file for both frontend and backend. For production, set secrets and production values in your Render and Vercel dashboards instead of committing them.
+
+### Backend (Render)
+
+Set these environment variables in the Render service where the Django backend runs:
+
+```env
+DJANGO_SECRET_KEY=<your-generated-secret>
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1,api.aysmartinvestmentltd.com
+CORS_ALLOWED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
+CSRF_TRUSTED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
+FRONTEND_URL=https://aysmartinvestmentltd.com
+NEXT_PUBLIC_API_URL=https://api.aysmartinvestmentltd.com/api
+
+RESEND_API_KEY=<your-resend-api-key>
+RESEND_WEBHOOK_SIGNING_SECRET=<your-resend-webhook-signing-secret>
+DEFAULT_FROM_EMAIL=noreply@aysmartinvestmentltd.com
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.resend.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=resend
+EMAIL_HOST_PASSWORD=<your-resend-api-key>
+EMAIL_USE_TLS=True
+```
+
+### Frontend (Vercel)
+
+Set these environment variables in the Vercel project:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.aysmartinvestmentltd.com/api
+NEXT_PUBLIC_APP_NAME=AY'Smart Properties & Construction
+NEXT_PUBLIC_SITE_EMAIL=support@aysmartinvestmentltd.com
+NEXT_PUBLIC_SITE_PHONE=+234 700 000 0000
+NEXT_PUBLIC_SITE_WHATSAPP=+234 800 000 0000
+NEXT_PUBLIC_SITE_ADDRESS="Lagos, Nigeria"
+NEXT_PUBLIC_SITE_HOURS="Mon–Sat 8:00am–6:00pm"
+```
+
+### DNS mapping
+
+- `aysmartinvestmentltd.com` A → Vercel root IP
+- `www` CNAME → Vercel target
+- `api` CNAME → `ay-smart-backend.onrender.com.`
+
+Do not commit real secrets to git. Use service environment variables in Render and Vercel for production.

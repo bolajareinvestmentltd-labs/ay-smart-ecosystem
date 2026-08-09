@@ -132,8 +132,15 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in os.getenv(
+        'CSRF_TRUSTED_ORIGINS', FRONTEND_URL
+    ).split(',') if origin.strip()
+]
 email_backend_env = os.getenv('EMAIL_BACKEND', '').strip()
 if email_backend_env:
     EMAIL_BACKEND = email_backend_env

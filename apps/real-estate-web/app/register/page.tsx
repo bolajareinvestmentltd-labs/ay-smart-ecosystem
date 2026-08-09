@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { API } from '../config/site';
+import { buildApiUrl } from '../lib/api';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 
 const studentEmailHint = 'Use your school email or a personal email that matches your student records.';
@@ -65,7 +65,7 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      const url = `${API.base}/auth/register/`;
+      const url = buildApiUrl('/auth/register/');
       console.log('[Register] Sending POST to:', url);
       
       const response = await fetch(url, {

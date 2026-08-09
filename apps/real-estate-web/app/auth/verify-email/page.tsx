@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { API } from '../../config/site';
+import { buildApiUrl } from '../../lib/api';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -21,7 +21,7 @@ export default function VerifyEmailPage() {
       }
 
       try {
-        const response = await fetch(`${API.base}/auth/verify-email/`, {
+        const response = await fetch(buildApiUrl('/auth/verify-email/'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ uid, token }),
