@@ -32,6 +32,8 @@ router.register(r'support/requests', SupportRequestViewSet, basename='support-re
 
 urlpatterns = [
     path("", RedirectView.as_view(url="/admin/", permanent=False)),
+    # Redirect any stray admin login subpaths back to the admin root
+    path("admin/login/<path:rest>/", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
     # Cookie-based auth endpoints (sets HttpOnly cookies)
     path("api/auth/login-cookie/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair_cookie"),

@@ -18,7 +18,15 @@ export default function PropertyDetailPage({ params }: any) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API.base}/properties/${params.id}/`);
+        const buildApiUrl = (input: RequestInfo) => {
+          if (typeof input !== 'string') return input;
+          // If a relative API path is provided, use it as-is so Next can proxy
+          if (input.startsWith('/api/')) return input;
+          const base = (API.base || '').replace(/\/+$/, '');
+          return `${base}${input.startsWith('/') ? input : '/' + input}`;
+        };
+
+        const res = await fetch(buildApiUrl(`/properties/${params.id}/`));
         if (res.ok) {
           const data = await res.json();
           setProperty(data);
@@ -53,7 +61,14 @@ export default function PropertyDetailPage({ params }: any) {
     const formData = new FormData();
     formData.append('image', selectedFile);
 
-    const res = await authFetch(`${API.base}/properties/${params.id}/upload_image/`, {
+    const buildApiUrl = (input: RequestInfo) => {
+      if (typeof input !== 'string') return input;
+      if (input.startsWith('/api/')) return input;
+      const base = (API.base || '').replace(/\/+$/, '');
+      return `${base}${input.startsWith('/') ? input : '/' + input}`;
+    };
+
+    const res = await authFetch(buildApiUrl(`/properties/${params.id}/upload_image/`), {
       method: 'POST',
       body: formData,
     });

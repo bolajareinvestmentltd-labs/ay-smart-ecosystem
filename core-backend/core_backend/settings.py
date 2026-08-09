@@ -3,6 +3,32 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
+# Compatibility shim: ensure django.utils.cache exposes names some third-party
+# packages (e.g., older/newer DRF) expect (cc_delim_re, patch_vary_headers).
+try:
+    import re
+    import importlib
+
+    _cache = importlib.import_module('django.utils.cache')
+    if not hasattr(_cache, 'cc_delim_re'):
+        _cache.cc_delim_re = re.compile(r'\s*,\s*')
+
+    if not hasattr(_cache, 'patch_vary_headers'):
+        def _patch_vary_headers(response, newheaders):
+            existing = response.get('Vary')
+            if existing:
+                existing_headers = [h.strip() for h in existing.split(',') if h.strip()]
+                for h in newheaders:
+                    if h not in existing_headers:
+                        existing_headers.append(h)
+                response['Vary'] = ', '.join(existing_headers)
+            else:
+                response['Vary'] = ', '.join(newheaders)
+
+        _cache.patch_vary_headers = _patch_vary_headers
+except Exception:
+    pass
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_ENV_FILE = BASE_DIR.parent / '.env'
 load_dotenv(ROOT_ENV_FILE)

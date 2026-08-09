@@ -65,7 +65,10 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${API.base}/auth/register/`, {
+      const url = `${API.base}/auth/register/`;
+      console.log('[Register] Sending POST to:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -83,12 +86,19 @@ export default function RegisterPage() {
         }),
       });
 
-      const payload = await response.json().catch(() => ({}));
+      console.log('[Register] Response status:', response.status);
+      const payload = await response.json().catch((err) => {
+        console.error('[Register] JSON parse error:', err);
+        return {};
+      });
+      
       if (!response.ok) {
-        setError(payload?.detail || 'Registration failed.');
+        console.error('[Register] Server error:', payload);
+        setError(payload?.detail || `Registration failed (${response.status}).`);
         return;
       }
 
+      console.log('[Register] Success:', payload);
       const profile = getStoredProfile();
       const nextProfile = {
         ...profile,
@@ -124,8 +134,9 @@ export default function RegisterPage() {
       }
       // Redirect user to verification landing with email param so they can resend if needed
       router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}`);
-    } catch {
-      setError('Network error while creating your account.');
+    } catch (err) {
+      console.error('[Register] Fetch error:', err);
+      setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error while creating your account.'}`);
     } finally {
       setSubmitting(false);
     }
