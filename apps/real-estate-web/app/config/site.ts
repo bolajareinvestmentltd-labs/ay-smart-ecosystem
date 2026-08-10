@@ -8,6 +8,11 @@ export const SITE = {
   hours: process.env.NEXT_PUBLIC_SITE_HOURS || 'Mon–Sat 8:00am–6:00pm',
 };
 
+function normalizeApiUrl(rawUrl: string) {
+  const trimmed = rawUrl.trim().replace(/\/+$|\s+$/g, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
 export const API = {
-  base: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+  base: normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'),
 };

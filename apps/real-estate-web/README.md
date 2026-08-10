@@ -73,6 +73,10 @@ EMAIL_HOST_PASSWORD=<your-resend-api-key>
 EMAIL_USE_TLS=True
 ```
 
+> Important: `NEXT_PUBLIC_API_URL` should point to your backend API root. If you set it without `/api`, the frontend now automatically appends it for all internal backend requests.
+
+> Recommended Render fix: use a Render-managed PostgreSQL database for `DATABASE_URL`. Supabase may resolve only to IPv6 and can fail from Render if your host has no IPv4 route.
+
 ### Frontend (Vercel)
 
 Set these environment variables in the Vercel project:

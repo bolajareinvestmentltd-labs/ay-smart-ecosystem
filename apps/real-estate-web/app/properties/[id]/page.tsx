@@ -1,36 +1,67 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PropertyGallery from '../../components/PropertyGallery';
 import InspectionBookingForm from '../../components/InspectionBookingForm';
 import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
 
-export default function PropertyDetailPage({ params }: any) {
+export default function PropertyDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const propertyId = params?.id ? String(params.id) : null;
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     async function load() {
+      if (!propertyId) {
+        setErrorMessage('Unable to determine property ID.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage('');
       try {
-        const res = await fetch(buildApiUrl(`/properties/${params.id}/`));
-        if (res.ok) {
-          const data = await res.json();
-          setProperty(data);
+        const res = await fetch(buildApiUrl(`/properties/${propertyId}/`));
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          const detail = payload?.detail || payload?.message || res.statusText || 'Unknown error';
+          setErrorMessage(`Failed to load property: ${res.status} ${detail}`);
+          return;
         }
+        const data = await res.json();
+        setProperty(data);
+      } catch (error) {
+        setErrorMessage(`Network or server error: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [params.id]);
+  }, [propertyId]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (errorMessage)
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 text-center">
+        <div className="max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950/95 p-8 shadow-2xl">
+          <h1 className="text-2xl font-black text-white">Unable to load property</h1>
+          <p className="mt-4 text-sm text-zinc-400">{errorMessage}</p>
+          <div className="mt-6">
+            <a href="/properties" className="rounded-full bg-brand-purple px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
+              Back to listings
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   if (!property) return <div className="min-h-screen flex items-center justify-center">Property not found</div>;
 
   const openMap = () => {
@@ -53,7 +84,7 @@ export default function PropertyDetailPage({ params }: any) {
     const formData = new FormData();
     formData.append('image', selectedFile);
 
-    const res = await authFetch(buildApiUrl(`/properties/${params.id}/upload_image/`), {
+    const res = await authFetch(buildApiUrl(`/properties/${propertyId}/upload_image/`), {
       method: 'POST',
       body: formData,
     });
@@ -108,7 +139,7 @@ export default function PropertyDetailPage({ params }: any) {
             <p className="mt-4 text-zinc-300">{property.location_address}</p>
             <div className="mt-6 space-y-4">
               <div id="book">
-                <InspectionBookingForm propertyId={Number(params.id)} />
+                <InspectionBookingForm propertyId={Number(propertyId)} />
               </div>
               <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
                 <h2 className="text-lg font-black">Upload property image</h2>
