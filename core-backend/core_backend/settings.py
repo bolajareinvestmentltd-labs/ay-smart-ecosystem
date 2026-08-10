@@ -1,5 +1,7 @@
 ﻿import os
+import socket
 from pathlib import Path
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -98,6 +100,30 @@ WSGI_APPLICATION = "core_backend.wsgi.application"
 
 # Database Configuration (Default SQLite for local testing, ready for Supabase/Neon URL)
 # Be tolerant of an empty/invalid DATABASE_URL (e.g. '://') and fall back to SQLite.
+
+def resolve_ipv4_address(host: str, port: int = 5432) -> str | None:
+    """Resolve the given host to an IPv4 address, if available."""
+    try:
+        addresses = socket.getaddrinfo(host, port, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP)
+        if not addresses:
+            return None
+        return addresses[0][4][0]
+    except OSError:
+        return None
+
+
+def build_database_config(raw_database_url: str) -> dict:
+    db_config = dj_database_url.parse(raw_database_url)
+    host = db_config.get('HOST')
+    port = int(db_config.get('PORT') or 5432)
+    if host and not host.replace('.', '').isdigit():
+        ipv4 = resolve_ipv4_address(host, port)
+        if ipv4:
+            db_options = db_config.get('OPTIONS', {}) or {}
+            db_options.setdefault('hostaddr', ipv4)
+            db_config['OPTIONS'] = db_options
+    return db_config
+
 raw_db = os.getenv('DATABASE_URL', '').strip()
 if not raw_db:
     DATABASES = {
@@ -108,7 +134,7 @@ if not raw_db:
     }
 else:
     try:
-        DATABASES = {"default": dj_database_url.parse(raw_db)}
+        DATABASES = {"default": build_database_config(raw_db)}
     except Exception:
         DATABASES = {
             "default": {
