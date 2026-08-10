@@ -56,7 +56,7 @@ Set these environment variables in the Render service where the Django backend r
 ```env
 DJANGO_SECRET_KEY=<your-generated-secret>
 DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1,api.aysmartinvestmentltd.com
+ALLOWED_HOSTS=localhost,127.0.0.1,ay-smart-backend.onrender.com,api.aysmartinvestmentltd.com
 CORS_ALLOWED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
 CSRF_TRUSTED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
 FRONTEND_URL=https://aysmartinvestmentltd.com
@@ -79,7 +79,7 @@ Set these environment variables in the Vercel project:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.aysmartinvestmentltd.com/api
-NEXT_PUBLIC_APP_NAME=AY'Smart Properties & Construction
+NEXT_PUBLIC_SITE_NAME=AY'Smart Properties & Construction
 NEXT_PUBLIC_SITE_EMAIL=support@aysmartinvestmentltd.com
 NEXT_PUBLIC_SITE_PHONE=+234 700 000 0000
 NEXT_PUBLIC_SITE_WHATSAPP=+234 800 000 0000

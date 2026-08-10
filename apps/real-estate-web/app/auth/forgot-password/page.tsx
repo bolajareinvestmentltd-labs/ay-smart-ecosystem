@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import { buildApiUrl } from '../../lib/api';
 import { API } from '../../config/site';
 
 export default function ForgotPasswordPage() {

@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
 import {
   ShieldCheck,
   Truck,
@@ -30,16 +29,6 @@ const legalLinks = ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Refu
 const resourceLinks = ['Buying Guide', 'Properties Care Tips', 'Promotions', 'Affiliate Program'];
 
 export default function Footer() {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  function handleSubscribe(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setSubscribed(true);
-    setEmail('');
-  }
-
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -118,24 +107,6 @@ export default function Footer() {
                   <li key={item} className="hover:text-white transition-colors">{item}</li>
                 ))}
               </ul>
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Stay Updated</p>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">Subscribe to receive exclusive offers, product launches, discounts, and technology updates.</p>
-              <form onSubmit={handleSubscribe} className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <label htmlFor="newsletter-email" className="sr-only">Email address</label>
-                <input
-                  id="newsletter-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-brand-surface-2 px-4 py-3 text-white placeholder:text-zinc-500 focus:border-brand-magenta focus:outline-none focus:ring-2 focus:ring-brand-magenta/20"
-                />
-                <button type="submit" className="rounded-2xl bg-brand-magenta px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-purple">Subscribe</button>
-              </form>
-              {subscribed && <p className="mt-3 text-sm text-emerald-400">Thank you! You are now subscribed.</p>}
             </section>
           </div>
         </div>

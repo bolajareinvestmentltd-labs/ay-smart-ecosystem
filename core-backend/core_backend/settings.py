@@ -35,7 +35,14 @@ load_dotenv(ROOT_ENV_FILE)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-aysmart-ecosystem-secret-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',') if host.strip()]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        'ALLOWED_HOSTS',
+        'localhost,127.0.0.1,testserver,ay-smart-backend.onrender.com,api.aysmartinvestmentltd.com'
+    ).split(',')
+    if host.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -58,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware", # CORS Middleware added
     "core_backend.jwt_cookie_middleware.JWTAuthCookieMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -126,7 +134,8 @@ REST_FRAMEWORK = {
 # Allow Next.js Vercel/Localhost frontend domains to communicate without CORS errors
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv(
-        'CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:3001'
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:3000,http://localhost:3001,https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com'
     ).split(',') if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
@@ -134,11 +143,17 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv(
-        'CSRF_TRUSTED_ORIGINS', FRONTEND_URL
+        'CSRF_TRUSTED_ORIGINS',
+        f'{FRONTEND_URL},https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com'
     ).split(',') if origin.strip()
 ]
 email_backend_env = os.getenv('EMAIL_BACKEND', '').strip()
@@ -171,7 +186,6 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
-STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # AY'SMART White-Label Brand Customization for django-unfold CMS
@@ -214,10 +228,11 @@ UNFOLD = {
 }
 
 # Added for Render Deployment & Whitenoise Static Files
-import os
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_KEEP_ONLY_HASHED_FILES = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -225,9 +240,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Cookie names for JWT when using HttpOnly cookie auth
 ACCESS_COOKIE_NAME = os.getenv('ACCESS_COOKIE_NAME', 'access')
 REFRESH_COOKIE_NAME = os.getenv('REFRESH_COOKIE_NAME', 'refresh')
-
-# --- Render Static Files & Security Configuration ---
-import os
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
