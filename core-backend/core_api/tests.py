@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
@@ -116,7 +117,7 @@ class ReferralWalletTests(TestCase):
 
         self.assertTrue(mock_send_mail.called)
         args, kwargs = mock_send_mail.call_args
-        self.assertEqual(args[2], 'noreply@resend.dev')
+        self.assertEqual(args[2], settings.DEFAULT_FROM_EMAIL)
         self.assertIn('verify your', args[0].lower())
 
     def test_password_reset_endpoint_updates_user_password(self):
