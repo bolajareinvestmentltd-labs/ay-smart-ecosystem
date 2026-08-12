@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { loginWithPassword } from '../../lib/auth';
+import { loginWithPassword, getCurrentUser } from '../../lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,10 +23,29 @@ export default function LoginPage() {
       return;
     }
 
-    setMessage('Login successful. Redirecting...');
-    // Honor optional `next` param, otherwise go to home
+    setMessage('Login successful. Loading profile...');
+
+    // Poll for current user to ensure profile is available before redirect.
+    const maxAttempts = 6;
+    const delayMs = 500;
+    let user = null;
+    for (let i = 0; i < maxAttempts; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      user = await getCurrentUser();
+      if (user) break;
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((res) => setTimeout(res, delayMs));
+    }
+
     const nextParam = searchParams.get('next') || '/';
-    router.replace(nextParam);
+    if (user) {
+      setMessage('Profile loaded. Redirecting...');
+      router.replace(nextParam);
+    } else {
+      // If we couldn't load profile, redirect to home but warn user
+      setError('Logged in but profile not available yet. Redirecting to home.');
+      router.replace('/');
+    }
   }
 
   return (
