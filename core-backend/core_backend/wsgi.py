@@ -38,8 +38,28 @@ try:
 			try:
 				new.dicts = [d.copy() for d in self.dicts]
 			except Exception:
-				from copy import deepcopy
-				new.dicts = deepcopy(self.dicts)
+				# Deepcopy of complex template context dicts can fail (open file
+				# handles, DB connections, etc.) and may OOM when rendered. Fall
+				# back to a safe, shallow-copy that preserves serializable keys
+				# while replacing uncopyable values with their repr string.
+				new.dicts = []
+				for d in self.dicts:
+					copied = {}
+					try:
+						items = list(d.items())
+					except Exception:
+						# If we can't iterate items, represent the object instead.
+						new.dicts.append({'__uncopyable_context__': repr(d)})
+						continue
+					for k, v in items:
+						try:
+							copied[k] = v
+						except Exception:
+							try:
+								copied[k] = repr(v)
+							except Exception:
+								copied[k] = None
+					new.dicts.append(copied)
 
 		# If there's a render_context, try to shallow-copy it to avoid shared state.
 		if hasattr(self, 'render_context'):
