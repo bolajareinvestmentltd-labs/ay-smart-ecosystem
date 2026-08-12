@@ -50,23 +50,28 @@ export default function RealEstateHome() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    // Only run splash logic on the client; avoid duplicate render during
+    // SSR and ensure single splash instance per user via localStorage.
+    const run = async () => {
       const hasSeenSplash = window.localStorage.getItem("aysmart-splash-seen");
       if (hasSeenSplash === "true") {
         setShowSplash(false);
         return;
       }
 
+      // Give the splash a graceful duration and a short transition.
       const splashTimer = window.setTimeout(() => {
         setIsTransitioning(true);
         window.setTimeout(() => {
           window.localStorage.setItem("aysmart-splash-seen", "true");
           setShowSplash(false);
         }, 300);
-      }, 3200);
+      }, 2200);
 
       return () => window.clearTimeout(splashTimer);
-    }
+    };
+
+    if (typeof window !== 'undefined') run();
   }, []);
 
   useEffect(() => {

@@ -67,6 +67,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core_backend.middleware.exception_logging.ExceptionLoggingMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware", # CORS Middleware added
     "core_backend.jwt_cookie_middleware.JWTAuthCookieMiddleware",

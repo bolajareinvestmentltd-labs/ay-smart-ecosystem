@@ -115,3 +115,21 @@ textarea {
 .splash-logo {
   animation: floatLogo 2.8s ease-in-out infinite;
 }
+
+/* Light-theme utility overrides: many components use Tailwind's
+   `text-white`, `bg-white/5`, etc. which target dark surfaces. When
+   the site is in light mode these utilities cause poor contrast on
+   the cream background. Prefer the theme variables for readability. */
+:root[data-theme="light"] .text-white {
+  color: var(--text-primary) !important;
+}
+:root[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+:root[data-theme="light"] .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+:root[data-theme="light"] .text-zinc-300,
+:root[data-theme="light"] .placeholder\:text-zinc-400 {
+  color: var(--text-muted) !important;
+}
