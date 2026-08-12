@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { loginWithPassword } from '../../lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -23,7 +24,9 @@ export default function LoginPage() {
     }
 
     setMessage('Login successful. Redirecting...');
-    router.push('/refer');
+    // Honor optional `next` param, otherwise go to home
+    const nextParam = searchParams.get('next') || '/';
+    router.replace(nextParam);
   }
 
   return (
