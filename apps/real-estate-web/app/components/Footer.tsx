@@ -82,10 +82,12 @@ export default function Footer() {
             <section>
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Contact Information</h3>
               <div className="mt-5 space-y-3 text-sm text-zinc-400">
-                <p>Phone: <span className="text-white">+234 700 000 0000</span></p>
-                <p>WhatsApp: <span className="text-white">+234 800 000 0000</span></p>
-                <p>Email: <span className="text-white">support@aysmartinvestmentltd.com</span></p>
-                <p>Address: <span className="text-white">Lagos, Nigeria</span></p>
+                <p>Phone: <span className="text-white">+234 9057403562</span></p>
+                <p>WhatsApp: <span className="text-white">+234 8136272360</span></p>
+                <p>Email: <span className="text-white">admin@aysmartinvestmentltd.com,
+                  support@aysmartinvestmentltd.com</span></p>
+                <p>Address: <span className="text-white">Sho 5 , opposite Nicro filling station, Along Ilorin Road Malete Kwara State University area.
+                  kwara, Nigeria</span></p>
                 <p>Hours: <span className="text-white">Mon–Sat 8:00am–6:00pm</span></p>
               </div>
             </section>
