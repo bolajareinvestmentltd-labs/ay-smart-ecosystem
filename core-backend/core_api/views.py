@@ -26,7 +26,7 @@ from django.conf import settings
 
 from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
-    Listing, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
+    Listing, ListingImage, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction
 )
 from .serializers import (
@@ -608,11 +608,35 @@ class ListingViewSet(viewsets.ModelViewSet):
     queryset = Listing.objects.all().order_by('-id')
     serializer_class = ListingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         if self.request.user.is_staff:
             return Listing.objects.all().order_by('-id')
         return Listing.objects.filter(user=self.request.user).order_by('-id')
+
+    def create(self, request, *args, **kwargs):
+        image_files = request.FILES.getlist('images') or request.FILES.getlist('image')
+        if len(image_files) < 5:
+            return Response({'detail': 'Please upload at least 5 property images before submitting for review.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payload = {
+            'title': request.data.get('title', ''),
+            'category': request.data.get('category', 'Property'),
+            'location': request.data.get('location', ''),
+            'price': request.data.get('price', '0'),
+            'plan': request.data.get('plan', 'basic'),
+            'duration_days': request.data.get('duration_days', 30),
+        }
+        serializer = self.get_serializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        listing = serializer.save(user=request.user)
+
+        for index, uploaded in enumerate(image_files[:10]):
+            ListingImage.objects.create(listing=listing, image=uploaded, order=index)
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(ListingSerializer(listing, context={'request': request}).data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

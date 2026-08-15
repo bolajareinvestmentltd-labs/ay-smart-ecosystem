@@ -319,6 +319,19 @@ class Listing(models.Model):
         return self.title
 
 
+class ListingImage(models.Model):
+    listing = models.ForeignKey(Listing, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='listing_images/', blank=True, null=True)
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"Image for {self.listing.title}"
+
+
 class Referral(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),

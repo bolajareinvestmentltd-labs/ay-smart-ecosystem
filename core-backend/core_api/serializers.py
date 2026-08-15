@@ -7,7 +7,7 @@ from rest_framework import serializers
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage, PropertyImage,
-    BuildProject, ProjectMilestone, Promotion
+    BuildProject, ProjectMilestone, Promotion, ListingImage
 )
 from .models import Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
 
@@ -169,10 +169,39 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
 
 
+class ListingImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListingImage
+        fields = ['id', 'image', 'caption', 'order']
+        read_only_fields = ['id']
+
+
 class ListingSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        request = self.context.get('request') if hasattr(self, 'context') else None
+
+        def absolute_url(url):
+            if not url:
+                return url
+            if request and url.startswith('/'):
+                return request.build_absolute_uri(url)
+            return url
+
+        return [
+            {
+                'id': image.id,
+                'url': absolute_url(image.image.url if getattr(image, 'image', None) else ''),
+                'caption': image.caption,
+                'order': image.order,
+            }
+            for image in obj.images.all()
+        ]
+
     class Meta:
         model = Listing
-        fields = ['id', 'user', 'title', 'category', 'location', 'price', 'plan', 'duration_days', 'status', 'cashback', 'created_at']
+        fields = ['id', 'user', 'title', 'category', 'location', 'price', 'plan', 'duration_days', 'status', 'cashback', 'created_at', 'images']
         read_only_fields = ['id', 'user', 'cashback', 'created_at']
 
     def create(self, validated_data):

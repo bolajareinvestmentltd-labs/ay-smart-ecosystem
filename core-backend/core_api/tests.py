@@ -177,6 +177,12 @@ class ReferralWalletTests(TestCase):
 
         self.assertEqual(profile_response.status_code, 200, profile_response.data)
 
+        image_file = SimpleUploadedFile(
+            "test.jpg",
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xFF\xFF\xFF\x21\xF9\x04\x01\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B",
+            content_type="image/gif",
+        )
+
         listing_response = self.client.post(
             "/api/listings/",
             {
@@ -186,8 +192,9 @@ class ReferralWalletTests(TestCase):
                 "price": "5000000",
                 "plan": "basic",
                 "duration_days": 30,
+                "images": [image_file, image_file, image_file, image_file, image_file],
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(listing_response.status_code, 201, listing_response.data)
@@ -358,6 +365,33 @@ class ReferralWalletTests(TestCase):
         response = self.client.post("/api/kyc/approve/", format="json")
         self.assertEqual(response.status_code, 400, response.data)
         self.assertIn("matric number", str(response.data.get("detail", "")).lower())
+
+    def test_listing_creation_requires_at_least_five_images(self):
+        user = User.objects.create_user(username="listingimg", email="listingimg@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+
+        image_file = SimpleUploadedFile(
+            "test.jpg",
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xFF\xFF\xFF\x21\xF9\x04\x01\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B",
+            content_type="image/gif",
+        )
+
+        response = self.client.post(
+            "/api/listings/",
+            {
+                "title": "Luxury Villa",
+                "category": "Property",
+                "location": "Lekki",
+                "price": "5000000",
+                "plan": "basic",
+                "duration_days": 30,
+                "images": [image_file, image_file, image_file, image_file],
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("at least 5", str(response.data.get("detail", "")).lower())
 
     def test_authenticated_user_can_upload_property_image(self):
         user = User.objects.create_user(username="imageuser", email="image@example.com", password="secret123")

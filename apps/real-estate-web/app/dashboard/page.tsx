@@ -17,6 +17,8 @@ export default function DashboardPage() {
   const [price, setPrice] = useState('');
   const [plan, setPlan] = useState<ListingPlan>('basic');
   const [durationDays, setDurationDays] = useState(30);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -57,11 +59,24 @@ export default function DashboardPage() {
       alert('Please complete KYC before publishing listings.');
       return;
     }
+    if (imageFiles.length < 5) {
+      alert('Please upload at least 5 property images before submitting for review.');
+      return;
+    }
+
     setSubmitting(true);
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('category', category);
+    formData.append('location', location);
+    formData.append('price', price);
+    formData.append('plan', plan);
+    formData.append('duration_days', String(durationDays));
+    imageFiles.forEach((file) => formData.append('images', file));
+
     const res = await authFetch('/api/listings/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, category, location, price, plan, duration_days: durationDays }),
+      body: formData,
     });
 
     const listing: ListingDraft = {
@@ -93,6 +108,8 @@ export default function DashboardPage() {
     setCategory('Property');
     setLocation('');
     setPrice('');
+    setImageFiles([]);
+    setImagePreviews([]);
     setSubmitting(false);
   }
 
@@ -161,6 +178,30 @@ export default function DashboardPage() {
                 <option value={30}>30 days</option>
                 <option value={60}>60 days</option>
               </select>
+
+              <div className="rounded-2xl border border-dashed border-white/15 bg-[#09090B]/80 p-4">
+                <label className="block text-sm font-medium text-zinc-300">Property images (minimum 5)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.files || []);
+                    setImageFiles(selected);
+                    setImagePreviews(selected.map((file) => URL.createObjectURL(file)));
+                  }}
+                  className="mt-3 block w-full text-sm text-zinc-200 file:mr-4 file:rounded-full file:border-0 file:bg-brand-purple file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                />
+                <p className="mt-2 text-xs text-zinc-400">Upload at least 5 clear photos. These items stay pending until the admin approves the listing.</p>
+                {imagePreviews.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {imagePreviews.map((preview, index) => (
+                      <img key={`${preview}-${index}`} src={preview} alt={`Preview ${index + 1}`} className="h-16 w-full rounded-xl object-cover" />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button disabled={submitting || !profile.isKycVerified} className="rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white transition hover:bg-brand-magenta disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : profile.isKycVerified ? 'Submit for review' : 'Complete KYC first'}</button>
             </div>
           </form>
