@@ -94,7 +94,13 @@ export default function RegisterPage() {
       
       if (!response.ok) {
         console.error('[Register] Server error:', payload);
-        setError(payload?.detail || `Registration failed (${response.status}).`);
+        // Map common token/authorization messages to friendlier wording
+        const rawDetail = payload?.detail || payload?.message || '';
+        if (typeof rawDetail === 'string' && /token/i.test(rawDetail)) {
+          setError('Session/token error detected. Please clear cookies or try again in a private window.');
+        } else {
+          setError(rawDetail || `Registration failed (${response.status}).`);
+        }
         return;
       }
 

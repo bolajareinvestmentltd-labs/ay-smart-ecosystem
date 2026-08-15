@@ -32,7 +32,11 @@ export default function PropertyDetailPage() {
         const res = await fetch(buildApiUrl(`/properties/${propertyId}/`));
         if (!res.ok) {
           const payload = await res.json().catch(() => null);
-          const detail = payload?.detail || payload?.message || res.statusText || 'Unknown error';
+          const raw = payload?.detail || payload?.message || res.statusText || 'Unknown error';
+          // Friendly mapping for token errors and guidance for users
+          const detail = typeof raw === 'string' && /token/i.test(raw)
+            ? 'Session expired or invalid token. Please sign in again or clear your browser cookies.'
+            : raw;
           setErrorMessage(`Failed to load property: ${res.status} ${detail}`);
           return;
         }
