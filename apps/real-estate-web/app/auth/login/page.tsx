@@ -37,14 +37,14 @@ export default function LoginPage() {
       await new Promise((res) => setTimeout(res, delayMs));
     }
 
-    const nextParam = searchParams.get('next') || '/';
+    const nextParam = searchParams.get('next') || '/auth/profile';
     if (user) {
       setMessage('Profile loaded. Redirecting...');
       router.replace(nextParam);
     } else {
-      // If we couldn't load profile, redirect to home but warn user
-      setError('Logged in but profile not available yet. Redirecting to home.');
-      router.replace('/');
+      // If we couldn't load profile, still send the user into the profile setup flow.
+      setError('Logged in but profile not available yet. Redirecting to profile setup.');
+      router.replace('/auth/profile');
     }
   }
 

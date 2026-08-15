@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db.models import Q
 from django.contrib.auth.models import User
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
@@ -51,26 +52,29 @@ class CookieTokenRefreshView(TokenRefreshView):
     """Read refresh token from cookie and return new access token (also set cookie)."""
 
     def post(self, request, *args, **kwargs):
-        # Prefer cookie
         refresh = request.COOKIES.get(settings.REFRESH_COOKIE_NAME) or request.data.get('refresh')
         if not refresh:
-            return Response({'detail': 'Refresh token not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Session expired. Please sign in again.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        request.data['refresh'] = refresh
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access = response.data.get('access')
-            if access:
-                secure = not settings.DEBUG
-                same_site = 'None' if secure else 'Lax'
-                response.set_cookie(
-                    settings.ACCESS_COOKIE_NAME,
-                    access,
-                    httponly=True,
-                    secure=secure,
-                    samesite=same_site,
-                    path='/',
-                )
+        serializer = self.get_serializer(data={'refresh': refresh})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError:
+            return Response({'detail': 'Session expired. Please sign in again.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        access = response.data.get('access')
+        if access:
+            secure = not settings.DEBUG
+            same_site = 'None' if secure else 'Lax'
+            response.set_cookie(
+                settings.ACCESS_COOKIE_NAME,
+                access,
+                httponly=True,
+                secure=secure,
+                samesite=same_site,
+                path='/',
+            )
         return response
 
 

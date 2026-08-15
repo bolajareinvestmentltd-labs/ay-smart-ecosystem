@@ -1,10 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/auth';
 import { getStoredProfile, saveStoredProfile, type SellerProfile } from '../../lib/app-state';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<SellerProfile>(getStoredProfile());
   const [location, setLocation] = useState(profile.location || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -13,6 +15,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -20,6 +23,11 @@ export default function ProfilePage() {
       if (!res.ok) return;
       const payload = await res.json().catch(() => null);
       if (!payload) return;
+      
+      // Detect if this is a first-time user (just registered, not KYC verified, not admin approved)
+      const isNew = !payload.is_kyc_verified && !payload.is_admin_approved;
+      setIsFirstTime(isNew);
+      
       const nextProfile = {
         ...getStoredProfile(),
         name: payload.name || '',
@@ -110,6 +118,78 @@ export default function ProfilePage() {
     setMessage('Password reset successfully.');
   }
 
+  function handleCompleteOnboarding() {
+    // After onboarding (profile setup), redirect to dashboard or properties
+    router.push('/dashboard');
+  }
+
+  // Show onboarding flow for first-time users
+  if (isFirstTime) {
+    return (
+      <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Welcome to AY'SMART</p>
+          <h1 className="mt-2 text-3xl font-black">Let's complete your profile</h1>
+          <p className="mt-2 text-sm text-zinc-400">You're almost ready! Just a few more details to get your account fully set up.</p>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {/* Account Summary */}
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-950/90 p-6">
+              <h2 className="text-lg font-bold">Your account</h2>
+              <div className="mt-4 space-y-3 text-sm">
+                <div>
+                  <p className="text-zinc-500">Name</p>
+                  <p className="font-semibold">{profile.name || 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500">Email</p>
+                  <p className="font-semibold">{profile.email || 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500">Username</p>
+                  <p className="font-semibold">{profile.username || 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500">Role</p>
+                  <p className="font-semibold capitalize">{profile.role || 'Not set'}</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Next Steps */}
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-950/90 p-6">
+              <h2 className="text-lg font-bold">What's next?</h2>
+              <ul className="mt-4 space-y-3 text-sm text-zinc-300">
+                <li className="flex items-start gap-3">
+                  <span className="text-amber-400">✓</span>
+                  <span>Email verified and account created</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-amber-400">→</span>
+                  <span>Complete profile information</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-amber-400">→</span>
+                  <span>KYC verification (if required)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-amber-400">→</span>
+                  <span>Start listing properties</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <div className="mt-8 flex gap-3">
+            <Link href="/auth/profile?edit=true" className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-semibold hover:border-zinc-700">View full profile settings</Link>
+            <button onClick={handleCompleteOnboarding} className="rounded-2xl bg-amber-500 px-6 py-3 font-semibold text-zinc-950 hover:bg-amber-600">Get started → Dashboard</button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Show settings for existing users
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
       <div className="mx-auto max-w-5xl space-y-6">

@@ -136,6 +136,14 @@ class ReferralWalletTests(TestCase):
         user.refresh_from_db()
         self.assertTrue(user.check_password('newsecret456'))
 
+    def test_invalid_refresh_cookie_returns_session_expired_message(self):
+        self.client.cookies['refresh'] = 'not.a.valid.jwt'
+
+        response = self.client.post('/api/auth/refresh-cookie/', format='json')
+
+        self.assertEqual(response.status_code, 401, response.data)
+        self.assertEqual(response.data.get('detail'), 'Session expired. Please sign in again.')
+
     def test_support_request_can_be_created(self):
         response = self.client.post(
             "/api/support/requests/",

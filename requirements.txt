@@ -10,3 +10,5 @@ requests>=2.31.0
 django-unfold>=0.89.0
 django-cors-headers>=4.9.0
 Pillow>=9.0.0
+cloudinary>=1.36.0
+django-cloudinary-storage>=0.3.0

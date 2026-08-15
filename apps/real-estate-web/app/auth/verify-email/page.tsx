@@ -35,7 +35,9 @@ export default function VerifyEmailPage() {
         }
 
         setStatus('success');
-        setMessage('Your email has been verified successfully. You can now sign in.');
+        setMessage('Your email has been verified successfully. Redirecting to login...');
+        // Auto-redirect to login after 2 seconds
+        setTimeout(() => router.push('/auth/login'), 2000);
       } catch {
         setStatus('failed');
         setMessage('Network error while verifying your email. Please try again.');

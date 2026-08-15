@@ -132,7 +132,7 @@ export default function RegisterPage() {
       if (payload?.warning) {
         setError(payload.warning);
       }
-      // Redirect user to verification landing with email param so they can resend if needed
+      // Keep the verification landing as the first post-signup step, then direct the user into profile setup after they confirm their email.
       router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}`);
     } catch (err) {
       console.error('[Register] Fetch error:', err);
