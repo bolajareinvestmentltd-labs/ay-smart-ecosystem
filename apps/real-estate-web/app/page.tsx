@@ -114,24 +114,24 @@ export default function RealEstateHome() {
   }
 
   return (
-    <main className="min-h-screen bg-brand-surface text-[var(--text-primary)] pb-28 transition-colors duration-300">
-      <header className="sticky top-0 z-40 border-b border-brand-border bg-[color:var(--brand-surface-2)]/95 backdrop-blur-xl px-4 py-4 lg:px-8">
+    <main className="min-h-screen bg-[color:var(--brand-surface)] pb-28 text-[var(--text-primary)] transition-colors duration-300">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--brand-border)] bg-[color:var(--brand-surface-2)]/95 px-4 py-4 backdrop-blur-xl lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-3xl bg-brand-purple text-white shadow-lg shadow-brand-purple/20 ring-1 ring-brand-border/20">
+            <Link href="/" className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1.1rem] bg-[#4e235f] text-white shadow-lg shadow-[#4e235f]/20 ring-1 ring-[#4e235f]/20">
               <Image src="/assets/ay-smart-logo.jpeg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-10 object-contain" priority />
             </Link>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">AY&apos;SMART ECO</p>
-              <p className="text-[11px] text-zinc-400">Real estate, construction, and vehicle services.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">AY&apos;SMART ECO</p>
+              <p className="text-[11px] text-[var(--text-muted)]">Real estate, construction, and vehicle services.</p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link href="/properties" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:border-brand-accent hover:text-brand-accent">
+            <Link href="/properties" className="rounded-full border border-[color:var(--brand-border)] bg-white/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-primary)] transition hover:border-[#f1b8a5] hover:text-[#4e235f]">
               Explore
             </Link>
-            <Link href="/auth/login" className="rounded-full bg-brand-purple px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-brand-magenta">
+            <Link href="/auth/login" className="rounded-full bg-[#4e235f] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#6b2d82]">
               Sign in
             </Link>
           </div>
@@ -141,21 +141,21 @@ export default function RealEstateHome() {
       <section className="relative overflow-hidden px-4 pt-8 lg:px-8">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-brand-accent">Premium property marketplace</p>
-            <div className="inline-flex w-fit items-center rounded-full border border-brand-accent/30 bg-brand-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">Premium property marketplace</p>
+            <div className="inline-flex w-fit items-center rounded-full border border-[#f1b8a5]/40 bg-[#f9efe9] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#4e235f]">
               {approvalStatus}
             </div>
-            <h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+            <h1 className="text-3xl font-black leading-[0.95] tracking-[-0.06em] text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
               Modern real estate and automotive services in one fast mobile app.
             </h1>
-            <p className="max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">
+            <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)] sm:text-base">
               Discover duplexes, offices, hostels, and vehicles with a clean, responsive experience that feels quick and polished on every screen.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/properties" className="rounded-full bg-brand-purple px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
+              <Link href="/properties" className="rounded-full bg-[#4e235f] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#4e235f]/20 transition hover:bg-[#6b2d82]">
                 View listings
               </Link>
-              <Link href="/plans" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-brand-accent hover:text-brand-accent">
+              <Link href="/plans" className="rounded-full border border-[color:var(--brand-border)] bg-white/80 px-5 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[#f1b8a5] hover:text-[#4e235f]">
                 Pricing plans
               </Link>
             </div>
@@ -165,16 +165,16 @@ export default function RealEstateHome() {
                 { label: 'Commercial offices', value: '8 Listings' },
                 { label: 'Verified agents', value: '24+ Professionals' },
               ].map((item) => (
-                <div key={item.label} className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">{item.label}</p>
-                  <p className="mt-2 text-lg font-black text-white">{item.value}</p>
+                <div key={item.label} className="rounded-[1.4rem] border border-[color:var(--brand-border)] bg-white/70 p-4 shadow-sm">
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">{item.label}</p>
+                  <p className="mt-2 text-lg font-black text-[var(--text-primary)]">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl ring-1 ring-white/10">
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-purple/30 via-transparent to-transparent" />
+          <div className="relative overflow-hidden rounded-[1.9rem] border border-[color:var(--brand-border)] bg-white/85 shadow-[0_18px_48px_rgba(46,17,54,0.08)] ring-1 ring-[#4e235f]/5">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#4e235f]/12 via-transparent to-transparent" />
             <div className="relative h-[320px] sm:h-[420px]">
               {carouselImages.map((slide, index) => (
                 <div
@@ -184,12 +184,12 @@ export default function RealEstateHome() {
                   <div className="relative h-full w-full">
                     <Image src={slide.image} alt={slide.title} fill className="object-cover" />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/10 to-slate-950/90" />
-                  <div className="absolute bottom-5 left-5 right-5 rounded-3xl bg-black/60 p-4 text-white backdrop-blur-sm">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-brand-purple px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#18141d]/10 to-[#18141d]/80" />
+                  <div className="absolute bottom-5 left-5 right-5 rounded-[1.4rem] bg-white/12 p-4 text-white backdrop-blur-sm">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[#4e235f] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
                       <Tag size={12} /> {slide.badge}
                     </span>
-                    <h2 className="mt-3 text-xl font-black">{slide.title}</h2>
+                    <h2 className="mt-3 text-xl font-black tracking-[-0.04em]">{slide.title}</h2>
                     <p className="mt-2 text-sm text-zinc-200">{slide.subtitle}</p>
                   </div>
                 </div>
@@ -205,38 +205,38 @@ export default function RealEstateHome() {
 
       <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 shadow-2xl backdrop-blur-xl">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Premium content section</p>
-            <h2 className="mt-3 text-2xl font-black text-white">A cleaner marketplace experience built for trust, speed, and clarity.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300">
+          <div className="rounded-[1.8rem] border border-[color:var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.06)] backdrop-blur-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#4e235f]">Premium content section</p>
+            <h2 className="mt-3 text-2xl font-black tracking-[-0.05em] text-[var(--text-primary)]">A cleaner marketplace experience built for trust, speed, and clarity.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
               Discover premium homes, verified commercial spaces, and service-led listings in one polished experience designed for quick decisions and confident browsing.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {premiumHighlights.map((item) => (
-                <div key={item.title} className="rounded-2xl border border-white/10 bg-[#07070D]/70 p-4">
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-zinc-400">{item.text}</p>
+                <div key={item.title} className="rounded-[1.35rem] border border-[color:var(--brand-border)] bg-[#f8f3f1] p-4">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{item.text}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <aside className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-accent">Ad-ready placement</p>
-            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-[#09090B]/70 p-4">
-              <p className="text-sm font-semibold text-white">Sponsored space</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <aside className="rounded-[1.8rem] border border-[color:var(--brand-border)] bg-white/75 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.06)] backdrop-blur-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#4e235f]">Ad-ready placement</p>
+            <div className="mt-4 rounded-[1.2rem] border border-[color:var(--brand-border)] bg-[#f2e6df] p-4">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Sponsored space</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                 This block is intentionally separated from core navigation and CTAs so it stays readable and AdSense-safe on desktop and mobile.
               </p>
             </div>
-            <p className="mt-4 text-xs leading-6 text-zinc-500">
+            <p className="mt-4 text-xs leading-6 text-[#7b7481]">
               This slot is ready for a future AdSense unit and uses a neutral, content-first layout with no misleading redirects.
             </p>
           </aside>
         </div>
       </section>
 
-      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8 pb-20">
+      <section className="mx-auto mt-8 max-w-6xl px-4 pb-20 lg:px-8">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { title: 'Houses & Duplexes', subtitle: '12 Listings', href: '/properties' },
@@ -247,11 +247,11 @@ export default function RealEstateHome() {
             <Link
               key={item.title}
               href={item.href}
-              className="group rounded-[1.65rem] border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-brand-accent/30"
+              className="group rounded-[1.65rem] border border-[color:var(--brand-border)] bg-white/75 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#f1b8a5]/40"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-brand-purple group-hover:text-brand-magenta">{item.title}</p>
-              <p className="mt-3 text-sm text-zinc-400">{item.subtitle}</p>
-              <p className="mt-4 text-sm font-semibold text-white">Explore</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#4e235f] group-hover:text-[#6b2d82]">{item.title}</p>
+              <p className="mt-3 text-sm text-[var(--text-muted)]">{item.subtitle}</p>
+              <p className="mt-4 text-sm font-semibold text-[var(--text-primary)]">Explore</p>
             </Link>
           ))}
         </div>

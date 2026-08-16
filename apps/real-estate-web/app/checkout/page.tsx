@@ -121,44 +121,45 @@ function CheckoutContent() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
+    <main className="min-h-screen bg-[color:var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
       <div className="mx-auto max-w-2xl">
-        {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-black">Checkout</h1>
-          <p className="mt-2 text-sm text-zinc-400">Complete your hostel rental payment</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">Checkout</p>
+          <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">Checkout</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Complete your hostel rental payment</p>
         </div>
 
-        {/* Order Summary */}
-        <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6">
-          <h2 className="font-black">Order Summary</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex justify-between">
+        <div className="mb-8 rounded-[2rem] border border-[color:var(--brand-border)] bg-[#1d1723] p-6 text-white shadow-[0_18px_48px_rgba(46,17,54,0.16)]">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-black">Order Summary</h2>
+            <span className="rounded-full bg-[#f1b8a5]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f1b8a5]">Selection</span>
+          </div>
+          <div className="mt-5 space-y-3">
+            <div className="flex justify-between text-sm">
               <span className="text-zinc-400">Hostel:</span>
               <span className="font-semibold">{hostelName}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-zinc-400">Duration:</span>
               <span className="font-semibold">1 Year</span>
             </div>
-            <div className="border-t border-zinc-700 pt-3 mt-3 flex justify-between text-lg font-black">
+            <div className="mt-4 border-t border-white/10 pt-4 flex justify-between text-lg font-black">
               <span>Total Amount:</span>
-              <span className="text-brand-accent">₦{Number(amount).toLocaleString()}</span>
+              <span className="text-[#f1b8a5]">₦{Number(amount).toLocaleString()}</span>
             </div>
           </div>
         </div>
 
-        {/* Payment Method Selection */}
         <div className="mb-8">
-          <h2 className="font-black mb-4">Select Payment Method</h2>
+          <h2 className="mb-4 font-black">Select Payment Method</h2>
           <div className="space-y-3">
             {PAYMENT_METHODS.map((method) => (
               <label
                 key={method.id}
-                className={`flex items-center rounded-2xl border-2 p-4 cursor-pointer transition ${
+                className={`flex cursor-pointer items-center rounded-[1.4rem] border-2 p-4 transition ${
                   selectedMethod === method.id
-                    ? 'border-brand-accent bg-brand-accent/10'
-                    : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                    ? 'border-[#f1b8a5] bg-[#f9efe9]'
+                    : 'border-[color:var(--brand-border)] bg-white/80 hover:border-[#f1b8a5]/50'
                 }`}
               >
                 <input
@@ -167,46 +168,43 @@ function CheckoutContent() {
                   value={method.id}
                   checked={selectedMethod === method.id}
                   onChange={(e) => setSelectedMethod(e.target.value)}
-                  className="mr-3"
+                  className="mr-3 accent-[#4e235f]"
                 />
                 <div className="flex-1">
-                  <p className="font-semibold flex items-center gap-2">
+                  <p className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
                     <span>{method.icon}</span> {method.name}
                   </p>
-                  <p className="text-xs text-zinc-400">{method.description}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{method.description}</p>
                 </div>
               </label>
             ))}
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/30 p-4">
-            <p className="text-red-300 text-sm">{error}</p>
+          <div className="mb-6 rounded-[1.2rem] border border-red-500/30 bg-red-500/10 p-4">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Checkout Button */}
         <form onSubmit={handleCheckout} className="space-y-4">
           <button
             type="submit"
             disabled={processing}
-            className="w-full rounded-2xl bg-brand-purple px-6 py-4 font-black text-white transition hover:bg-brand-magenta disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-[1.4rem] bg-[#4e235f] px-6 py-4 font-black text-white transition hover:bg-[#6b2d82] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {processing ? '🔄 Processing...' : `💳 Pay ₦${Number(amount).toLocaleString()}`}
           </button>
 
           <Link
             href={`/hostel/${hostelId}`}
-            className="block text-center rounded-2xl border border-zinc-700 px-6 py-4 font-semibold text-white transition hover:bg-zinc-800/50"
+            className="block rounded-[1.4rem] border border-[color:var(--brand-border)] bg-white/80 px-6 py-4 text-center font-semibold text-[var(--text-primary)] transition hover:bg-[#f7f2ef]"
           >
             Cancel
           </Link>
         </form>
 
-        {/* Security Info */}
-        <div className="mt-8 text-center text-xs text-zinc-500">
+        <div className="mt-8 text-center text-xs text-[var(--text-muted)]">
           <p>🔒 Your payment is secure and encrypted</p>
           <p>💳 We support multiple payment providers for your convenience</p>
         </div>

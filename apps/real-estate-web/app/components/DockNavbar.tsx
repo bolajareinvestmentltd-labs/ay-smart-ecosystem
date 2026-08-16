@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/properties', label: 'Explore', icon: Search },
-  { href: '/plans', label: 'Plans', icon: Calendar },
+  { href: '/', label: 'Explore', icon: Search },
+  { href: '/saved', label: 'Saved', icon: Home },
+  { href: '/inbox', label: 'Messages', icon: Calendar },
   { href: '/dashboard', label: 'Profile', icon: User },
 ];
 
@@ -30,23 +30,23 @@ export default function DockNavbar() {
   }, [darkMode]);
 
   return (
-    <nav className="fixed bottom-4 left-1/2 z-50 w-[min(96vw,720px)] -translate-x-1/2 rounded-full border border-[color:var(--brand-border)] bg-[color:var(--brand-surface-2)]/95 p-2 shadow-2xl backdrop-blur-xl">
-      <div className="grid grid-cols-5 gap-2">
+    <nav className="fixed bottom-3 left-1/2 z-50 w-[min(98vw,480px)] -translate-x-1/2 rounded-[2rem] border border-[#4e235f]/20 bg-white/95 p-2.5 shadow-[0_18px_48px_rgba(46,17,54,0.16)] backdrop-blur-xl">
+      <div className="grid grid-cols-4 gap-1.5">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href));
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[10px] uppercase tracking-[0.22em] transition-all ${
+              className={`flex flex-col items-center justify-center gap-1 rounded-[1.2rem] px-2.5 py-2 text-[9px] uppercase tracking-[0.2em] transition-all ${
                 active
-                  ? 'bg-brand-purple text-white shadow-sm shadow-brand-purple/20'
+                  ? 'bg-[#4e235f] text-white shadow-sm shadow-[#4e235f]/20'
                   : 'text-[color:var(--text-muted)] hover:bg-[color:var(--brand-surface)]/10 hover:text-[color:var(--text-primary)]'
               }`}
               aria-label={label}
             >
-              <Icon size={18} />
-              <span className="leading-none">{label}</span>
+              <Icon size={20} />
+              <span className="leading-tight text-[8px]">{label}</span>
             </Link>
           );
         })}

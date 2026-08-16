@@ -4,44 +4,48 @@
 :root {
   color-scheme: light;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #FBF0E7;
-  color: #382419;
-  --brand-light: #FBF0E7;
-  --brand-dark: #4E3021;
-  --brand-purple: #5E2879;
-  --brand-magenta: #8C2F8F;
-  --brand-accent: #B45309;
-  --brand-surface: #F9F0E3;
-  --brand-surface-2: #ECD8C4;
-  --brand-border: rgba(120, 64, 25, 0.14);
-  --brand-violet: #A855F7;
-  --bg-start: #FBF0E7;
-  --bg-end: #E9D6C5;
-  --text-primary: #382419;
-  --text-muted: #6E5847;
-  --selection-bg: rgba(180, 83, 9, 0.18);
-  --selection-text: #3E1F0D;
+  background-color: #f7f3f0;
+  color: #1f1b2a;
+  --brand-light: #fffaf7;
+  --brand-dark: #28152d;
+  --brand-purple: #4e235f;
+  --brand-purple-deep: #2a1136;
+  --brand-magenta: #7d4a88;
+  --brand-accent: #f1b8a5;
+  --brand-accent-strong: #e28c72;
+  --brand-surface: #f5f1ef;
+  --brand-surface-2: #f0e7e0;
+  --brand-surface-3: #efe3db;
+  --brand-border: rgba(55, 32, 68, 0.12);
+  --brand-violet: #7d4a88;
+  --bg-start: #f9f2ef;
+  --bg-end: #efe5de;
+  --text-primary: #221b2d;
+  --text-muted: #6a5f6e;
+  --selection-bg: rgba(78, 35, 95, 0.12);
+  --selection-text: #211629;
 }
 
 .dark {
   color-scheme: dark;
-  background-color: #09090B;
-  color: #F9FAFB;
-  --brand-light: #F8FAFC;
-  --brand-dark: #09090B;
-  --brand-purple: #581C87;
-  --brand-magenta: #7E22CE;
-  --brand-accent: #F59E0B;
-  --brand-surface: #09090B;
-  --brand-surface-2: #0F172A;
+  background-color: #120f18;
+  color: #f9f5f2;
+  --brand-light: #f9f7f5;
+  --brand-dark: #120f18;
+  --brand-purple: #4e235f;
+  --brand-magenta: #825a91;
+  --brand-accent: #f1b8a5;
+  --brand-surface: #120f18;
+  --brand-surface-2: #1d1723;
+  --brand-surface-3: #201a27;
   --brand-border: rgba(255, 255, 255, 0.08);
-  --brand-violet: #A855F7;
-  --bg-start: rgba(134, 102, 255, 0.16);
-  --bg-end: #07070A;
-  --text-primary: #F9FAFB;
-  --text-muted: #A1A1AA;
-  --selection-bg: rgba(88, 28, 135, 0.9);
-  --selection-text: #F9FAFB;
+  --brand-violet: #9b6bb3;
+  --bg-start: #160f1b;
+  --bg-end: #0d0a13;
+  --text-primary: #f9f5f2;
+  --text-muted: #c9b7c9;
+  --selection-bg: rgba(94, 64, 112, 0.8);
+  --selection-text: #f9f5f2;
 }
 
 * {
@@ -55,8 +59,13 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(180, 83, 9, 0.16), transparent 28%), linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
   color: var(--text-primary);
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }
 
 a {
@@ -76,55 +85,60 @@ textarea {
   color: var(--selection-text);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-::selection {
-  background: rgba(88, 28, 135, 0.9);
-  color: white;
-}
-
 @keyframes marquee {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
 }
 
 @keyframes floatLogo {
-  0%,
-  100% {
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    transform: translateY(-8px) scale(1.03);
-  }
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-8px) scale(1.03); }
+}
+
+@keyframes softPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.82; }
+}
+
+@keyframes ringSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .splash-logo {
   animation: floatLogo 2.8s ease-in-out infinite;
 }
 
-/* Light-theme utility overrides: many components use Tailwind's
-   `text-white`, `bg-white/5`, etc. which target dark surfaces. When
-   the site is in light mode these utilities cause poor contrast on
-   the cream background. Prefer the theme variables for readability. */
+.brand-orb {
+  animation: softPulse 2.6s ease-in-out infinite;
+}
+
+.brand-ring {
+  animation: ringSpin 7s linear infinite;
+}
+
+.brand-card {
+  border: 1px solid var(--brand-border);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 60px rgba(46, 17, 54, 0.08);
+}
+
+.brand-panel {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(78, 35, 95, 0.08);
+  box-shadow: 0 16px 40px rgba(46, 17, 54, 0.08);
+}
+
+.brand-input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 :root[data-theme="light"] .text-white {
   color: var(--text-primary) !important;
 }
 :root[data-theme="light"] .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
 }
 :root[data-theme="light"] .border-white\/10 {
   border-color: rgba(0, 0, 0, 0.06) !important;
