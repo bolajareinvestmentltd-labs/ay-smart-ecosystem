@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SITE } from '../config/site';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -25,7 +26,7 @@ export default function PrivacyPolicyPage() {
           </section>
           <section>
             <h2 className="text-lg font-black">4. Contact</h2>
-            <p className="mt-2">For privacy questions, contact support@aysmartinvestmentltd.com.</p>
+            <p className="mt-2">For privacy questions, contact {SITE.email}.</p>
           </section>
         </div>
 

@@ -4,7 +4,7 @@ from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage,
     PropertyImage, Promotion,
-    BuildProject, ProjectMilestone
+    BuildProject, ProjectMilestone, UserProfile, Listing
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -48,6 +48,26 @@ class PromotionAdmin(admin.ModelAdmin):
     list_filter = ('audience', 'is_active')
     search_fields = ('title', 'subtitle', 'discount_text')
     ordering = ('display_order', '-updated_at')
+
+
+@admin.register(Listing)
+class ListingAdmin(ModelAdmin):
+    list_display = ('title', 'user', 'category', 'location', 'price', 'plan', 'status', 'created_at')
+    list_filter = ('status', 'category', 'plan', 'created_at')
+    search_fields = ('title', 'location', 'user__username', 'user__email')
+    ordering = ('-created_at',)
+    actions = ['approve_selected_listings', 'reject_selected_listings']
+
+    @admin.action(description='Approve selected listings')
+    def approve_selected_listings(self, request, queryset):
+        updated = queryset.update(status='LIVE')
+        self.message_user(request, f'{updated} listing(s) approved and published.')
+
+    @admin.action(description='Reject selected listings')
+    def reject_selected_listings(self, request, queryset):
+        updated = queryset.update(status='REJECTED')
+        self.message_user(request, f'{updated} listing(s) rejected.')
+
 
 class InspectionBookingMessageInline(admin.TabularInline):
     model = InspectionBookingMessage
@@ -98,6 +118,30 @@ class ReferralAdmin(admin.ModelAdmin):
 class WalletAdmin(admin.ModelAdmin):
     list_display = ('user', 'balance', 'currency')
     search_fields = ('user__username',)
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(ModelAdmin):
+    list_display = ('user', 'role', 'phone', 'location', 'email_verified', 'is_kyc_verified', 'is_admin_approved', 'student_matric_number')
+    list_filter = ('role', 'email_verified', 'is_kyc_verified', 'is_admin_approved')
+    search_fields = ('user__username', 'user__email', 'phone', 'student_matric_number', 'location')
+    ordering = ('-updated_at',)
+    actions = ['approve_selected_users', 'mark_kyc_verified', 'reset_kyc_status']
+
+    @admin.action(description='Approve selected users')
+    def approve_selected_users(self, request, queryset):
+        updated = queryset.update(is_admin_approved=True, is_kyc_verified=True)
+        self.message_user(request, f'{updated} user(s) approved and marked KYC verified.')
+
+    @admin.action(description='Mark selected users as KYC verified')
+    def mark_kyc_verified(self, request, queryset):
+        updated = queryset.update(is_kyc_verified=True)
+        self.message_user(request, f'{updated} user(s) marked as KYC verified.')
+
+    @admin.action(description='Reset selected users KYC status')
+    def reset_kyc_status(self, request, queryset):
+        updated = queryset.update(is_kyc_verified=False, is_admin_approved=False)
+        self.message_user(request, f'{updated} user(s) reset to pending verification.')
 
 
 @admin.register(SupportRequest)

@@ -36,10 +36,10 @@ export default function AboutPage() {
           <div className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6">
             <h2 className="text-xl font-bold">Contact</h2>
             <div className="mt-4 space-y-2 text-sm text-zinc-300">
-              <p>Phone: <a className="text-white" href="tel:+2349057403562">+234 9057403562</a></p>
-              <p>WhatsApp: <a className="text-white" href="https://wa.me/2348136272360">+234 8136272360</a></p>
-              <p>Email: <a className="text-white" href="mailto:admin@aysmartinvestmentltd.com">admin@aysmartinvestmentltd.com</a></p>
-              <p>Address: Sho 5, Opposite Nicro Filling Station, Ilorin Road, Malete, Kwara State</p>
+              <p>Phone: <a className="text-white" href={`tel:${SITE.phone.replace(/\s+/g, '')}`}>{SITE.phone}</a></p>
+              <p>WhatsApp: <a className="text-white" href={`https://wa.me/${SITE.whatsapp.replace(/\s+/g, '').replace('+', '')}`}>{SITE.whatsapp}</a></p>
+              <p>Email: <a className="text-white" href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+              <p>Address: {SITE.address}</p>
             </div>
 
             <div className="mt-6">

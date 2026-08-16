@@ -176,7 +176,7 @@ SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://aysmartinvestmentltd.com')
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         'CSRF_TRUSTED_ORIGINS',
@@ -197,7 +197,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', os.getenv('RESEND_SMTP_USERNAME',
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', os.getenv('RESEND_API_KEY', ''))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', os.getenv('RESEND_EMAIL_USE_TLS', 'True')).lower() in ('1', 'true', 'yes')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('RESEND_FROM_EMAIL', 'noreply@resend.dev'))
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('RESEND_FROM_EMAIL', 'support@aysmartinvestmentltd.com'))
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
 RESEND_WEBHOOK_SIGNING_SECRET = os.getenv('RESEND_WEBHOOK_SIGNING_SECRET', '')
 
