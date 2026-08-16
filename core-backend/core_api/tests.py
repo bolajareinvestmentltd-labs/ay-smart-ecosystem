@@ -419,3 +419,48 @@ class ReferralWalletTests(TestCase):
 
         self.assertEqual(response.status_code, 201, response.data)
         self.assertTrue(property_obj.images.filter(image__isnull=False).exists())
+
+
+class MarketplaceFoundationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='marketuser', email='market@example.com', password='secret123')
+        self.listing = Listing.objects.create(
+            user=self.user,
+            title='Beachfront Plot',
+            category='Property',
+            location='Lekki',
+            price='25000000',
+            plan='standard',
+            duration_days=30,
+            status='LIVE',
+        )
+
+    def test_user_can_create_saved_search(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/saved-searches/', {
+            'name': 'Lekki duplex',
+            'location': 'Lekki',
+            'property_type': 'RESIDENTIAL',
+            'min_price': '20000000',
+            'max_price': '50000000',
+        }, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(response.data['id'])
+
+    def test_user_can_toggle_favorite_and_hidden_listing(self):
+        self.client.force_authenticate(user=self.user)
+        fav = self.client.post('/api/favorites/', {'listing': self.listing.id}, format='json')
+        self.assertEqual(fav.status_code, 201, fav.data)
+        hidden = self.client.post('/api/hidden-listings/', {'listing': self.listing.id}, format='json')
+        self.assertEqual(hidden.status_code, 201, hidden.data)
+
+    def test_user_can_start_inbox_conversation(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/conversations/', {
+            'subject': 'Question on listing',
+            'listing': self.listing.id,
+            'message': 'Can I arrange a viewing this week?'
+        }, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['subject'], 'Question on listing')

@@ -27,12 +27,13 @@ from django.conf import settings
 from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
     Listing, ListingImage, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
-    Vehicle, Wallet, WalletTransaction
+    Vehicle, Wallet, WalletTransaction, SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
 )
 from .serializers import (
     BranchLocationSerializer, VehicleSerializer,
     PropertySerializer, InspectionBookingSerializer, PropertyImageUploadSerializer,
-    BuildProjectSerializer, PromotionSerializer
+    BuildProjectSerializer, PromotionSerializer, SavedSearchSerializer, FavoriteListingSerializer,
+    HiddenListingSerializer, ConversationSerializer, ConversationMessageSerializer,
 )
 from .models import Referral
 from .serializers import (
@@ -602,6 +603,66 @@ class BuildProjectViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BuildProject.objects.all()
     serializer_class = BuildProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class SavedSearchViewSet(viewsets.ModelViewSet):
+    serializer_class = SavedSearchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedSearch.objects.filter(user=self.request.user).order_by('-updated_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class FavoriteListingViewSet(viewsets.ModelViewSet):
+    serializer_class = FavoriteListingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FavoriteListing.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class HiddenListingViewSet(viewsets.ModelViewSet):
+    serializer_class = HiddenListingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return HiddenListing.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class ConversationViewSet(viewsets.ModelViewSet):
+    serializer_class = ConversationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Conversation.objects.filter(user=self.request.user).order_by('-updated_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def reply(self, request, pk=None):
+        conversation = self.get_object()
+        message = (request.data.get('message') or '').strip()
+        if not message:
+            return Response({'detail': 'message is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        obj = ConversationMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            sender_name=request.user.get_full_name() or request.user.username,
+            text=message,
+        )
+        conversation.status = 'REPLIED'
+        conversation.save(update_fields=['status', 'updated_at'])
+        return Response(ConversationMessageSerializer(obj).data, status=status.HTTP_201_CREATED)
 
 
 class ListingViewSet(viewsets.ModelViewSet):

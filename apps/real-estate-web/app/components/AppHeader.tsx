@@ -40,12 +40,26 @@ export default function AppHeader() {
               Back
             </button>
           ) : (
-            <Link
-              href="/properties"
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Explore
-            </Link>
+            <>
+              <Link
+                href="/properties"
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Explore
+              </Link>
+              <Link
+                href="/saved"
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Saved
+              </Link>
+              <Link
+                href="/inbox"
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Inbox
+              </Link>
+            </>
           )}
         </div>
       </div>

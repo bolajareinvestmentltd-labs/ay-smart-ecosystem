@@ -7,9 +7,10 @@ from rest_framework import serializers
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage, PropertyImage,
-    BuildProject, ProjectMilestone, Promotion, ListingImage
+    BuildProject, ProjectMilestone, Promotion, ListingImage,
+    Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
+    SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
 )
-from .models import Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
 
 
 class BranchLocationSerializer(serializers.ModelSerializer):
@@ -208,6 +209,65 @@ class ListingSerializer(serializers.ModelSerializer):
         amount = validated_data.get('price', 0)
         validated_data['cashback'] = amount * Decimal('0.10')
         return super().create(validated_data)
+
+
+class SavedSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedSearch
+        fields = ['id', 'user', 'name', 'location', 'property_type', 'min_price', 'max_price', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+
+class FavoriteListingSerializer(serializers.ModelSerializer):
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+    listing_location = serializers.CharField(source='listing.location', read_only=True)
+
+    class Meta:
+        model = FavoriteListing
+        fields = ['id', 'user', 'listing', 'listing_title', 'listing_location', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+
+class HiddenListingSerializer(serializers.ModelSerializer):
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+
+    class Meta:
+        model = HiddenListing
+        fields = ['id', 'user', 'listing', 'listing_title', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+
+class ConversationMessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+
+    class Meta:
+        model = ConversationMessage
+        fields = ['id', 'conversation', 'sender', 'sender_username', 'sender_name', 'text', 'created_at']
+        read_only_fields = ['id', 'conversation', 'sender', 'sender_username', 'created_at']
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    messages = ConversationMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Conversation
+        fields = ['id', 'user', 'listing', 'subject', 'status', 'created_at', 'updated_at', 'messages']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at', 'messages']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        conversation = super().create(validated_data)
+        text = self.context.get('request').data.get('message') if self.context.get('request') else ''
+        if text:
+            ConversationMessage.objects.create(
+                conversation=conversation,
+                sender=request.user if request and request.user.is_authenticated else None,
+                sender_name=(request.user.get_full_name() or request.user.username) if request and request.user.is_authenticated else 'Guest',
+                text=text,
+            )
+        return conversation
 
 
 class ReferralSerializer(serializers.ModelSerializer):

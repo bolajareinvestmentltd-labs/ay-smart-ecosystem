@@ -4,7 +4,8 @@ from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage,
     PropertyImage, Promotion,
-    BuildProject, ProjectMilestone, UserProfile, Listing
+    BuildProject, ProjectMilestone, UserProfile, Listing,
+    SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -142,6 +143,37 @@ class UserProfileAdmin(ModelAdmin):
     def reset_kyc_status(self, request, queryset):
         updated = queryset.update(is_kyc_verified=False, is_admin_approved=False)
         self.message_user(request, f'{updated} user(s) reset to pending verification.')
+
+
+@admin.register(SavedSearch)
+class SavedSearchAdmin(admin.ModelAdmin):
+    list_display = ('user', 'name', 'location', 'property_type', 'min_price', 'max_price', 'updated_at')
+    search_fields = ('name', 'location', 'user__username')
+
+
+@admin.register(FavoriteListing)
+class FavoriteListingAdmin(admin.ModelAdmin):
+    list_display = ('user', 'listing', 'created_at')
+    search_fields = ('user__username', 'listing__title')
+
+
+@admin.register(HiddenListing)
+class HiddenListingAdmin(admin.ModelAdmin):
+    list_display = ('user', 'listing', 'created_at')
+    search_fields = ('user__username', 'listing__title')
+
+
+@admin.register(Conversation)
+class ConversationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'subject', 'listing', 'status', 'updated_at')
+    list_filter = ('status',)
+    search_fields = ('subject', 'user__username', 'listing__title')
+
+
+@admin.register(ConversationMessage)
+class ConversationMessageAdmin(admin.ModelAdmin):
+    list_display = ('conversation', 'sender_name', 'created_at')
+    search_fields = ('sender_name', 'text')
 
 
 @admin.register(SupportRequest)

@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     # Third-party & Local Apps
     "corsheaders",
     "rest_framework",
+    "cloudinary_storage",
     "core_api",
 ]
 

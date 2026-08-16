@@ -332,6 +332,84 @@ class ListingImage(models.Model):
         return f"Image for {self.listing.title}"
 
 
+class SavedSearch(models.Model):
+    user = models.ForeignKey(User, related_name='saved_searches', on_delete=models.CASCADE)
+    name = models.CharField(max_length=150)
+    location = models.CharField(max_length=200, blank=True)
+    property_type = models.CharField(max_length=30, blank=True)
+    min_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    max_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.username}: {self.name}"
+
+
+class FavoriteListing(models.Model):
+    user = models.ForeignKey(User, related_name='favorite_listings', on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, related_name='favorited_by', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'listing')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} likes {self.listing.title}"
+
+
+class HiddenListing(models.Model):
+    user = models.ForeignKey(User, related_name='hidden_listings', on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, related_name='hidden_by', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'listing')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} hid {self.listing.title}"
+
+
+class Conversation(models.Model):
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('REPLIED', 'Replied'),
+        ('RESOLVED', 'Resolved'),
+    ]
+
+    user = models.ForeignKey(User, related_name='conversations', on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, related_name='conversations', on_delete=models.SET_NULL, null=True, blank=True)
+    subject = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.subject} ({self.user.username})"
+
+
+class ConversationMessage(models.Model):
+    conversation = models.ForeignKey(Conversation, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, related_name='conversation_messages', on_delete=models.SET_NULL, null=True, blank=True)
+    sender_name = models.CharField(max_length=120, blank=True)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message in {self.conversation.subject}"
+
+
 class Referral(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
