@@ -5,6 +5,8 @@ __pycache__/
 *.log
 .env
 *.pyc
+media/
+core-backend/media/
 
 # Node / Next.js / Turborepo
 node_modules/
