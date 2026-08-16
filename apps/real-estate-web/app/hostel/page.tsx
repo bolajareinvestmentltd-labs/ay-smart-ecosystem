@@ -122,10 +122,12 @@ export default function HostelPage() {
                     </div>
                     <p className="mt-3 text-sm leading-6 text-zinc-400">{hostel.description}</p>
                     <div className="mt-4 flex flex-wrap gap-3">
+                      <Link href={`/hostel/${hostel.id}`} className="rounded-full bg-brand-accent px-4 py-2 text-sm font-semibold text-[#07070D] transition hover:opacity-90">
+                        View Details
+                      </Link>
                       <button onClick={() => toggleCart(hostel)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isSelected ? 'bg-brand-accent text-[#07070D]' : 'bg-brand-purple text-white hover:bg-brand-magenta'}`}>
-                        {isSelected ? 'Remove from shortlist' : 'Add to cart'}
+                        {isSelected ? 'Remove from shortlist' : 'Add to shortlist'}
                       </button>
-                      <Link href="#reservation" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-brand-accent hover:text-brand-accent">Book inspection</Link>
                     </div>
                   </div>
                 </article>

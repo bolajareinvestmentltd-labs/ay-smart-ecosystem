@@ -1,11 +1,13 @@
 ﻿from django.contrib import admin
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage,
     PropertyImage, Promotion,
-    BuildProject, ProjectMilestone, UserProfile, Listing,
+    BuildProject, ProjectMilestone, UserProfile, Listing, ListingImage,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
+    PaymentTransaction,
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -33,15 +35,78 @@ class PickupVoucherAdmin(ModelAdmin):
 class PropertyImageInline(admin.TabularInline):
     model = PropertyImage
     extra = 1
+    fields = ('image_preview', 'image', 'url', 'caption', 'order')
+    readonly_fields = ('image_preview',)
+    
+    def image_preview(self, obj):
+        """Display thumbnail preview of the image"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" width="100" height="100" style="border-radius: 4px; object-fit: cover;" />',
+                obj.image.url
+            )
+        elif obj.url:
+            return format_html(
+                '<img src="{}" width="100" height="100" style="border-radius: 4px; object-fit: cover;" />',
+                obj.url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
 
 @admin.register(Property)
 class PropertyAdmin(ModelAdmin):
-    list_display = ('title', 'property_type', 'price', 'is_for_lease', 'is_available')
+    list_display = ('title', 'property_type', 'price', 'is_for_lease', 'is_available', 'image_count')
     list_filter = ('property_type', 'is_for_lease', 'is_available')
     search_fields = ('title', 'location_address')
     inlines = [PropertyImageInline]
+    
+    def image_count(self, obj):
+        """Show count of images for this property"""
+        count = obj.images.count()
+        return format_html(
+            '<span style="background-color: #ddd; padding: 2px 8px; border-radius: 12px;">{} images</span>',
+            count
+        )
+    image_count.short_description = "Images"
 
-admin.site.register(PropertyImage)
+@admin.register(PropertyImage)
+class PropertyImageAdmin(ModelAdmin):
+    list_display = ('property', 'image_thumbnail', 'caption', 'order')
+    list_filter = ('property', 'order')
+    search_fields = ('property__title', 'caption')
+    readonly_fields = ('image_preview',)
+    fields = ('property', 'image', 'url', 'caption', 'order', 'image_preview')
+    ordering = ('property', 'order')
+    
+    def image_thumbnail(self, obj):
+        """Display thumbnail in list view"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" width="80" height="80" style="border-radius: 4px; object-fit: cover;" />',
+                obj.image.url
+            )
+        elif obj.url:
+            return format_html(
+                '<img src="{}" width="80" height="80" style="border-radius: 4px; object-fit: cover;" />',
+                obj.url
+            )
+        return "No image"
+    image_thumbnail.short_description = "Thumbnail"
+    
+    def image_preview(self, obj):
+        """Display large preview in detail view"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-width: 400px; max-height: 400px; border-radius: 8px;" />',
+                obj.image.url
+            )
+        elif obj.url:
+            return format_html(
+                '<img src="{}" style="max-width: 400px; max-height: 400px; border-radius: 8px;" />',
+                obj.url
+            )
+        return "No image"
+    image_preview.short_description = "Full Preview"
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
@@ -51,13 +116,39 @@ class PromotionAdmin(admin.ModelAdmin):
     ordering = ('display_order', '-updated_at')
 
 
+class ListingImageInline(admin.TabularInline):
+    model = ListingImage
+    extra = 1
+    fields = ('image_preview', 'image', 'caption', 'order')
+    readonly_fields = ('image_preview',)
+    
+    def image_preview(self, obj):
+        """Display thumbnail preview of the image"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" width="100" height="100" style="border-radius: 4px; object-fit: cover;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
+
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
-    list_display = ('title', 'user', 'category', 'location', 'price', 'plan', 'status', 'created_at')
+    list_display = ('title', 'user', 'category', 'location', 'price', 'plan', 'status', 'image_count', 'created_at')
     list_filter = ('status', 'category', 'plan', 'created_at')
     search_fields = ('title', 'location', 'user__username', 'user__email')
     ordering = ('-created_at',)
+    inlines = [ListingImageInline]
     actions = ['approve_selected_listings', 'reject_selected_listings']
+
+    def image_count(self, obj):
+        """Show count of images for this listing"""
+        count = obj.images.count()
+        return format_html(
+            '<span style="background-color: #ddd; padding: 2px 8px; border-radius: 12px;">{} images</span>',
+            count
+        )
+    image_count.short_description = "Images"
 
     @admin.action(description='Approve selected listings')
     def approve_selected_listings(self, request, queryset):
@@ -68,6 +159,35 @@ class ListingAdmin(ModelAdmin):
     def reject_selected_listings(self, request, queryset):
         updated = queryset.update(status='REJECTED')
         self.message_user(request, f'{updated} listing(s) rejected.')
+
+@admin.register(ListingImage)
+class ListingImageAdmin(ModelAdmin):
+    list_display = ('listing', 'image_thumbnail', 'caption', 'order')
+    list_filter = ('listing', 'order')
+    search_fields = ('listing__title', 'caption')
+    readonly_fields = ('image_preview',)
+    fields = ('listing', 'image', 'caption', 'order', 'image_preview')
+    ordering = ('listing', 'order')
+    
+    def image_thumbnail(self, obj):
+        """Display thumbnail in list view"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" width="80" height="80" style="border-radius: 4px; object-fit: cover;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_thumbnail.short_description = "Thumbnail"
+    
+    def image_preview(self, obj):
+        """Display large preview in detail view"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-width: 400px; max-height: 400px; border-radius: 8px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Full Preview"
 
 
 class InspectionBookingMessageInline(admin.TabularInline):
@@ -187,3 +307,24 @@ class SupportRequestAdmin(admin.ModelAdmin):
 class SiteBrandAdmin(admin.ModelAdmin):
     list_display = ('name', 'updated_at')
     readonly_fields = ('updated_at',)
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'plan', 'amount', 'provider', 'status', 'provider_reference', 'created_at')
+    list_filter = ('provider', 'status', 'plan', 'created_at')
+    search_fields = ('user__username', 'user__email', 'provider_reference')
+    readonly_fields = ('provider_reference', 'created_at', 'updated_at')
+    ordering = ('-created_at',)
+    actions = ['mark_success', 'mark_failed']
+
+    @admin.action(description='Mark selected transactions as successful')
+    def mark_success(self, request, queryset):
+        updated = queryset.update(status='SUCCESS')
+        self.message_user(request, f'{updated} transaction(s) marked as successful.')
+
+    @admin.action(description='Mark selected transactions as failed')
+    def mark_failed(self, request, queryset):
+        updated = queryset.update(status='FAILED')
+        self.message_user(request, f'{updated} transaction(s) marked as failed.')
+

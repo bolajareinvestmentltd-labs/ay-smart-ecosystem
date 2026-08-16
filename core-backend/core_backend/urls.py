@@ -11,6 +11,7 @@ from core_api.views import (
     PaymentVerifyView, ProfileView, PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
     SupportRequestViewSet, UserInfoView, VehicleViewSet, WalletViewSet,
     SavedSearchViewSet, FavoriteListingViewSet, HiddenListingViewSet, ConversationViewSet,
+    PaymentTransactionViewSet,
 )
 
 # Explicit High-Contrast Branding Overrides
@@ -33,6 +34,7 @@ router.register(r'saved-searches', SavedSearchViewSet, basename='saved-search')
 router.register(r'favorites', FavoriteListingViewSet, basename='favorite')
 router.register(r'hidden-listings', HiddenListingViewSet, basename='hidden-listing')
 router.register(r'conversations', ConversationViewSet, basename='conversation')
+router.register(r'payments', PaymentTransactionViewSet, basename='payment')
 router.register(r'support/requests', SupportRequestViewSet, basename='support-request')
 
 urlpatterns = [

@@ -17,6 +17,9 @@ export default function PropertyDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     async function load() {
@@ -42,6 +45,33 @@ export default function PropertyDetailPage() {
         }
         const data = await res.json();
         setProperty(data);
+
+        // Check user auth and favorites/hidden status
+        try {
+          const userRes = await authFetch(buildApiUrl('/auth/me/'));
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            setUser(userData);
+
+            // Check if favorited
+            const favRes = await authFetch(buildApiUrl('/favorites/'));
+            if (favRes.ok) {
+              const favorites = await favRes.json();
+              const isFav = favorites.some((fav: any) => fav.listing?.id === propertyId || fav.id === propertyId);
+              setIsFavorited(isFav);
+            }
+
+            // Check if hidden
+            const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
+            if (hiddenRes.ok) {
+              const hidden = await hiddenRes.json();
+              const isHid = hidden.some((hid: any) => hid.listing?.id === propertyId || hid.id === propertyId);
+              setIsHidden(isHid);
+            }
+          }
+        } catch (err) {
+          console.log('User not authenticated');
+        }
       } catch (error) {
         setErrorMessage(`Network or server error: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
@@ -75,6 +105,78 @@ export default function PropertyDetailPage() {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location_address)}`, '_blank');
     }
   };
+
+  async function handleToggleFavorite() {
+    if (!user) {
+      setErrorMessage('Please sign in to save favorites.');
+      return;
+    }
+
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        const favRes = await authFetch(buildApiUrl('/favorites/'));
+        if (favRes.ok) {
+          const favorites = await favRes.json();
+          const favToDelete = favorites.find((fav: any) => fav.listing?.id === propertyId || fav.id === propertyId);
+          if (favToDelete) {
+            await authFetch(buildApiUrl(`/favorites/${favToDelete.id}/`), { method: 'DELETE' });
+            setIsFavorited(false);
+          }
+        }
+      } else {
+        // Add to favorites
+        const res = await authFetch(buildApiUrl('/favorites/'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listing: propertyId }),
+        });
+        if (res.ok) {
+          setIsFavorited(true);
+        } else {
+          setErrorMessage('Failed to save favorite.');
+        }
+      }
+    } catch (error) {
+      setErrorMessage(`Error updating favorite: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function handleToggleHidden() {
+    if (!user) {
+      setErrorMessage('Please sign in to hide listings.');
+      return;
+    }
+
+    try {
+      if (isHidden) {
+        // Remove from hidden
+        const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
+        if (hiddenRes.ok) {
+          const hidden = await hiddenRes.json();
+          const hidToDelete = hidden.find((hid: any) => hid.listing?.id === propertyId || hid.id === propertyId);
+          if (hidToDelete) {
+            await authFetch(buildApiUrl(`/hidden-listings/${hidToDelete.id}/`), { method: 'DELETE' });
+            setIsHidden(false);
+          }
+        }
+      } else {
+        // Add to hidden
+        const res = await authFetch(buildApiUrl('/hidden-listings/'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listing: propertyId }),
+        });
+        if (res.ok) {
+          setIsHidden(true);
+        } else {
+          setErrorMessage('Failed to hide listing.');
+        }
+      }
+    } catch (error) {
+      setErrorMessage(`Error updating hidden status: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   async function handleUploadImage(e: React.FormEvent) {
     e.preventDefault();
@@ -121,12 +223,36 @@ export default function PropertyDetailPage() {
             <p className="text-sm uppercase tracking-[0.28em] text-brand-accent">Property detail</p>
             <h1 className="mt-2 text-3xl font-black">{property.title}</h1>
           </div>
-          <Link
-            href="/properties"
-            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            Back to listings
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleToggleFavorite}
+              className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-semibold transition ${
+                isFavorited
+                  ? 'bg-red-500/20 border-red-500/50 border text-red-400'
+                  : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'
+              }`}
+              title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              ❤️ {isFavorited ? 'Favorited' : 'Favorite'}
+            </button>
+            <button
+              onClick={handleToggleHidden}
+              className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-semibold transition ${
+                isHidden
+                  ? 'bg-gray-500/20 border-gray-500/50 border text-gray-400'
+                  : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'
+              }`}
+              title={isHidden ? 'Unhide this listing' : 'Hide this listing'}
+            >
+              👁️ {isHidden ? 'Hidden' : 'Hide'}
+            </button>
+            <Link
+              href="/properties"
+              className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Back to listings
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-6 md:grid-cols-2">

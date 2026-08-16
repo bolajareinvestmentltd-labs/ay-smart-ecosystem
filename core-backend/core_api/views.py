@@ -970,3 +970,161 @@ class PaymentVerifyView(APIView):
             # avoid failing the verification flow if referral reward logic has issues
             pass
         return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
+
+
+class PaymentTransactionViewSet(viewsets.ViewSet):
+    """Handle payment transaction endpoints for hostel rentals and other purchases"""
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        """List user's payment transactions"""
+        transactions = PaymentTransaction.objects.filter(user=request.user).order_by('-created_at')
+        serializer = PaymentTransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        """Create a new payment for hostel rental or listing plan"""
+        hostel_id = request.data.get('hostel_id')
+        hostel_name = request.data.get('hostel_name', 'Hostel Rental')
+        amount = request.data.get('amount')
+        provider = request.data.get('provider', 'paystack')  # Can be 'paystack' or 'wema'
+        plan = request.data.get('plan', 'hostel_yearly')
+
+        try:
+            amount_value = Decimal(str(amount))
+        except Exception:
+            return Response({'detail': 'A valid amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if amount_value <= 0:
+            return Response({'detail': 'Amount must be greater than zero.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        reference = f"{provider}-{request.user.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        transaction = PaymentTransaction.objects.create(
+            user=request.user,
+            plan=plan,
+            amount=amount_value,
+            provider=provider,
+            provider_reference=reference,
+            status='PENDING',
+        )
+
+        # Initialize payment with chosen provider
+        payment_url = None
+        if provider == 'paystack':
+            payment_url = self._init_paystack(request.user, transaction, reference, amount_value)
+        elif provider == 'wema':
+            payment_url = self._init_wema(request.user, transaction, reference, amount_value)
+
+        return Response({
+            'id': transaction.id,
+            'provider_reference': reference,
+            'amount': str(amount_value),
+            'plan': plan,
+            'payment_url': payment_url,
+            'provider': provider,
+        }, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, pk=None):
+        """Get a specific payment transaction"""
+        try:
+            transaction = PaymentTransaction.objects.get(id=pk, user=request.user)
+            serializer = PaymentTransactionSerializer(transaction)
+            return Response(serializer.data)
+        except PaymentTransaction.DoesNotExist:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def send_receipt(self, request, pk=None):
+        """Send receipt email for successful payment"""
+        try:
+            transaction = PaymentTransaction.objects.get(id=pk, user=request.user)
+        except PaymentTransaction.DoesNotExist:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if transaction.status != 'SUCCESS':
+            return Response({'detail': 'Only successful payments can send receipts.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Send receipt email
+        try:
+            subject = f'Payment Receipt - {transaction.plan.upper()} Plan'
+            message = f"""
+Hello {request.user.get_full_name() or request.user.username},
+
+Your payment of ₦{transaction.amount:,.2f} has been confirmed.
+
+Transaction Details:
+- Reference ID: {transaction.provider_reference}
+- Plan: {transaction.plan.upper()}
+- Amount: ₦{transaction.amount:,.2f}
+- Payment Method: {transaction.provider.upper()}
+- Date: {transaction.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+
+Thank you for using AY'SMART!
+
+Best regards,
+AY'SMART Team
+            """
+            send_mail(subject, message, getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'), [request.user.email], fail_silently=False)
+            return Response({'detail': 'Receipt sent to your email.'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _init_paystack(self, user, transaction, reference, amount):
+        """Initialize Paystack payment"""
+        paystack_secret_key = getattr(settings, 'PAYSTACK_SECRET_KEY', '').strip()
+        if not paystack_secret_key:
+            return None
+
+        try:
+            response = requests.post(
+                'https://api.paystack.co/transaction/initialize',
+                headers={'Authorization': f'Bearer {paystack_secret_key}', 'Content-Type': 'application/json'},
+                json={
+                    'email': user.email,
+                    'amount': int(amount * 100),
+                    'reference': reference,
+                    'currency': 'NGN',
+                    'channels': ['card', 'bank', 'ussd', 'qr', 'mobile_money'],
+                    'metadata': {'plan': transaction.plan, 'user_id': user.id},
+                },
+                timeout=10,
+            )
+            if response.ok:
+                payload = response.json().get('data', {})
+                transaction.provider_reference = payload.get('reference', reference)
+                transaction.save(update_fields=['provider_reference'])
+                return payload.get('authorization_url')
+        except requests.RequestException:
+            pass
+        return None
+
+    def _init_wema(self, user, transaction, reference, amount):
+        """Initialize Wema/Alat Pay payment"""
+        wema_api_key = getattr(settings, 'WEMA_API_KEY', '').strip()
+        if not wema_api_key:
+            return None
+
+        try:
+            response = requests.post(
+                'https://api.wema.ng/v1/transaction/initialize',  # placeholder URL
+                headers={'Authorization': f'Bearer {wema_api_key}', 'Content-Type': 'application/json'},
+                json={
+                    'email': user.email,
+                    'amount': int(amount),
+                    'reference': reference,
+                    'currency': 'NGN',
+                    'description': transaction.plan,
+                    'customer_name': user.get_full_name() or user.username,
+                    'customer_phone': user.profile.phone if hasattr(user, 'profile') else '',
+                },
+                timeout=10,
+            )
+            if response.ok:
+                payload = response.json().get('data', {})
+                transaction.provider_reference = payload.get('reference', reference)
+                transaction.save(update_fields=['provider_reference'])
+                return payload.get('payment_url') or payload.get('checkout_url')
+        except requests.RequestException:
+            pass
+        return None
+
