@@ -110,12 +110,12 @@ export default function KycPage() {
     const payload = await res.json().catch(() => null);
     const nextProfile = {
       ...profile,
-      isKycVerified: payload?.is_kyc_verified || true,
-      adminApproved: payload?.is_admin_approved || true,
+      isKycVerified: Boolean(payload?.is_kyc_verified),
+      adminApproved: Boolean(payload?.is_admin_approved),
     };
     saveStoredProfile(nextProfile);
     setProfile(nextProfile);
-    setMessage('KYC approved. Your dashboard is now unlocked.');
+    setMessage(payload?.detail || 'KYC submitted. An administrator must review and approve your documents before listings or protected actions are unlocked.');
     setLoading(false);
   }
 
@@ -129,7 +129,7 @@ export default function KycPage() {
         <div className="mt-6 space-y-4 rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-400">Verification status</span>
-            <span className={`rounded-full px-3 py-1 text-sm font-semibold ${profile.isKycVerified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{profile.isKycVerified ? 'Verified' : 'Pending'}</span>
+            <span className={`rounded-full px-3 py-1 text-sm font-semibold ${profile.isKycVerified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{profile.isKycVerified ? 'Verified' : 'Pending admin review'}</span>
           </div>
           <div className="text-sm text-zinc-400">Name: {profile.name || 'Please register first'}</div>
           <div className="text-sm text-zinc-400">Email: {profile.email || 'Pending'}</div>
@@ -167,7 +167,7 @@ export default function KycPage() {
           <button type="submit" disabled={saving} className="mt-4 rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-70">{saving ? 'Saving...' : 'Save student details'}</button>
         </form>
 
-        <button disabled={loading} onClick={handleVerify} className="mt-6 rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Approving...' : 'Request KYC approval'}</button>
+        <button disabled={loading || profile.isKycVerified} onClick={handleVerify} className="mt-6 rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Submitting...' : profile.isKycVerified ? 'KYC verified' : 'Submit for admin review'}</button>
         {(message || error) && <p className={`mt-3 text-sm ${error ? 'text-rose-400' : 'text-emerald-400'}`}>{error || message}</p>}
 
         <div className="mt-6 flex flex-wrap gap-3">

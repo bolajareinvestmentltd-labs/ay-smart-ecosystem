@@ -243,25 +243,25 @@ class WalletAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(ModelAdmin):
-    list_display = ('user', 'role', 'phone', 'location', 'email_verified', 'is_kyc_verified', 'is_admin_approved', 'student_matric_number')
-    list_filter = ('role', 'email_verified', 'is_kyc_verified', 'is_admin_approved')
+    list_display = ('user', 'role', 'phone', 'location', 'email_verified', 'kyc_status', 'is_kyc_verified', 'is_admin_approved', 'student_matric_number')
+    list_filter = ('role', 'email_verified', 'kyc_status', 'is_kyc_verified', 'is_admin_approved')
     search_fields = ('user__username', 'user__email', 'phone', 'student_matric_number', 'location')
     ordering = ('-updated_at',)
     actions = ['approve_selected_users', 'mark_kyc_verified', 'reset_kyc_status']
 
     @admin.action(description='Approve selected users')
     def approve_selected_users(self, request, queryset):
-        updated = queryset.update(is_admin_approved=True, is_kyc_verified=True)
+        updated = queryset.update(is_admin_approved=True, is_kyc_verified=True, kyc_status='VERIFIED', kyc_rejection_reason='')
         self.message_user(request, f'{updated} user(s) approved and marked KYC verified.')
 
     @admin.action(description='Mark selected users as KYC verified')
     def mark_kyc_verified(self, request, queryset):
-        updated = queryset.update(is_kyc_verified=True)
+        updated = queryset.update(is_admin_approved=True, is_kyc_verified=True, kyc_status='VERIFIED', kyc_rejection_reason='')
         self.message_user(request, f'{updated} user(s) marked as KYC verified.')
 
     @admin.action(description='Reset selected users KYC status')
     def reset_kyc_status(self, request, queryset):
-        updated = queryset.update(is_kyc_verified=False, is_admin_approved=False)
+        updated = queryset.update(is_kyc_verified=False, is_admin_approved=False, kyc_status='REJECTED')
         self.message_user(request, f'{updated} user(s) reset to pending verification.')
 
 

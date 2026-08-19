@@ -1,4 +1,5 @@
-﻿import os
+﻿import json
+import os
 from datetime import timedelta
 from decimal import Decimal
 
@@ -460,16 +461,24 @@ class KycApprovalView(APIView):
 
     def post(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        if profile.role in {'student', 'both'} and (not profile.student_matric_number or not profile.student_email):
+        if profile.role in {'student', 'both'} and (not profile.student_matric_number or not profile.student_email or not profile.student_id_image):
             return Response(
-                {'detail': 'Student accounts must provide matric number and student email before KYC approval.'},
+                {'detail': 'Student accounts must provide matric number, student email, and student ID image before KYC review.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        profile.is_kyc_verified = True
-        profile.is_admin_approved = True
-        profile.save()
-        return Response(UserProfileSerializer(profile).data, status=status.HTTP_200_OK)
+        if profile.is_kyc_verified and profile.is_admin_approved:
+            return Response(UserProfileSerializer(profile).data, status=status.HTTP_200_OK)
+
+        profile.kyc_status = 'PENDING'
+        profile.kyc_provider = (request.data.get('provider') or profile.kyc_provider or '').strip()[:40]
+        profile.kyc_reference = (request.data.get('reference') or profile.kyc_reference or '').strip()[:120]
+        profile.kyc_rejection_reason = ''
+        profile.save(update_fields=['kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_rejection_reason', 'updated_at'])
+        return Response({
+            'detail': 'KYC submitted for admin review. Verification is not complete until an administrator approves it.',
+            **UserProfileSerializer(profile).data,
+        }, status=status.HTTP_202_ACCEPTED)
 
 
 class BranchLocationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -677,15 +686,32 @@ class ListingViewSet(viewsets.ModelViewSet):
         return Listing.objects.filter(user=self.request.user).order_by('-id')
 
     def create(self, request, *args, **kwargs):
+        profile = getattr(request.user, 'profile', None)
+        if not profile or profile.role not in {'seller', 'agent', 'both'}:
+            return Response({'detail': 'Only seller or agent accounts can submit listings.'}, status=status.HTTP_403_FORBIDDEN)
+        if not profile.is_kyc_verified or not profile.is_admin_approved:
+            return Response({'detail': 'Complete KYC and wait for admin account approval before submitting listings.'}, status=status.HTTP_403_FORBIDDEN)
+
         image_files = request.FILES.getlist('images') or request.FILES.getlist('image')
         if len(image_files) < 5:
             return Response({'detail': 'Please upload at least 5 property images before submitting for review.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        raw_facilities = request.data.get('facilities', [])
+        if isinstance(raw_facilities, str):
+            try:
+                raw_facilities = json.loads(raw_facilities)
+            except json.JSONDecodeError:
+                raw_facilities = [item.strip() for item in raw_facilities.split(',') if item.strip()]
+        if not isinstance(raw_facilities, list):
+            return Response({'detail': 'Facilities must be a list of text values.'}, status=status.HTTP_400_BAD_REQUEST)
+
         payload = {
             'title': request.data.get('title', ''),
             'category': request.data.get('category', 'Property'),
+            'description': request.data.get('description', ''),
             'location': request.data.get('location', ''),
             'price': request.data.get('price', '0'),
+            'facilities': raw_facilities,
             'plan': request.data.get('plan', 'basic'),
             'duration_days': request.data.get('duration_days', 30),
         }
@@ -701,6 +727,11 @@ class ListingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='published')
+    def published(self, request):
+        listings = Listing.objects.filter(status='LIVE').order_by('-updated_at', '-id')
+        return Response(ListingSerializer(listings, many=True, context={'request': request}).data)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def review(self, request, pk=None):

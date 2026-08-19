@@ -219,16 +219,17 @@ class ReferralWalletTests(TestCase):
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal("6500.00"))
 
-    def test_authenticated_user_can_approve_kyc(self):
+    def test_authenticated_user_can_submit_kyc_for_admin_review(self):
         user = User.objects.create_user(username="kycuser", email="kyc@example.com", password="secret123")
         self.client.force_authenticate(user=user)
 
         response = self.client.post("/api/kyc/approve/", format="json")
 
-        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.status_code, 202, response.data)
         profile = UserProfile.objects.get(user=user)
-        self.assertTrue(profile.is_kyc_verified)
-        self.assertTrue(profile.is_admin_approved)
+        self.assertFalse(profile.is_kyc_verified)
+        self.assertFalse(profile.is_admin_approved)
+        self.assertEqual(profile.kyc_status, 'PENDING')
 
     def test_staff_user_can_review_listing(self):
         owner = User.objects.create_user(username="owner", email="owner@example.com", password="secret123")
@@ -368,6 +369,12 @@ class ReferralWalletTests(TestCase):
 
     def test_listing_creation_requires_at_least_five_images(self):
         user = User.objects.create_user(username="listingimg", email="listingimg@example.com", password="secret123")
+        profile = UserProfile.objects.get(user=user)
+        profile.role = 'agent'
+        profile.is_kyc_verified = True
+        profile.is_admin_approved = True
+        profile.kyc_status = 'VERIFIED'
+        profile.save()
         self.client.force_authenticate(user=user)
 
         image_file = SimpleUploadedFile(

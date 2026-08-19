@@ -10,6 +10,8 @@ export default function AppHeader() {
   const router = useRouter();
   const showBack = pathname !== '/' && pathname !== '/splash';
 
+  if (pathname === '/') return null;
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-3 shadow-sm shadow-black/20">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">

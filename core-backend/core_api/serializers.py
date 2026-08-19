@@ -165,7 +165,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at',
-            'is_kyc_verified', 'is_admin_approved', 'email_verified',
+            'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_rejection_reason', 'email_verified',
             'student_matric_number', 'student_email', 'student_id_image',
         ]
 
@@ -202,7 +202,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Listing
-        fields = ['id', 'user', 'title', 'category', 'location', 'price', 'plan', 'duration_days', 'status', 'cashback', 'created_at', 'images']
+        fields = ['id', 'user', 'title', 'category', 'description', 'location', 'price', 'facilities', 'plan', 'duration_days', 'status', 'cashback', 'created_at', 'images']
         read_only_fields = ['id', 'user', 'cashback', 'created_at']
 
     def create(self, validated_data):

@@ -255,6 +255,12 @@ class PaymentTransaction(models.Model):
 
 
 class UserProfile(models.Model):
+    KYC_STATUS_CHOICES = [
+        ('NOT_STARTED', 'Not started'),
+        ('PENDING', 'Pending admin review'),
+        ('VERIFIED', 'Verified'),
+        ('REJECTED', 'Rejected'),
+    ]
     ROLE_CHOICES = [
         ('seller', 'Seller'),
         ('student', 'Student'),
@@ -271,6 +277,10 @@ class UserProfile(models.Model):
     subscription_expires_at = models.DateTimeField(null=True, blank=True)
     is_kyc_verified = models.BooleanField(default=False)
     is_admin_approved = models.BooleanField(default=False)
+    kyc_status = models.CharField(max_length=20, choices=KYC_STATUS_CHOICES, default='NOT_STARTED')
+    kyc_provider = models.CharField(max_length=40, blank=True)
+    kyc_reference = models.CharField(max_length=120, blank=True)
+    kyc_rejection_reason = models.TextField(blank=True)
     email_verified = models.BooleanField(default=False)  # Added email verification field
     # Timestamp the last time a verification email was sent (for server-side cooldown)
     last_verification_sent_at = models.DateTimeField(null=True, blank=True)
@@ -306,8 +316,10 @@ class Listing(models.Model):
     user = models.ForeignKey(User, related_name='listings', on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Property')
+    description = models.TextField(blank=True)
     location = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=12, decimal_places=2)
+    facilities = models.JSONField(default=list, blank=True)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='basic')
     duration_days = models.PositiveIntegerField(default=30)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')

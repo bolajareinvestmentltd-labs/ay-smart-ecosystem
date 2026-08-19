@@ -1,51 +1,36 @@
 "use client";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Tag } from "lucide-react";
-import { authFetch } from "./lib/auth";
-import PromoCarousel from "./components/PromoCarousel";
+import { Bell, CalendarDays, ChevronRight, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound } from "lucide-react";
+import { buildApiUrl } from "./lib/api";
 import BrandSplashScreen from "./components/BrandSplashScreen";
 
-const carouselImages = [
-  {
-    title: "Luxury Duplexes & Homes",
-    subtitle: "Built from scratch to absolute perfection",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-    badge: "Featured",
-  },
-  {
-    title: "Commercial & Corporate Offices",
-    subtitle: "Prime business locations for high-flying enterprises",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80",
-    badge: "Verified Listing",
-  },
-  {
-    title: "Student Hostels & Apartments",
-    subtitle: "Modern, secure, and fully serviced living spaces",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80",
-    badge: "Hot Deal",
-  },
+type Property = {
+  id: number;
+  title: string;
+  price?: string | number;
+  location_address?: string;
+  main_image_url?: string;
+  images?: Array<{ url?: string }>;
+  is_for_lease?: boolean;
+};
+
+const hostelListings = [
+  { id: 1, title: "Cozy London Loft", location: "London, UK", price: "£1,800/mo", image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80", rating: "4.8" },
+  { id: 2, title: "Global Backpacker Hub", location: "Berlin, Germany", price: "€35/night", image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80", rating: "4.6" },
+  { id: 3, title: "Lisbon Coastal Stay", location: "Lisbon, Portugal", price: "€42/night", image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80", rating: "4.9" },
 ];
 
-const premiumHighlights = [
-  {
-    title: "Verified listings",
-    text: "Every high-value property is reviewed for clarity, quality, and trust.",
-  },
-  {
-    title: "Fast inspection flow",
-    text: "Book walkthroughs quickly with a simple, polished experience.",
-  },
-  {
-    title: "Premium support",
-    text: "Get reliable guidance for purchasing, leasing, or building from scratch.",
-  },
+const destinations = [
+  { name: "London", image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=240&q=80" },
+  { name: "Berlin", image: "https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&w=240&q=80" },
+  { name: "Lisbon", image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=240&q=80" },
+  { name: "Bali", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=240&q=80" },
 ];
 
 export default function RealEstateHome() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [approvalStatus, setApprovalStatus] = useState("Checking status...");
+  const [activeCategory, setActiveCategory] = useState<"real-estate" | "hostels">("real-estate");
+  const [properties, setProperties] = useState<Property[]>([]);
   const [showSplash, setShowSplash] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -75,34 +60,14 @@ export default function RealEstateHome() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
-    }, 4500);
-
-    async function loadApprovalState() {
-      const res = await authFetch('/api/auth/profile/');
-      if (!res.ok) {
-        setApprovalStatus('Login to see your verification status');
-        return;
-      }
-
-      const payload = await res.json().catch(() => null);
-      if (!payload) {
-        setApprovalStatus('Verification status unavailable');
-        return;
-      }
-
-      if (payload.is_admin_approved) {
-        setApprovalStatus('Admin approved · ready for live listings');
-      } else if (payload.is_kyc_verified) {
-        setApprovalStatus('KYC verified · awaiting admin review');
-      } else {
-        setApprovalStatus('Verification pending');
-      }
-    }
-
-    loadApprovalState();
-    return () => clearInterval(timer);
+    let mounted = true;
+    fetch(buildApiUrl('/api/properties/'))
+      .then((response) => response.ok ? response.json() : [])
+      .then((payload) => {
+        if (mounted && Array.isArray(payload)) setProperties(payload);
+      })
+      .catch(() => undefined);
+    return () => { mounted = false; };
   }, []);
 
   if (showSplash) {
@@ -114,148 +79,59 @@ export default function RealEstateHome() {
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--brand-surface)] pb-28 text-[var(--text-primary)] transition-colors duration-300">
-      <header className="sticky top-0 z-40 border-b border-[color:var(--brand-border)] bg-[color:var(--brand-surface-2)]/95 px-4 py-4 backdrop-blur-xl lg:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen bg-[#fbf8f6] pb-28 text-[#241c2d]">
+      <div className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 lg:px-8">
+        <header className="flex items-center justify-between py-4">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4e235f] text-sm font-black text-white">A</span>
+            <span className="text-sm font-black tracking-[-0.03em] text-[#4e235f]">AY-Smart</span>
+          </Link>
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1.1rem] bg-[#4e235f] text-white shadow-lg shadow-[#4e235f]/20 ring-1 ring-[#4e235f]/20">
-              <Image src="/assets/ay-smart-logo.jpeg" alt="AY'SMART ECO" width={40} height={40} className="h-10 w-10 object-contain" priority />
-            </Link>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">AY&apos;SMART ECO</p>
-              <p className="text-[11px] text-[var(--text-muted)]">Real estate, construction, and vehicle services.</p>
-            </div>
+            <button type="button" aria-label="Notifications" className="rounded-full p-2 text-[#4e235f] hover:bg-[#f4e7e2]"><Bell size={18} /></button>
+            <Link href="/dashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1b8a5] text-[#4e235f]"><UserRound size={16} /></Link>
           </div>
+        </header>
 
-          <div className="flex flex-wrap gap-3">
-            <Link href="/properties" className="rounded-full border border-[color:var(--brand-border)] bg-white/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-primary)] transition hover:border-[#f1b8a5] hover:text-[#4e235f]">
-              Explore
-            </Link>
-            <Link href="/auth/login" className="rounded-full bg-[#4e235f] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#6b2d82]">
-              Sign in
-            </Link>
+        <section className="pt-5">
+          <p className="text-sm font-medium text-[#7e7080]">Good morning, discover</p>
+          <h1 className="mt-1 max-w-md text-3xl font-black leading-tight tracking-[-0.06em] text-[#241c2d] sm:text-4xl">A place you&apos;ll love to come home to.</h1>
+          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-[#eaded9] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(78,35,95,0.06)]">
+            <Search size={18} className="shrink-0 text-[#7e7080]" />
+            <input aria-label="Search properties" placeholder="Find properties or hostels worldwide..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#a398a0]" />
+            <button type="button" aria-label="Filter listings" className="rounded-xl bg-[#f9efe9] p-2 text-[#4e235f]"><SlidersHorizontal size={16} /></button>
           </div>
+        </section>
+
+        <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-[#f1e7e3] p-1">
+          <button type="button" onClick={() => setActiveCategory("real-estate")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "real-estate" ? "bg-[#4e235f] text-white shadow-md" : "text-[#6d5c6b]"}`}>Real Estate</button>
+          <button type="button" onClick={() => setActiveCategory("hostels")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "hostels" ? "bg-[#f1a990] text-[#4e235f] shadow-md" : "text-[#6d5c6b]"}`}>Hostels</button>
         </div>
-      </header>
 
-      <section className="relative overflow-hidden px-4 pt-8 lg:px-8">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div className="space-y-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">Premium property marketplace</p>
-            <div className="inline-flex w-fit items-center rounded-full border border-[#f1b8a5]/40 bg-[#f9efe9] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#4e235f]">
-              {approvalStatus}
-            </div>
-            <h1 className="text-3xl font-black leading-[0.95] tracking-[-0.06em] text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
-              Modern real estate and automotive services in one fast mobile app.
-            </h1>
-            <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)] sm:text-base">
-              Discover duplexes, offices, hostels, and vehicles with a clean, responsive experience that feels quick and polished on every screen.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/properties" className="rounded-full bg-[#4e235f] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#4e235f]/20 transition hover:bg-[#6b2d82]">
-                View listings
+        <section className="mt-6">
+          <div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Featured listings</h2><Link href={activeCategory === "hostels" ? "/hostel" : "/properties"} className="flex items-center gap-1 text-xs font-bold text-[#4e235f]">See all <ChevronRight size={14} /></Link></div>
+          <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {activeCategory === "hostels" ? hostelListings.map((listing) => (
+              <Link key={listing.id} href={`/hostel/${listing.id}`} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]">
+                <div className="relative h-32"><img src={listing.image} alt={listing.title} className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div>
+                <div className="p-3"><div className="flex items-start justify-between gap-2"><h3 className="text-sm font-black">{listing.title}</h3><span className="flex items-center gap-1 text-[11px] font-bold"><Star size={12} fill="#f1a990" className="text-[#e28c72]" />{listing.rating}</span></div><p className="mt-1 text-[11px] text-[#817681]">{listing.location}</p><p className="mt-2 text-sm font-black text-[#4e235f]">{listing.price}</p></div>
               </Link>
-              <Link href="/plans" className="rounded-full border border-[color:var(--brand-border)] bg-white/80 px-5 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[#f1b8a5] hover:text-[#4e235f]">
-                Pricing plans
-              </Link>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: 'Student hostels', value: '15 Listings' },
-                { label: 'Commercial offices', value: '8 Listings' },
-                { label: 'Verified agents', value: '24+ Professionals' },
-              ].map((item) => (
-                <div key={item.label} className="rounded-[1.4rem] border border-[color:var(--brand-border)] bg-white/70 p-4 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">{item.label}</p>
-                  <p className="mt-2 text-lg font-black text-[var(--text-primary)]">{item.value}</p>
-                </div>
-              ))}
-            </div>
+            )) : (properties.length ? properties.slice(0, 4) : [
+              { id: 1, title: "Luxury Smart Duplex", location_address: "Lekki Phase 1, Lagos", price: "850000000", main_image_url: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80" },
+              { id: 2, title: "Executive Mini Duplex", location_address: "Ikeja GRA, Lagos", price: "350000000", main_image_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80" },
+            ]).map((property) => {
+              const image = property.main_image_url || property.images?.[0]?.url || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80";
+              return <Link key={property.id} href={`/properties/${property.id}`} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]"><div className="relative h-32"><img src={image} alt={property.title} className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div><div className="p-3"><h3 className="truncate text-sm font-black">{property.title}</h3><p className="mt-1 flex items-center gap-1 text-[11px] text-[#817681]"><MapPin size={12} />{property.location_address || "Location pending"}</p><p className="mt-2 text-sm font-black text-[#4e235f]">₦{Number(property.price || 0).toLocaleString()}</p></div></Link>;
+            })}
           </div>
+          <div className="flex justify-center gap-1.5"><span className="h-1.5 w-5 rounded-full bg-[#4e235f]" /><span className="h-1.5 w-1.5 rounded-full bg-[#d7c6cf]" /><span className="h-1.5 w-1.5 rounded-full bg-[#d7c6cf]" /></div>
+        </section>
 
-          <div className="relative overflow-hidden rounded-[1.9rem] border border-[color:var(--brand-border)] bg-white/85 shadow-[0_18px_48px_rgba(46,17,54,0.08)] ring-1 ring-[#4e235f]/5">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#4e235f]/12 via-transparent to-transparent" />
-            <div className="relative h-[320px] sm:h-[420px]">
-              {carouselImages.map((slide, index) => (
-                <div
-                  key={slide.title}
-                  className={`absolute inset-0 transition-all duration-700 ease-out ${index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}
-                >
-                  <div className="relative h-full w-full">
-                    <Image src={slide.image} alt={slide.title} fill className="object-cover" />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#18141d]/10 to-[#18141d]/80" />
-                  <div className="absolute bottom-5 left-5 right-5 rounded-[1.4rem] bg-white/12 p-4 text-white backdrop-blur-sm">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-[#4e235f] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-                      <Tag size={12} /> {slide.badge}
-                    </span>
-                    <h2 className="mt-3 text-xl font-black tracking-[-0.04em]">{slide.title}</h2>
-                    <p className="mt-2 text-sm text-zinc-200">{slide.subtitle}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+        <section className="mt-6"><div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Featured destinations</h2><button type="button" className="text-xs font-bold text-[#4e235f]">View map</button></div><div className="mt-3 grid grid-cols-4 gap-2">{destinations.map((destination) => <Link href="/properties" key={destination.name} className="text-center"><img src={destination.image} alt={destination.name} className="aspect-square w-full rounded-xl object-cover" /><span className="mt-1 block text-[11px] font-semibold text-[#5f5260]">{destination.name}</span></Link>)}</div></section>
 
-      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
-        <PromoCarousel />
-      </section>
+        <section className="mt-6"><div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Popular rentals</h2><Link href="/properties" className="text-xs font-bold text-[#4e235f]">See all</Link></div><div className="mt-3 space-y-2">{hostelListings.slice(0, 2).map((listing) => <Link href={`/hostel/${listing.id}`} key={listing.id} className="flex items-center gap-3 rounded-2xl border border-[#eaded9] bg-white p-2 shadow-[0_6px_18px_rgba(78,35,95,0.05)]"><img src={listing.image} alt={listing.title} className="h-16 w-20 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{listing.title}</p><p className="mt-1 text-[11px] text-[#817681]">{listing.location} · <Star size={10} fill="#f1a990" className="inline text-[#e28c72]" /> {listing.rating}</p></div><p className="text-xs font-black text-[#4e235f]">{listing.price}</p></Link>)}</div></section>
 
-      <section className="mx-auto mt-8 max-w-6xl px-4 lg:px-8">
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[1.8rem] border border-[color:var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.06)] backdrop-blur-xl">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#4e235f]">Premium content section</p>
-            <h2 className="mt-3 text-2xl font-black tracking-[-0.05em] text-[var(--text-primary)]">A cleaner marketplace experience built for trust, speed, and clarity.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              Discover premium homes, verified commercial spaces, and service-led listings in one polished experience designed for quick decisions and confident browsing.
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {premiumHighlights.map((item) => (
-                <div key={item.title} className="rounded-[1.35rem] border border-[color:var(--brand-border)] bg-[#f8f3f1] p-4">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{item.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <aside className="rounded-[1.8rem] border border-[color:var(--brand-border)] bg-white/75 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.06)] backdrop-blur-xl">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#4e235f]">Ad-ready placement</p>
-            <div className="mt-4 rounded-[1.2rem] border border-[color:var(--brand-border)] bg-[#f2e6df] p-4">
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Sponsored space</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                This block is intentionally separated from core navigation and CTAs so it stays readable and AdSense-safe on desktop and mobile.
-              </p>
-            </div>
-            <p className="mt-4 text-xs leading-6 text-[#7b7481]">
-              This slot is ready for a future AdSense unit and uses a neutral, content-first layout with no misleading redirects.
-            </p>
-          </aside>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-8 max-w-6xl px-4 pb-20 lg:px-8">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { title: 'Houses & Duplexes', subtitle: '12 Listings', href: '/properties' },
-            { title: 'Commercial Offices', subtitle: '8 Listings', href: '/properties' },
-            { title: 'Student Hostels', subtitle: '15 Listings', href: '/hostel' },
-            { title: 'From-Scratch Build', subtitle: 'Custom service', href: '/plans' },
-          ].map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="group rounded-[1.65rem] border border-[color:var(--brand-border)] bg-white/75 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#f1b8a5]/40"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#4e235f] group-hover:text-[#6b2d82]">{item.title}</p>
-              <p className="mt-3 text-sm text-[var(--text-muted)]">{item.subtitle}</p>
-              <p className="mt-4 text-sm font-semibold text-[var(--text-primary)]">Explore</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+        <Link href="/properties" className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-[#4e235f] py-3 text-sm font-bold text-white shadow-lg shadow-[#4e235f]/20"><CalendarDays size={16} /> Book a viewing</Link>
+      </div>
     </main>
   );
 }
