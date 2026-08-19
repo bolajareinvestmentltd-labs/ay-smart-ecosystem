@@ -57,6 +57,7 @@ urlpatterns = [
     path("api/payments/checkout/", CheckoutView.as_view(), name="checkout"),
     path("api/payments/initiate/", PaymentInitiateView.as_view(), name="payment_initiate"),
     path("api/payments/verify/", PaymentVerifyView.as_view(), name="payment_verify"),
+    path("api/payments/wema/webhook/", __import__('core_api.views', fromlist=['']).WemaPaymentWebhookView.as_view(), name="wema_payment_webhook"),
     path("api/", include(router.urls)),
 ]
 

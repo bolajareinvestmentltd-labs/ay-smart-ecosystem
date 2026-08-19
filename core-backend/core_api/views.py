@@ -872,20 +872,23 @@ class CheckoutView(APIView):
 class PaymentInitiateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    PLAN_AMOUNTS = {'basic': Decimal('3500'), 'standard': Decimal('5000'), 'premium': Decimal('7500')}
+
     def post(self, request):
         plan = (request.data.get('plan') or 'basic').strip().lower()
         provider = (request.data.get('provider') or 'paystack').strip().lower()
         if provider not in {'paystack', 'wema'}:
             return Response({'detail': 'Unsupported payment provider.'}, status=status.HTTP_400_BAD_REQUEST)
-        amount = request.data.get('amount')
-
-        try:
-            amount_value = Decimal(str(amount))
-        except Exception:
-            return Response({'detail': 'A valid amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if amount_value <= 0:
-            return Response({'detail': 'Amount must be greater than zero.'}, status=status.HTTP_400_BAD_REQUEST)
+        amount_value = self.PLAN_AMOUNTS.get(plan)
+        if amount_value is None:
+            return Response({'detail': 'Unsupported subscription plan.'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('amount') is not None:
+            try:
+                requested_amount = Decimal(str(request.data.get('amount')))
+            except Exception:
+                return Response({'detail': 'A valid amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            if requested_amount <= 0 or requested_amount != amount_value:
+                return Response({'detail': 'The amount does not match the selected plan.'}, status=status.HTTP_400_BAD_REQUEST)
 
         reference = f"{provider}-{request.user.id}-{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
         transaction = PaymentTransaction.objects.create(
@@ -932,9 +935,13 @@ class PaymentInitiateView(APIView):
             except requests.RequestException:
                 pass
 
+        if provider == 'paystack':
+            transaction.delete()
+            return Response({'detail': 'Paystack is not configured for live payments.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
         if provider == 'wema':
             payment_url = PaymentTransactionViewSet()._init_wema(request.user, transaction, reference, amount_value)
-            if not payment_url and not getattr(settings, 'PAYSTACK_USE_TEST_MODE', False):
+            if not payment_url:
                 transaction.delete()
                 return Response({'detail': 'ALAT Pay is not configured or its payment session could not be created.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             return Response({
@@ -947,16 +954,7 @@ class PaymentInitiateView(APIView):
                 'test_mode': getattr(settings, 'PAYSTACK_USE_TEST_MODE', False),
             }, status=status.HTTP_201_CREATED)
 
-        return Response({
-            'id': transaction.id,
-            'provider_reference': reference,
-            'amount': str(amount_value),
-            'plan': plan,
-            'provider': provider,
-            'authorization_url': None,
-            'test_mode': use_test_mode,
-            'message': 'Paystack not configured; using local test-mode checkout flow.',
-        }, status=status.HTTP_201_CREATED)
+        return Response({'detail': 'Payment provider is unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class PaymentVerifyView(APIView):
@@ -975,11 +973,11 @@ class PaymentVerifyView(APIView):
             return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
         paystack_secret_key = getattr(settings, 'PAYSTACK_SECRET_KEY', '').strip()
-        use_test_mode = getattr(settings, 'PAYSTACK_USE_TEST_MODE', False)
+        if transaction.provider == 'wema':
+            return Response({'detail': 'ALAT Pay verification must be confirmed by the Wema provider webhook.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        if use_test_mode or not paystack_secret_key:
-            transaction.status = 'SUCCESS'
-            transaction.save(update_fields=['status', 'updated_at'])
+        if not paystack_secret_key:
+            return Response({'detail': 'Paystack verification is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         else:
             try:
                 response = requests.get(
@@ -1019,6 +1017,40 @@ class PaymentVerifyView(APIView):
         except Exception:
             # avoid failing the verification flow if referral reward logic has issues
             pass
+        return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
+
+
+class WemaPaymentWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        secret = getattr(settings, 'WEMA_WEBHOOK_SECRET', '').strip()
+        signature = request.headers.get('X-WEMA-SIGNATURE', '')
+        raw_body = request.body
+        expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest() if secret else ''
+        if not secret or not signature or not hmac.compare_digest(signature, expected):
+            return Response({'detail': 'Invalid webhook signature.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        reference = str(request.data.get('reference') or '').strip()
+        provider_status = str(request.data.get('status') or '').lower()
+        transaction = PaymentTransaction.objects.filter(provider='wema', provider_reference=reference).first()
+        if not transaction:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if provider_status not in {'success', 'successful', 'settled', 'completed'}:
+            transaction.status = 'FAILED'
+            transaction.save(update_fields=['status', 'updated_at'])
+            return Response({'detail': 'Payment was not successful.'}, status=status.HTTP_200_OK)
+        if transaction.status == 'SUCCESS':
+            return Response({'detail': 'Already processed.'}, status=status.HTTP_200_OK)
+
+        transaction.status = 'SUCCESS'
+        transaction.save(update_fields=['status', 'updated_at'])
+        profile, _ = UserProfile.objects.get_or_create(user=transaction.user)
+        profile.subscription_plan = transaction.plan
+        profile.subscription_status = 'active'
+        profile.subscription_expires_at = timezone.now() + timedelta(days=7)
+        profile.save(update_fields=['subscription_plan', 'subscription_status', 'subscription_expires_at', 'updated_at'])
         return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
 
@@ -1156,7 +1188,7 @@ AY'SMART Team
 
         try:
             response = requests.post(
-                'https://api.wema.ng/v1/transaction/initialize',  # placeholder URL
+                f"{getattr(settings, 'WEMA_API_URL', '').rstrip('/')}/transaction/initialize",
                 headers={'Authorization': f'Bearer {wema_api_key}', 'Content-Type': 'application/json'},
                 json={
                     'email': user.email,

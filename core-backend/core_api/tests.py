@@ -273,7 +273,10 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         self.assertTrue(PaymentTransaction.objects.filter(user=user, plan="basic").exists())
 
-    def test_authenticated_user_can_verify_provider_payment(self):
+    @patch('core_api.views.requests.get')
+    def test_authenticated_user_can_verify_provider_payment(self, mock_get):
+        mock_get.return_value.ok = True
+        mock_get.return_value.json.return_value = {'data': {'status': 'success'}}
         user = User.objects.create_user(username="paytwo", email="paytwo@example.com", password="secret123")
         transaction = PaymentTransaction.objects.create(
             user=user,
@@ -295,7 +298,10 @@ class ReferralWalletTests(TestCase):
         transaction.refresh_from_db()
         self.assertEqual(transaction.status, "SUCCESS")
 
-    def test_referral_reward_issued_on_first_successful_payment(self):
+    @patch('core_api.views.requests.get')
+    def test_referral_reward_issued_on_first_successful_payment(self, mock_get):
+        mock_get.return_value.ok = True
+        mock_get.return_value.json.return_value = {'data': {'status': 'success'}}
         referrer = User.objects.create_user(username="refpay_ref", email="refpay_ref@example.com", password="secret123")
         referral = Referral.objects.create(referrer=referrer, referred_email="newpayer@example.com")
 
@@ -319,7 +325,10 @@ class ReferralWalletTests(TestCase):
         referral.refresh_from_db()
         self.assertTrue(referral.rewarded)
 
-    def test_payment_verify_is_idempotent_and_credits_only_once(self):
+    @patch('core_api.views.requests.get')
+    def test_payment_verify_is_idempotent_and_credits_only_once(self, mock_get):
+        mock_get.return_value.ok = True
+        mock_get.return_value.json.return_value = {'data': {'status': 'success'}}
         user = User.objects.create_user(username="idempotent", email="idem@example.com", password="secret123")
         # ensure initial wallet balance is zero
         wallet = Wallet.objects.get(user=user)

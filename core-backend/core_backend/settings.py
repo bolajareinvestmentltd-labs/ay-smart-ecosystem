@@ -210,6 +210,7 @@ PAYSTACK_USE_TEST_MODE = os.getenv('PAYSTACK_USE_TEST_MODE', 'true').lower() in 
 WEMA_API_KEY = os.getenv('WEMA_API_KEY', '').strip()
 WEMA_BANK_CODE = os.getenv('WEMA_BANK_CODE', '035')  # Standard WEMA bank code
 WEMA_API_URL = os.getenv('WEMA_API_URL', 'https://sandbox.wemabank.com/api')  # Change to production URL when ready
+WEMA_WEBHOOK_SECRET = os.getenv('WEMA_WEBHOOK_SECRET', '').strip()
 
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')

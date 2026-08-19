@@ -147,3 +147,34 @@ textarea {
 :root[data-theme="light"] .placeholder\:text-zinc-400 {
   color: var(--text-muted) !important;
 }
+
+:root[data-theme="light"] [class~="bg-zinc-950"],
+:root[data-theme="light"] [class~="bg-zinc-950/80"],
+:root[data-theme="light"] [class~="bg-zinc-950/90"],
+:root[data-theme="light"] [class~="bg-[#07070D]"],
+:root[data-theme="light"] [class~="bg-[#09090B]"],
+:root[data-theme="light"] [class~="bg-[#0b0b12]/80"] {
+  background-color: var(--brand-surface) !important;
+}
+
+:root[data-theme="light"] [class~="bg-zinc-900"],
+:root[data-theme="light"] [class~="bg-zinc-900/80"],
+:root[data-theme="light"] [class~="bg-[#111114]"] {
+  background-color: var(--brand-surface-2) !important;
+}
+
+:root[data-theme="light"] [class~="border-zinc-800"],
+:root[data-theme="light"] [class~="border-zinc-700"] {
+  border-color: var(--brand-border) !important;
+}
+
+:root[data-theme="light"] [class~="text-zinc-100"],
+:root[data-theme="light"] [class~="text-zinc-200"],
+:root[data-theme="light"] [class~="text-zinc-300"] {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] [class~="text-zinc-400"],
+:root[data-theme="light"] [class~="text-zinc-500"] {
+  color: var(--text-muted) !important;
+}

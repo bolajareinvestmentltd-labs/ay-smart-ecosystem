@@ -26,8 +26,10 @@ export type BackendListing = {
   id: number;
   title: string;
   category: string;
+  description?: string;
   location: string;
   price: string | number;
+  facilities?: string[];
   plan: string;
   duration_days: number;
   status: 'PENDING' | 'LIVE' | 'REJECTED' | string;
