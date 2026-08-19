@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getBackendListings, getBackendProfile, getBackendWallet, createBackendListing, type BackendListing, type ListingPlan } from '../lib/backend';
-import { getStoredProfile, saveStoredProfile } from '../lib/app-state';
+import { getBackendListings, getBackendProfile, getBackendWallet, createBackendListing, type BackendListing } from '../lib/backend';
+import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -686,7 +686,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         return Listing.objects.filter(user=self.request.user).order_by('-id')
 
     def create(self, request, *args, **kwargs):
-        profile = getattr(request.user, 'profile', None)
+        profile = UserProfile.objects.filter(user=request.user).first()
         if not profile or profile.role not in {'seller', 'agent', 'both'}:
             return Response({'detail': 'Only seller or agent accounts can submit listings.'}, status=status.HTTP_403_FORBIDDEN)
         if not profile.is_kyc_verified or not profile.is_admin_approved:
@@ -874,6 +874,9 @@ class PaymentInitiateView(APIView):
 
     def post(self, request):
         plan = (request.data.get('plan') or 'basic').strip().lower()
+        provider = (request.data.get('provider') or 'paystack').strip().lower()
+        if provider not in {'paystack', 'wema'}:
+            return Response({'detail': 'Unsupported payment provider.'}, status=status.HTTP_400_BAD_REQUEST)
         amount = request.data.get('amount')
 
         try:
@@ -884,12 +887,12 @@ class PaymentInitiateView(APIView):
         if amount_value <= 0:
             return Response({'detail': 'Amount must be greater than zero.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        reference = f"paystack-{request.user.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        reference = f"{provider}-{request.user.id}-{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
         transaction = PaymentTransaction.objects.create(
             user=request.user,
             plan=plan,
             amount=amount_value,
-            provider='paystack',
+            provider=provider,
             provider_reference=reference,
             status='PENDING',
         )
@@ -898,7 +901,7 @@ class PaymentInitiateView(APIView):
         paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', '').strip()
         use_test_mode = getattr(settings, 'PAYSTACK_USE_TEST_MODE', True)
 
-        if paystack_secret_key and paystack_public_key:
+        if provider == 'paystack' and paystack_secret_key and paystack_public_key:
             try:
                 response = requests.post(
                     'https://api.paystack.co/transaction/initialize',
@@ -929,11 +932,27 @@ class PaymentInitiateView(APIView):
             except requests.RequestException:
                 pass
 
+        if provider == 'wema':
+            payment_url = PaymentTransactionViewSet()._init_wema(request.user, transaction, reference, amount_value)
+            if not payment_url and not getattr(settings, 'PAYSTACK_USE_TEST_MODE', False):
+                transaction.delete()
+                return Response({'detail': 'ALAT Pay is not configured or its payment session could not be created.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({
+                'id': transaction.id,
+                'provider_reference': transaction.provider_reference,
+                'amount': str(amount_value),
+                'plan': plan,
+                'provider': provider,
+                'payment_url': payment_url,
+                'test_mode': getattr(settings, 'PAYSTACK_USE_TEST_MODE', False),
+            }, status=status.HTTP_201_CREATED)
+
         return Response({
             'id': transaction.id,
             'provider_reference': reference,
             'amount': str(amount_value),
             'plan': plan,
+            'provider': provider,
             'authorization_url': None,
             'test_mode': use_test_mode,
             'message': 'Paystack not configured; using local test-mode checkout flow.',

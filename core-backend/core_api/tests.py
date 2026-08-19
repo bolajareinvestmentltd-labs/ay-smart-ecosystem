@@ -176,6 +176,11 @@ class ReferralWalletTests(TestCase):
         )
 
         self.assertEqual(profile_response.status_code, 200, profile_response.data)
+        profile = UserProfile.objects.get(user=user)
+        profile.is_kyc_verified = True
+        profile.is_admin_approved = True
+        profile.kyc_status = 'VERIFIED'
+        profile.save()
 
         image_file = SimpleUploadedFile(
             "test.jpg",

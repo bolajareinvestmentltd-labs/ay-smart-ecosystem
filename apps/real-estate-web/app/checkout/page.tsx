@@ -1,222 +1,121 @@
 'use client';
-import React, { useEffect, useState, Suspense } from 'react';
+
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Paystack from '@paystack/inline-js';
 import { authFetch } from '../lib/auth';
-import { buildApiUrl } from '../lib/api';
 
-interface PaymentMethod {
-  id: string;
-  name: string;
-  provider: string;
-  icon: string;
-  description: string;
-}
+type Provider = 'paystack' | 'wema';
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: 'paystack',
-    name: 'Paystack',
-    provider: 'paystack',
-    icon: '🔵',
-    description: 'Pay with card, bank transfer, or USSD',
-  },
-  {
-    id: 'wema',
-    name: 'Wema / Alat Pay',
-    provider: 'wema',
-    icon: '🏦',
-    description: 'Fast bank transfer and mobile money',
-  },
-];
+const plans = {
+  basic: { label: 'Basic', amount: 3500 },
+  standard: { label: 'Standard', amount: 5000 },
+  premium: { label: 'Premium', amount: 7500 },
+} as const;
 
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const hostelId = searchParams.get('hostel');
-  const hostelName = searchParams.get('hostelName');
-  const amount = searchParams.get('amount');
-  const [selectedMethod, setSelectedMethod] = useState('paystack');
+  const planKey = (searchParams.get('plan') || 'basic') as keyof typeof plans;
+  const plan = plans[planKey] || plans.basic;
+  const [provider, setProvider] = useState<Provider>('paystack');
+  const [email, setEmail] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<{ reference?: string; access_code?: string; payment_url?: string; transfer_instructions?: string } | null>(null);
 
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await authFetch(buildApiUrl('/auth/me/'));
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else {
-          router.push('/login');
-        }
-      } catch (err) {
-        router.push('/login');
-      } finally {
-        setLoading(false);
+    authFetch('/api/auth/profile/').then(async (response) => {
+      if (response.status === 401) {
+        router.push('/auth/login');
+        return;
       }
-    }
-    checkAuth();
+      const payload = await response.json().catch(() => null);
+      if (payload?.email) setEmail(payload.email);
+    }).catch(() => router.push('/auth/login'));
   }, [router]);
 
-  async function handleCheckout(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(reference: string) {
+    setProcessing(true);
+    setMessage('Confirming payment with the server...');
+    const response = await authFetch('/api/payments/verify/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference, provider }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(payload?.detail || 'Payment is not confirmed yet.');
+      setProcessing(false);
+      return;
+    }
+    setMessage('Payment confirmed. Your subscription is now active.');
+    setSession(null);
+    setProcessing(false);
+  }
+
+  async function startPayment(event: React.FormEvent) {
+    event.preventDefault();
     setProcessing(true);
     setError('');
-
-    try {
-      // Create payment transaction
-      const res = await authFetch(buildApiUrl('/payments/'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hostel_id: hostelId,
-          hostel_name: hostelName,
-          amount: Number(amount),
-          provider: selectedMethod,
-          plan: 'hostel_yearly',
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        // Redirect to payment provider
-        if (selectedMethod === 'paystack' && data.payment_url) {
-          window.location.href = data.payment_url;
-        } else if (selectedMethod === 'wema' && data.payment_url) {
-          window.location.href = data.payment_url;
-        } else {
-          // Fallback: redirect to success with transaction ID
-          router.push(`/success?transactionId=${data.id}&hostelName=${encodeURIComponent(hostelName || '')}`);
-        }
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setError(errData.detail || 'Payment initiation failed');
-      }
-    } catch (err) {
-      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
+    setMessage('Creating a secure payment session...');
+    const response = await authFetch('/api/payments/initiate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: planKey, amount: plan.amount, provider }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) router.push('/auth/login');
+      setError(payload?.detail || 'Unable to start payment.');
       setProcessing(false);
+      return;
     }
-  }
+    setSession({ reference: payload.provider_reference, access_code: payload.access_code, payment_url: payload.payment_url, transfer_instructions: payload.transfer_instructions });
+    setMessage(provider === 'paystack' ? 'Secure Paystack checkout is ready.' : 'Wema / ALAT payment session is ready.');
+    setProcessing(false);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!hostelId || !amount) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 text-center">
-        <div className="max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950/95 p-8 shadow-2xl">
-          <h1 className="text-2xl font-black text-white">Invalid Request</h1>
-          <p className="mt-3 text-sm text-zinc-400">Missing hostel or price information.</p>
-          <Link href="/hostel" className="mt-6 inline-block rounded-full bg-brand-purple px-6 py-3 text-sm font-bold text-white">
-            Back to Hostels
-          </Link>
-        </div>
-      </div>
-    );
+    if (provider === 'paystack' && payload.access_code) {
+      const paystack = new Paystack();
+      paystack.resumeTransaction(payload.access_code, {
+        onSuccess: (result: { reference: string }) => verify(result.reference),
+        onCancel: () => setMessage('Payment window closed. Your subscription remains inactive until payment is confirmed.'),
+      });
+    }
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-8 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#4e235f]">Checkout</p>
-          <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">Checkout</h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">Complete your hostel rental payment</p>
-        </div>
+    <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 pb-32 text-[var(--text-primary)]">
+      <div className="mx-auto max-w-3xl">
+        <Link href="/plans" className="text-sm font-semibold text-[#4e235f]">Back to plans</Link>
+        <section className="mt-5 rounded-[2rem] border border-[var(--brand-border)] bg-white/85 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#4e235f]">Secure checkout</p>
+          <h1 className="mt-2 text-3xl font-black">Activate the {plan.label} plan</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Payment is verified by Django before your subscription becomes active.</p>
+          <div className="mt-6 flex justify-between rounded-2xl bg-[#f9efe9] p-4 text-lg font-black text-[#4e235f]"><span>Total</span><span>₦{plan.amount.toLocaleString()}</span></div>
+        </section>
 
-        <div className="mb-8 rounded-[2rem] border border-[color:var(--brand-border)] bg-[#1d1723] p-6 text-white shadow-[0_18px_48px_rgba(46,17,54,0.16)]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-black">Order Summary</h2>
-            <span className="rounded-full bg-[#f1b8a5]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f1b8a5]">Selection</span>
+        <form onSubmit={startPayment} className="mt-4 rounded-[2rem] border border-[var(--brand-border)] bg-white/85 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)]">
+          <label className="block text-sm font-semibold">Receipt email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-xl border border-[var(--brand-border)] bg-white px-4 py-3 outline-none" /></label>
+          <p className="mt-5 text-sm font-bold">Choose payment method</p>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            {(['paystack', 'wema'] as Provider[]).map((item) => <button type="button" key={item} onClick={() => setProvider(item)} className={`rounded-xl border p-4 text-left ${provider === item ? 'border-[#4e235f] bg-[#f9efe9]' : 'border-[var(--brand-border)] bg-white'}`}><strong>{item === 'paystack' ? 'Paystack' : 'ALAT Pay by Wema'}</strong><span className="mt-1 block text-xs text-[var(--text-muted)]">{item === 'paystack' ? 'Card, bank, USSD and mobile money in a secure in-app window.' : 'Wema session or bank instructions shown here.'}</span></button>)}
           </div>
-          <div className="mt-5 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Hostel:</span>
-              <span className="font-semibold">{hostelName}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Duration:</span>
-              <span className="font-semibold">1 Year</span>
-            </div>
-            <div className="mt-4 border-t border-white/10 pt-4 flex justify-between text-lg font-black">
-              <span>Total Amount:</span>
-              <span className="text-[#f1b8a5]">₦{Number(amount).toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="mb-4 font-black">Select Payment Method</h2>
-          <div className="space-y-3">
-            {PAYMENT_METHODS.map((method) => (
-              <label
-                key={method.id}
-                className={`flex cursor-pointer items-center rounded-[1.4rem] border-2 p-4 transition ${
-                  selectedMethod === method.id
-                    ? 'border-[#f1b8a5] bg-[#f9efe9]'
-                    : 'border-[color:var(--brand-border)] bg-white/80 hover:border-[#f1b8a5]/50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value={method.id}
-                  checked={selectedMethod === method.id}
-                  onChange={(e) => setSelectedMethod(e.target.value)}
-                  className="mr-3 accent-[#4e235f]"
-                />
-                <div className="flex-1">
-                  <p className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
-                    <span>{method.icon}</span> {method.name}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)]">{method.description}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-6 rounded-[1.2rem] border border-red-500/30 bg-red-500/10 p-4">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleCheckout} className="space-y-4">
-          <button
-            type="submit"
-            disabled={processing}
-            className="w-full rounded-[1.4rem] bg-[#4e235f] px-6 py-4 font-black text-white transition hover:bg-[#6b2d82] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processing ? '🔄 Processing...' : `💳 Pay ₦${Number(amount).toLocaleString()}`}
-          </button>
-
-          <Link
-            href={`/hostel/${hostelId}`}
-            className="block rounded-[1.4rem] border border-[color:var(--brand-border)] bg-white/80 px-6 py-4 text-center font-semibold text-[var(--text-primary)] transition hover:bg-[#f7f2ef]"
-          >
-            Cancel
-          </Link>
+          <button type="submit" disabled={processing} className="mt-5 w-full rounded-xl bg-[#4e235f] px-4 py-3 font-bold text-white disabled:opacity-60">{processing ? 'Processing...' : `Pay ₦${plan.amount.toLocaleString()}`}</button>
         </form>
 
-        <div className="mt-8 text-center text-xs text-[var(--text-muted)]">
-          <p>🔒 Your payment is secure and encrypted</p>
-          <p>💳 We support multiple payment providers for your convenience</p>
-        </div>
+        {session?.payment_url && provider === 'wema' && <section className="mt-4 overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-white p-3"><p className="p-3 text-sm font-semibold">Complete ALAT Pay in this secure panel</p><iframe title="ALAT Pay checkout" src={session.payment_url} className="h-[560px] w-full rounded-xl border-0" /></section>}
+        {session?.transfer_instructions && <section className="mt-4 whitespace-pre-line rounded-2xl bg-[#f9efe9] p-4 text-sm">{session.transfer_instructions}</section>}
+        {session?.reference && <button type="button" disabled={processing} onClick={() => verify(session.reference!)} className="mt-4 w-full rounded-xl border border-[#4e235f] px-4 py-3 font-bold text-[#4e235f]">I have completed payment, verify</button>}
+        {message && <p className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{message}</p>}
+        {error && <p className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
       </div>
     </main>
   );
 }
 
 export default function CheckoutPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading checkout...</div>}>
-      <CheckoutContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<main className="min-h-screen p-8">Loading checkout...</main>}><CheckoutContent /></Suspense>;
 }

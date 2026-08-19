@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { getPlanBenefits, getPlanPrice, getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
+import { getPlanBenefits, getPlanPrice, getStoredProfile, type ListingPlan } from '../lib/app-state';
 
 const plans: Array<{ key: ListingPlan; name: string; subtitle: string; accent: string }> = [
   { key: 'basic', name: 'Basic', subtitle: 'For first-time sellers', accent: 'from-amber-500 to-orange-500' },
@@ -18,10 +18,8 @@ export default function PlansPage() {
   const [selectedPlan, setSelectedPlan] = useState<ListingPlan>(profile.selectedPlan ?? 'basic');
 
   function choosePlan(plan: ListingPlan) {
-    const nextProfile = { ...profile, selectedPlan: plan, walletBalance: profile.walletBalance + 1000 };
-    setProfile(nextProfile);
+    setProfile({ ...profile, selectedPlan: plan });
     setSelectedPlan(plan);
-    saveStoredProfile(nextProfile);
   }
 
   return (
@@ -43,16 +41,19 @@ export default function PlansPage() {
                 <p className="font-semibold text-zinc-100">{formatPlanPrice(plan.key, 60)}</p>
                 {getPlanBenefits(plan.key).map((item) => <p key={item}>• {item}</p>)}
                 <p className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-300">10% cashback is deposited into your wallet instantly after every paid plan.</p>
-                <button onClick={() => choosePlan(plan.key)} className="mt-4 w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">
-                  {selectedPlan === plan.key ? 'Selected' : 'Select plan'}
+                <button type="button" onClick={() => choosePlan(plan.key)} className="mt-4 w-full rounded-2xl border border-amber-500/40 px-4 py-3 font-semibold text-amber-300">
+                  {selectedPlan === plan.key ? 'Selected plan' : 'Select plan'}
                 </button>
+                <Link href={`/checkout?plan=${plan.key}&amount=${getPlanPrice(plan.key, 30)}`} className="mt-2 block w-full rounded-2xl bg-amber-500 px-4 py-3 text-center font-semibold text-zinc-950">
+                  Continue to checkout
+                </Link>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/dashboard" className="rounded-full bg-amber-500 px-4 py-2 font-semibold text-zinc-950">Create a listing</Link>
+          <Link href={`/checkout?plan=${selectedPlan}&amount=${getPlanPrice(selectedPlan, 30)}`} className="rounded-full bg-amber-500 px-4 py-2 font-semibold text-zinc-950">Continue to checkout</Link>
           <Link href="/dashboard" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Open dashboard</Link>
         </div>
       </div>
