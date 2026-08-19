@@ -35,7 +35,7 @@ class PickupVoucherAdmin(ModelAdmin):
 class PropertyImageInline(admin.TabularInline):
     model = PropertyImage
     extra = 1
-    fields = ('image_preview', 'image', 'url', 'caption', 'order')
+    fields = ('image_preview', 'image', 'video', 'url', 'caption', 'order')
     readonly_fields = ('image_preview',)
     
     def image_preview(self, obj):
@@ -75,7 +75,7 @@ class PropertyImageAdmin(ModelAdmin):
     list_filter = ('property', 'order')
     search_fields = ('property__title', 'caption')
     readonly_fields = ('image_preview',)
-    fields = ('property', 'image', 'url', 'caption', 'order', 'image_preview')
+    fields = ('property', 'image', 'video', 'url', 'caption', 'order', 'image_preview')
     ordering = ('property', 'order')
     
     def image_thumbnail(self, obj):
@@ -119,7 +119,7 @@ class PromotionAdmin(admin.ModelAdmin):
 class ListingImageInline(admin.TabularInline):
     model = ListingImage
     extra = 1
-    fields = ('image_preview', 'image', 'caption', 'order')
+    fields = ('image_preview', 'image', 'video', 'caption', 'order')
     readonly_fields = ('image_preview',)
     
     def image_preview(self, obj):
@@ -134,8 +134,8 @@ class ListingImageInline(admin.TabularInline):
 
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
-    list_display = ('title', 'user', 'category', 'location', 'price', 'plan', 'status', 'image_count', 'created_at')
-    list_filter = ('status', 'category', 'plan', 'created_at')
+    list_display = ('title', 'user', 'category', 'location', 'price', 'duration_unit', 'service_fee', 'status', 'image_count', 'created_at')
+    list_filter = ('status', 'category', 'duration_unit', 'plan', 'created_at')
     search_fields = ('title', 'location', 'user__username', 'user__email')
     ordering = ('-created_at',)
     inlines = [ListingImageInline]
@@ -166,7 +166,7 @@ class ListingImageAdmin(ModelAdmin):
     list_filter = ('listing', 'order')
     search_fields = ('listing__title', 'caption')
     readonly_fields = ('image_preview',)
-    fields = ('listing', 'image', 'caption', 'order', 'image_preview')
+    fields = ('listing', 'image', 'video', 'caption', 'order', 'image_preview')
     ordering = ('listing', 'order')
     
     def image_thumbnail(self, obj):

@@ -127,8 +127,8 @@ export default function PropertiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#07070D] text-white pb-28 transition-colors duration-300">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07070D]/95 backdrop-blur-xl px-4 py-4">
+    <main className="min-h-screen bg-[var(--brand-surface)] text-[var(--text-primary)] pb-28 transition-colors duration-300">
+      <header className="sticky top-0 z-40 border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]/95 backdrop-blur-xl px-4 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-accent">Property Catalog</p>

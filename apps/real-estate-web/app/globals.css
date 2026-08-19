@@ -137,6 +137,33 @@ textarea {
 :root[data-theme="light"] .text-white {
   color: var(--text-primary) !important;
 }
+
+:root[data-theme="light"] .bg-zinc-950,
+:root[data-theme="light"] .bg-zinc-900,
+:root[data-theme="light"] .bg-zinc-950\/80,
+:root[data-theme="light"] .bg-zinc-950\/90,
+:root[data-theme="light"] .bg-zinc-900\/80 {
+  background-color: var(--brand-surface-2) !important;
+}
+
+.dark .bg-white,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/85,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: var(--brand-surface-2) !important;
+}
+
+.dark .text-\[var\(--text-primary\)\] {
+  color: var(--text-primary);
+}
+
+:root[data-theme="light"] [class~="bg-[#07070D]"],
+:root[data-theme="light"] [class~="bg-[#09090B]"],
+:root[data-theme="light"] [class~="bg-[#111114]"] {
+  background-color: var(--brand-surface-2) !important;
+}
 :root[data-theme="light"] .bg-white\/5 {
   background-color: rgba(255, 255, 255, 0.82) !important;
 }

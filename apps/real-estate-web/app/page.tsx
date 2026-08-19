@@ -11,6 +11,14 @@ export default function RealEstateHome() {
   const [listings, setListings] = useState<BackendListing[]>([]);
   const [showSplash, setShowSplash] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const carouselCategories = [
+    { label: "Hostels", href: "/hostel", match: (listing: BackendListing) => listing.category === "Hostel" },
+    { label: "Rented apartments", href: "/properties", match: (listing: BackendListing) => /rent|apartment/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
+    { label: "Landed properties", href: "/properties", match: (listing: BackendListing) => /land/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
+    { label: "Build from scratch", href: "/about", match: (listing: BackendListing) => /build|construction/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
+  ];
 
   useEffect(() => {
     // Only run splash logic on the client; avoid duplicate render during
@@ -38,6 +46,11 @@ export default function RealEstateHome() {
   }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setCarouselIndex((current) => (current + 1) % carouselCategories.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [carouselCategories.length]);
+
+  useEffect(() => {
     let mounted = true;
     getPublishedListings().then((payload) => {
       if (mounted && Array.isArray(payload)) setListings(payload);
@@ -54,33 +67,48 @@ export default function RealEstateHome() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fbf8f6] pb-28 text-[#241c2d]">
+    <main className="min-h-screen bg-[var(--brand-surface)] pb-28 text-[var(--text-primary)]">
       <div className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between py-4">
+        <header className="-mx-4 flex items-center justify-between bg-[var(--brand-purple-deep)] px-4 py-4 text-white sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4e235f] text-sm font-black text-white">A</span>
-            <span className="text-sm font-black tracking-[-0.03em] text-[#4e235f]">AY-Smart</span>
+            <span className="text-sm font-black tracking-[-0.03em] text-white">AY-Smart</span>
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <button type="button" aria-label="Notifications" className="rounded-full p-2 text-[#4e235f] hover:bg-[#f4e7e2]"><Bell size={18} /></button>
-            <Link href="/dashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1b8a5] text-[#4e235f]"><UserRound size={16} /></Link>
+            <button type="button" aria-label="Notifications" className="rounded-full p-2 text-white hover:bg-white/10"><Bell size={18} /></button>
+            <Link href="/dashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-purple-deep)]"><UserRound size={16} /></Link>
           </div>
         </header>
 
         <section className="pt-5">
-          <p className="text-sm font-medium text-[#7e7080]">Good morning, discover</p>
-          <h1 className="mt-1 max-w-md text-3xl font-black leading-tight tracking-[-0.06em] text-[#241c2d] sm:text-4xl">A place you&apos;ll love to come home to.</h1>
-          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-[#eaded9] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(78,35,95,0.06)]">
-            <Search size={18} className="shrink-0 text-[#7e7080]" />
-            <input aria-label="Search properties" placeholder="Find properties or hostels worldwide..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#a398a0]" />
-            <button type="button" aria-label="Filter listings" className="rounded-xl bg-[#f9efe9] p-2 text-[#4e235f]"><SlidersHorizontal size={16} /></button>
+          <p className="text-sm font-medium text-[var(--text-muted)]">Good morning, discover</p>
+          <h1 className="mt-1 max-w-md text-3xl font-black leading-tight tracking-[-0.06em] text-[var(--text-primary)] sm:text-4xl">A place you&apos;ll love to come home to.</h1>
+          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-4 py-3 shadow-[0_8px_24px_rgba(78,35,95,0.06)]">
+            <Search size={18} className="shrink-0 text-[var(--text-muted)]" />
+            <input aria-label="Search properties" placeholder="Find properties or hostels worldwide..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]" />
+            <button type="button" aria-label="Filter listings" className="rounded-xl bg-[var(--brand-surface-3)] p-2 text-[var(--brand-purple)]"><SlidersHorizontal size={16} /></button>
           </div>
         </section>
 
-        <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-[#f1e7e3] p-1">
-          <button type="button" onClick={() => setActiveCategory("real-estate")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "real-estate" ? "bg-[#4e235f] text-white shadow-md" : "text-[#6d5c6b]"}`}>Real Estate</button>
-          <button type="button" onClick={() => setActiveCategory("hostels")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "hostels" ? "bg-[#f1a990] text-[#4e235f] shadow-md" : "text-[#6d5c6b]"}`}>Hostels</button>
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] shadow-[0_16px_40px_rgba(78,35,95,0.1)]">
+          {carouselCategories.map((category, index) => {
+            const listing = listings.find(category.match);
+            const image = listing ? listingImage(listing) || "/assets/ay-smart-logo.png" : "/assets/ay-smart-logo.png";
+            return (
+              <Link key={category.label} href={category.href} className={`relative block h-56 transition-opacity duration-500 ${index === carouselIndex ? "opacity-100" : "hidden opacity-0"}`}>
+                <img src={image} alt={listing?.title || category.label} className="h-full w-full object-cover opacity-75" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5 text-white"><p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--brand-accent)]">Explore AY&apos;SMART</p><h2 className="mt-1 text-2xl font-black">{category.label}</h2><p className="mt-1 text-xs text-white/75">{listing?.title || "Approved listings will appear here"}</p></div>
+              </Link>
+            );
+          })}
+          <div className="flex justify-center gap-1.5 p-3">{carouselCategories.map((category, index) => <button key={category.label} type="button" aria-label={`Show ${category.label}`} onClick={() => setCarouselIndex(index)} className={`h-1.5 rounded-full transition-all ${index === carouselIndex ? "w-6 bg-[var(--brand-purple)]" : "w-1.5 bg-[var(--brand-border)]"}`} />)}</div>
+        </section>
+
+        <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-[var(--brand-surface-3)] p-1">
+          <button type="button" onClick={() => setActiveCategory("real-estate")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "real-estate" ? "bg-[var(--brand-purple)] text-white shadow-md" : "text-[var(--text-muted)]"}`}>Real Estate</button>
+          <button type="button" onClick={() => setActiveCategory("hostels")} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeCategory === "hostels" ? "bg-[var(--brand-accent)] text-[var(--brand-purple-deep)] shadow-md" : "text-[var(--text-muted)]"}`}>Hostels</button>
         </div>
 
         <section className="mt-6">

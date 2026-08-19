@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
+import { getPublishedListings, listingImage } from '../../lib/backend';
 import { MapPin, Star, Bookmark, Bed, Bath, Zap, Home, Clock, Phone, Mail, ArrowLeft, Share2 } from 'lucide-react';
 
 interface HostelDetail {
@@ -72,9 +73,22 @@ export default function HostelDetailPage() {
       return;
     }
 
-    const selectedHostel = HOSTEL_DETAILS[hostelId];
-    if (selectedHostel) {
-      setHostel(selectedHostel);
+    const loadHostel = async () => {
+      const listings = await getPublishedListings();
+      const listing = listings?.find((item) => item.id === hostelId && item.category === 'Hostel');
+      const selectedHostel = listing ? {
+        id: listing.id,
+        name: listing.title,
+        location: listing.location,
+        price: Number(listing.price),
+        capacity: listing.duration_unit === 'year' ? 'Annual student rent' : 'Student accommodation',
+        description: listing.description || 'Approved student accommodation.',
+        image: listingImage(listing) || '/assets/ay-smart-logo.png',
+        amenities: listing.facilities || [],
+        rules: ['Rent duration: per year', 'Inspect before payment', 'Contact support for assistance'],
+      } : null;
+      if (selectedHostel) {
+        setHostel(selectedHostel);
 
       // Check for existing inspection booking
       const checkBooking = async () => {
@@ -100,10 +114,13 @@ export default function HostelDetailPage() {
         }
       };
 
-      checkBooking();
-    } else {
-      setLoading(false);
-    }
+        checkBooking();
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadHostel().catch(() => setLoading(false));
   }, [hostelId]);
 
   async function handleBookInspection(e: React.FormEvent) {

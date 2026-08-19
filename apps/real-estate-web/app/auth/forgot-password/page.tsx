@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { buildApiUrl } from '../../lib/api';
 import { API } from '../../config/site';
+import PasswordInput from '../../components/PasswordInput';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -41,16 +42,16 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl">
+    <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-8 shadow-2xl">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Reset password</p>
         <h1 className="mt-2 text-3xl font-black">Forgot your password?</h1>
         <p className="mt-3 text-sm text-zinc-400">Enter your registered email and choose a new password for your account.</p>
 
         <form onSubmit={handleReset} className="mt-6 space-y-4">
           <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Registered email address" />
-          <input required type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" />
-          <input required type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" />
+          <PasswordInput required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" />
+          <PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" />
           <button className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Reset password</button>
         </form>
 

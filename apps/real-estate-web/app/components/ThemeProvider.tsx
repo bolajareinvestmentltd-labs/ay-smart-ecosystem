@@ -7,8 +7,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     const root = document.documentElement;
     const stored = window.localStorage.getItem('aysmart-theme');
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    const initialTheme = stored ? stored : prefersDark ? 'dark' : 'light';
+    const initialTheme = stored || 'light';
 
     root.dataset.theme = initialTheme;
     root.classList.toggle('dark', initialTheme === 'dark');

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildApiUrl } from '../lib/api';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
+import PasswordInput from '../components/PasswordInput';
+import SocialAuthButtons from '../components/SocialAuthButtons';
 
 const studentEmailHint = 'Use your school email or a personal email that matches your student records.';
 
@@ -33,6 +35,10 @@ export default function RegisterPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  function handleSocialAuth(provider: string) {
+    setError(`${provider} sign-up will be available after its OAuth credentials are configured.`);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,8 +155,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
+    <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-6 shadow-2xl">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Account registration</p>
         <h1 className="mt-2 text-3xl font-black">Create your AY&apos;SMART account</h1>
         <p className="mt-2 text-sm text-zinc-400">Choose your role, complete your profile, and get ready for verification and listing management.</p>
@@ -167,8 +173,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Password" />
-            <input required type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm password" />
+            <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Password" />
+            <PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm password" />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -206,6 +212,8 @@ export default function RegisterPage() {
 
           <button disabled={submitting} className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Creating account...' : 'Create account'}</button>
         </form>
+
+        <SocialAuthButtons onUnavailable={handleSocialAuth} />
 
         {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
         {saved && <p className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-400">Account created. Check your email for a verification link before signing in.</p>}

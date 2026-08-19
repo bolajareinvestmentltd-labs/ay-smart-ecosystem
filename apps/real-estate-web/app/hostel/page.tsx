@@ -1,53 +1,19 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapPin, Star, Bookmark } from 'lucide-react';
-
-const hostels = [
-  {
-    id: 1,
-    name: 'Cozy London Loft',
-    location: 'Grosvenor Square, London',
-    price: 2450000,
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80',
-    rating: 4.8,
-    capacity: '40 occupants',
-    amenities: ['WiFi', 'Gym', 'Library'],
-  },
-  {
-    id: 2,
-    name: 'Global Backpacker Hub',
-    location: 'Berlin, Germany',
-    price: 450000,
-    image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
-    rating: 4.6,
-    capacity: '60 occupants',
-    amenities: ['WiFi', 'Kitchen', 'Lounge'],
-  },
-  {
-    id: 3,
-    name: 'Lisbon Coastal Stay',
-    location: 'Cascais, Lisbon',
-    price: 380000,
-    image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80',
-    rating: 4.9,
-    capacity: '35 occupants',
-    amenities: ['Beach access', 'WiFi', 'Kitchen'],
-  },
-  {
-    id: 4,
-    name: 'Tokyo Urban Living',
-    location: 'Shibuya, Tokyo',
-    price: 2900000,
-    image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
-    rating: 4.7,
-    capacity: '50 occupants',
-    amenities: ['WiFi', 'Studio', 'Rooftop'],
-  },
-];
+import { getPublishedListings, listingImage, type BackendListing } from '../lib/backend';
 
 export default function HostelPage() {
+  const [hostels, setHostels] = useState<BackendListing[]>([]);
+
+  useEffect(() => {
+    getPublishedListings().then((listings) => {
+      setHostels((listings || []).filter((listing) => listing.category === 'Hostel'));
+    }).catch(() => setHostels([]));
+  }, []);
+
   return (
     <main className="min-h-screen bg-[color:var(--brand-surface)] px-4 py-4 text-[var(--text-primary)] pb-32">
       <div className="mx-auto max-w-6xl">
@@ -90,7 +56,7 @@ export default function HostelPage() {
             >
               {/* Image */}
               <div className="relative h-40 overflow-hidden bg-[#f0e6df]">
-                <img src={hostel.image} alt={hostel.name} className="h-full w-full object-cover transition group-hover:scale-105" />
+                <img src={listingImage(hostel) || '/assets/ay-smart-logo.png'} alt={hostel.title} className="h-full w-full object-cover transition group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#4e235f] transition hover:bg-white">
                   <Bookmark size={18} />
@@ -101,23 +67,23 @@ export default function HostelPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-sm font-black text-[var(--text-primary)]">{hostel.name}</h3>
+                    <h3 className="text-sm font-black text-[var(--text-primary)]">{hostel.title}</h3>
                     <p className="mt-1 flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
                       <MapPin size={13} /> {hostel.location}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 rounded-full bg-[#f9efe9] px-2.5 py-1 text-[10px] font-bold text-[#4e235f]">
-                    <Star size={12} fill="#4e235f" /> {hostel.rating}
+                    <Star size={12} fill="#4e235f" /> Live
                   </div>
                 </div>
 
                 <div className="mt-3 flex items-baseline justify-between">
-                  <p className="text-lg font-black text-[#4e235f]">₦{(hostel.price / 1000000).toFixed(1)}M</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">{hostel.capacity}</p>
+                  <p className="text-lg font-black text-[#4e235f]">₦{Number(hostel.price).toLocaleString()}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">per year</p>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {hostel.amenities?.slice(0, 2).map((amenity) => (
+                  {hostel.facilities?.slice(0, 2).map((amenity) => (
                     <span key={amenity} className="inline-flex rounded-full bg-[#f9efe9] px-2.5 py-1 text-[9px] font-semibold text-[#4e235f]">
                       {amenity}
                     </span>
@@ -126,6 +92,7 @@ export default function HostelPage() {
               </div>
             </Link>
           ))}
+          {!hostels.length && <p className="col-span-full rounded-2xl border border-dashed border-[var(--brand-border)] p-8 text-center text-sm text-[var(--text-muted)]">No approved hostels are live yet.</p>}
         </div>
       </div>
     </main>

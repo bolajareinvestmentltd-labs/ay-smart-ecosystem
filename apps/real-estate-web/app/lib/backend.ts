@@ -32,10 +32,13 @@ export type BackendListing = {
   facilities?: string[];
   plan: string;
   duration_days: number;
+  duration_unit?: 'year' | 'day' | 'week' | 'month' | string;
+  service_fee?: string | number;
+  map_url?: string;
   status: 'PENDING' | 'LIVE' | 'REJECTED' | string;
   cashback: string | number;
   created_at: string;
-  images?: Array<{ id: number; url?: string; caption?: string }>;
+  images?: Array<{ id: number; url?: string; video_url?: string; caption?: string }>;
 };
 
 export type BackendWallet = {

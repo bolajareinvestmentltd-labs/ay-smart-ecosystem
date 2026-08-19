@@ -1,11 +1,24 @@
 ﻿from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
+try:
+    from cloudinary_storage.storage import VideoMediaCloudinaryStorage
+except ImportError:
+    VideoMediaCloudinaryStorage = None
+
+VIDEO_STORAGE = (
+    VideoMediaCloudinaryStorage()
+    if VideoMediaCloudinaryStorage and settings.CLOUDINARY_STORAGE.get('CLOUD_NAME')
+    else default_storage
+)
 
 # ==========================================
 # 1. AUTOMOTIVE DIVISION MODELS
@@ -79,6 +92,7 @@ class Property(models.Model):
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='property_images/', blank=True, null=True)
+    video = models.FileField(upload_to='property_videos/', storage=VIDEO_STORAGE, blank=True, null=True)
     url = models.URLField(blank=True, null=True, help_text='Fallback image URL when media file is not available')
     caption = models.CharField(max_length=200, blank=True)
     order = models.PositiveIntegerField(default=0, help_text='Lower values appear first')
@@ -299,8 +313,23 @@ class UserProfile(models.Model):
 class Listing(models.Model):
     CATEGORY_CHOICES = [
         ('Property', 'Property'),
-        ('Automotive', 'Automotive'),
+        ('Landed Property', 'Landed Property'),
+        ('Completed Building', 'Completed Building'),
+        ('Uncompleted Building', 'Uncompleted Building'),
+        ('Residential House', 'Residential House'),
+        ('Duplex', 'Duplex'),
+        ('Apartment', 'Apartment'),
+        ('Service Apartment', 'Service Apartment'),
         ('Hostel', 'Hostel'),
+        ('Commercial Property', 'Commercial Property'),
+        ('Build from Scratch', 'Build from Scratch'),
+        ('Automotive', 'Automotive'),
+    ]
+    DURATION_UNIT_CHOICES = [
+        ('year', 'Per year'),
+        ('day', 'Per day'),
+        ('week', 'Per week'),
+        ('month', 'Per month'),
     ]
     PLAN_CHOICES = [
         ('basic', 'Basic'),
@@ -315,13 +344,16 @@ class Listing(models.Model):
 
     user = models.ForeignKey(User, related_name='listings', on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Property')
+    category = models.CharField(max_length=40, choices=CATEGORY_CHOICES, default='Residential House')
     description = models.TextField(blank=True)
     location = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=12, decimal_places=2)
     facilities = models.JSONField(default=list, blank=True)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='basic')
     duration_days = models.PositiveIntegerField(default=30)
+    duration_unit = models.CharField(max_length=10, choices=DURATION_UNIT_CHOICES, default='month')
+    service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1500.00'))
+    map_url = models.URLField(blank=True, help_text='Google Maps link for inspection or location verification')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     cashback = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     created_at = models.DateTimeField(auto_now_add=True)
@@ -334,6 +366,7 @@ class Listing(models.Model):
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='listing_images/', blank=True, null=True)
+    video = models.FileField(upload_to='listing_videos/', storage=VIDEO_STORAGE, blank=True, null=True)
     caption = models.CharField(max_length=200, blank=True)
     order = models.PositiveIntegerField(default=0)
 

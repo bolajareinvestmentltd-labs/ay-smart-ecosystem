@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/auth';
 import { getStoredProfile, saveStoredProfile, type SellerProfile } from '../../lib/app-state';
+import PasswordInput from '../../components/PasswordInput';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -231,9 +232,9 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-zinc-400">Enter your current password before choosing a new one.</p>
 
             <div className="mt-4 space-y-4">
-              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Current password" />
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" />
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" />
+              <PasswordInput value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Current password" />
+              <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" />
+              <PasswordInput value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" />
               <button type="submit" className="rounded-2xl bg-amber-500 px-4 py-3 font-bold text-zinc-950">Update password</button>
             </div>
           </form>

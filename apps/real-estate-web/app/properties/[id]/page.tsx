@@ -15,6 +15,7 @@ export default function PropertyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isFavorited, setIsFavorited] = useState(false);
@@ -32,7 +33,12 @@ export default function PropertyDetailPage() {
       setLoading(true);
       setErrorMessage('');
       try {
-        const res = await fetch(buildApiUrl(`/properties/${propertyId}/`));
+        let res = await fetch(buildApiUrl(`/listings/${propertyId}/`));
+        let source = 'listing';
+        if (!res.ok) {
+          source = 'property';
+          res = await fetch(buildApiUrl(`/properties/${propertyId}/`));
+        }
         if (!res.ok) {
           const payload = await res.json().catch(() => null);
           const raw = payload?.detail || payload?.message || res.statusText || 'Unknown error';
@@ -44,7 +50,14 @@ export default function PropertyDetailPage() {
           return;
         }
         const data = await res.json();
-        setProperty(data);
+        setProperty({
+          ...data,
+          title: data.title,
+          property_type_display: data.property_type_display || data.category,
+          location_address: data.location_address || data.location,
+          main_image_url: data.main_image_url || data.images?.[0]?.url,
+          source,
+        });
 
         // Check user auth and favorites/hidden status
         try {
@@ -57,7 +70,7 @@ export default function PropertyDetailPage() {
             const favRes = await authFetch(buildApiUrl('/favorites/'));
             if (favRes.ok) {
               const favorites = await favRes.json();
-              const isFav = favorites.some((fav: any) => fav.listing?.id === propertyId || fav.id === propertyId);
+              const isFav = favorites.some((fav: any) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
               setIsFavorited(isFav);
             }
 
@@ -65,7 +78,7 @@ export default function PropertyDetailPage() {
             const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
             if (hiddenRes.ok) {
               const hidden = await hiddenRes.json();
-              const isHid = hidden.some((hid: any) => hid.listing?.id === propertyId || hid.id === propertyId);
+              const isHid = hidden.some((hid: any) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
               setIsHidden(isHid);
             }
           }
@@ -180,15 +193,16 @@ export default function PropertyDetailPage() {
 
   async function handleUploadImage(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedFile) {
-      setUploadMessage('Please choose an image to upload.');
+    if (!selectedFile && !selectedVideo) {
+      setUploadMessage('Please choose an image or video to upload.');
       return;
     }
 
     setUploading(true);
     setUploadMessage('');
     const formData = new FormData();
-    formData.append('image', selectedFile);
+    if (selectedFile) formData.append('image', selectedFile);
+    if (selectedVideo) formData.append('video', selectedVideo);
 
     const res = await authFetch(buildApiUrl(`/properties/${propertyId}/upload_image/`), {
       method: 'POST',
@@ -204,13 +218,14 @@ export default function PropertyDetailPage() {
 
     const payload = await res.json().catch(() => null);
     if (payload && payload.id) {
-      const newImage = { id: payload.id, url: payload.image || payload.url, caption: payload.caption || '' };
+      const newImage = { id: payload.id, url: payload.image || payload.url, video_url: payload.video, caption: payload.caption || '' };
       setProperty((prev: any) => ({
         ...prev,
         images: prev.images ? [newImage, ...prev.images] : [newImage],
       }));
       setUploadMessage('Image uploaded successfully.');
       setSelectedFile(null);
+      setSelectedVideo(null);
     }
     setUploading(false);
   }
@@ -265,23 +280,24 @@ export default function PropertyDetailPage() {
           <div>
             <div className="text-sm text-zinc-400">{property.property_type_display}</div>
             <div className="mt-2 text-2xl font-black">₦{Number(property.price).toLocaleString()}</div>
-            <button onClick={openMap} className="mt-4 rounded-full border border-zinc-700 px-4 py-2">{property.location_address}</button>
+            {property.map_url ? <a href={property.map_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-full border border-zinc-700 px-4 py-2">Open location in Google Maps</a> : <button onClick={openMap} className="mt-4 rounded-full border border-zinc-700 px-4 py-2">{property.location_address}</button>}
             <p className="mt-4 text-zinc-300">{property.location_address}</p>
             <div className="mt-6 space-y-4">
               <div id="book">
                 <InspectionBookingForm propertyId={Number(propertyId)} />
               </div>
               <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
-                <h2 className="text-lg font-black">Upload property image</h2>
-                <p className="mt-2 text-sm text-zinc-400">Trusted agents and authenticated sellers can submit new photos for this listing.</p>
+                <h2 className="text-lg font-black">Upload property media</h2>
+                <p className="mt-2 text-sm text-zinc-400">Trusted agents and authenticated sellers can submit photos or walkthrough videos for this listing.</p>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
                   className="mt-4 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100"
                 />
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(e) => setSelectedVideo(e.target.files?.[0] ?? null)} className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100" />
                 <button disabled={uploading} className="mt-4 rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-70">
-                  {uploading ? 'Uploading...' : 'Upload image'}
+                  {uploading ? 'Uploading...' : 'Upload media'}
                 </button>
                 {uploadMessage && <p className="mt-3 text-sm text-zinc-300">{uploadMessage}</p>}
               </form>

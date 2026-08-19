@@ -45,6 +45,7 @@ class PropertySerializer(serializers.ModelSerializer):
             {
                 'id': img.id,
                 'url': absolute_url(img.image.url if getattr(img, 'image', None) else img.url),
+                'video_url': absolute_url(img.video.url) if getattr(img, 'video', None) else None,
                 'caption': img.caption,
                 'order': img.order,
             }
@@ -69,9 +70,20 @@ class InspectionBookingMessageSerializer(serializers.ModelSerializer):
 
 
 class PropertyImageUploadSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        video = attrs.get('video')
+        if video:
+            if video.size > 50 * 1024 * 1024:
+                raise serializers.ValidationError({'video': 'Each video must be 50 MB or smaller.'})
+            if video.content_type not in {'video/mp4', 'video/webm', 'video/quicktime'}:
+                raise serializers.ValidationError({'video': 'Videos must be MP4, WebM, or MOV files.'})
+        if not attrs.get('image') and not video:
+            raise serializers.ValidationError('Upload an image or a video.')
+        return attrs
+
     class Meta:
         model = PropertyImage
-        fields = ['id', 'property', 'image', 'caption', 'order']
+        fields = ['id', 'property', 'image', 'video', 'caption', 'order']
         read_only_fields = ['id', 'property']
 
 class PromotionSerializer(serializers.ModelSerializer):
@@ -173,7 +185,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'image', 'caption', 'order']
+        fields = ['id', 'image', 'video', 'caption', 'order']
         read_only_fields = ['id']
 
 
@@ -194,6 +206,7 @@ class ListingSerializer(serializers.ModelSerializer):
             {
                 'id': image.id,
                 'url': absolute_url(image.image.url if getattr(image, 'image', None) else ''),
+                'video_url': absolute_url(image.video.url) if getattr(image, 'video', None) else None,
                 'caption': image.caption,
                 'order': image.order,
             }
@@ -202,7 +215,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Listing
-        fields = ['id', 'user', 'title', 'category', 'description', 'location', 'price', 'facilities', 'plan', 'duration_days', 'status', 'cashback', 'created_at', 'images']
+        fields = ['id', 'user', 'title', 'category', 'description', 'location', 'price', 'facilities', 'plan', 'duration_days', 'duration_unit', 'service_fee', 'map_url', 'status', 'cashback', 'created_at', 'images']
         read_only_fields = ['id', 'user', 'cashback', 'created_at']
 
     def create(self, validated_data):

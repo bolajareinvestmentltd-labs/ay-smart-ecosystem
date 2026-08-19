@@ -683,7 +683,14 @@ class ListingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_staff:
             return Listing.objects.all().order_by('-id')
+        if self.action == 'retrieve':
+            return Listing.objects.filter(status='LIVE').order_by('-id')
         return Listing.objects.filter(user=self.request.user).order_by('-id')
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
         profile = UserProfile.objects.filter(user=request.user).first()
@@ -693,6 +700,14 @@ class ListingViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Complete KYC and wait for admin account approval before submitting listings.'}, status=status.HTTP_403_FORBIDDEN)
 
         image_files = request.FILES.getlist('images') or request.FILES.getlist('image')
+        video_files = request.FILES.getlist('videos') or request.FILES.getlist('video')
+        allowed_video_types = {'video/mp4', 'video/webm', 'video/quicktime'}
+        oversized_video = next((video for video in video_files if video.size > 50 * 1024 * 1024), None)
+        unsupported_video = next((video for video in video_files if video.content_type not in allowed_video_types), None)
+        if oversized_video:
+            return Response({'detail': 'Each video must be 50 MB or smaller.'}, status=status.HTTP_400_BAD_REQUEST)
+        if unsupported_video:
+            return Response({'detail': 'Videos must be MP4, WebM, or MOV files.'}, status=status.HTTP_400_BAD_REQUEST)
         if len(image_files) < 5:
             return Response({'detail': 'Please upload at least 5 property images before submitting for review.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -714,6 +729,8 @@ class ListingViewSet(viewsets.ModelViewSet):
             'facilities': raw_facilities,
             'plan': request.data.get('plan', 'basic'),
             'duration_days': request.data.get('duration_days', 30),
+            'duration_unit': request.data.get('duration_unit', 'month'),
+            'map_url': request.data.get('map_url', ''),
         }
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
@@ -721,6 +738,8 @@ class ListingViewSet(viewsets.ModelViewSet):
 
         for index, uploaded in enumerate(image_files[:10]):
             ListingImage.objects.create(listing=listing, image=uploaded, order=index)
+        for index, uploaded in enumerate(video_files[:5], start=len(image_files[:10])):
+            ListingImage.objects.create(listing=listing, video=uploaded, order=index)
 
         headers = self.get_success_headers(serializer.data)
         return Response(ListingSerializer(listing, context={'request': request}).data, status=status.HTTP_201_CREATED, headers=headers)

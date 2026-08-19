@@ -12,15 +12,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Property');
+  const [category, setCategory] = useState('Residential House');
   const [location, setLocation] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [facilities, setFacilities] = useState('');
   const [plan, setPlan] = useState<ListingPlan>('basic');
   const [durationDays, setDurationDays] = useState(30);
+  const [durationUnit, setDurationUnit] = useState('month');
+  const [mapUrl, setMapUrl] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -82,7 +85,10 @@ export default function DashboardPage() {
     formData.append('facilities', JSON.stringify(facilities.split(',').map((item) => item.trim()).filter(Boolean)));
     formData.append('plan', plan);
     formData.append('duration_days', String(durationDays));
+    formData.append('duration_unit', durationUnit);
+    formData.append('map_url', mapUrl);
     imageFiles.forEach((file) => formData.append('images', file));
+    videoFiles.forEach((file) => formData.append('videos', file));
 
     const listing = await createBackendListing(formData);
     if (!listing) {
@@ -93,13 +99,16 @@ export default function DashboardPage() {
 
     setListings((current) => [listing, ...current]);
     setTitle('');
-    setCategory('Property');
+    setCategory('Residential House');
     setLocation('');
     setPrice('');
     setDescription('');
     setFacilities('');
     setImageFiles([]);
     setImagePreviews([]);
+    setVideoFiles([]);
+    setDurationUnit('month');
+    setMapUrl('');
     setSubmitting(false);
   }
 
@@ -155,21 +164,38 @@ export default function DashboardPage() {
               <input required value={location} onChange={(e) => setLocation(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Location" />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-24 rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Description" />
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]">
-                <option value="Property">Property</option>
-                <option value="Automotive">Automotive</option>
+                <option value="Landed Property">Landed Property</option>
+                <option value="Completed Building">Completed Building</option>
+                <option value="Uncompleted Building">Uncompleted Building</option>
+                <option value="Residential House">Residential House</option>
+                <option value="Duplex">Duplex</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Service Apartment">Service Apartment</option>
                 <option value="Hostel">Hostel</option>
+                <option value="Commercial Property">Commercial Property</option>
+                <option value="Build from Scratch">Build from Scratch</option>
+                <option value="Automotive">Automotive</option>
               </select>
               <input required type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Fixed listing price" />
-              {category === 'Hostel' && <input value={facilities} onChange={(e) => setFacilities(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Facilities, comma separated" />}
+              <input value={facilities} onChange={(e) => setFacilities(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Facilities, comma separated" />
               <select value={plan} onChange={(e) => setPlan(e.target.value as ListingPlan)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]">
                 <option value="basic">Basic</option>
                 <option value="standard">Standard</option>
                 <option value="premium">Premium</option>
               </select>
               <select value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]">
+                <option value={365}>1 year</option>
                 <option value={30}>30 days</option>
-                <option value={60}>60 days</option>
+                <option value={7}>1 week</option>
+                <option value={1}>1 day</option>
               </select>
+              <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]">
+                <option value="year">Price is per year</option>
+                <option value="month">Price is per month</option>
+                <option value="week">Price is per week</option>
+                <option value="day">Price is per day</option>
+              </select>
+              <input type="url" value={mapUrl} onChange={(e) => setMapUrl(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Google Maps URL (optional)" />
 
               <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-[#f9efe9] p-4">
                 <label className="block text-sm font-medium text-[var(--text-primary)]">Property images (minimum 5)</label>
@@ -192,6 +218,13 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-[#f9efe9] p-4">
+                <label className="block text-sm font-medium text-[var(--text-primary)]">Property videos (optional, up to 5)</label>
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" multiple onChange={(e) => setVideoFiles(Array.from(e.target.files || []).slice(0, 5))} className="mt-3 block w-full text-sm text-[var(--text-primary)] file:mr-4 file:rounded-full file:border-0 file:bg-[#4e235f] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white" />
+                <p className="mt-2 text-xs text-[var(--text-muted)]">Use short MP4, WebM, or MOV walkthrough videos. Videos are reviewed with the listing before publication.</p>
+                {videoFiles.length > 0 && <p className="mt-2 text-xs font-semibold text-[var(--text-primary)]">{videoFiles.length} video(s) selected</p>}
               </div>
 
               <button disabled={submitting || !profile.isKycVerified} className="rounded-2xl bg-[#4e235f] px-4 py-3 font-bold text-white transition hover:bg-[#6b2d82] disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : profile.isKycVerified ? 'Submit for review' : 'Complete KYC first'}</button>

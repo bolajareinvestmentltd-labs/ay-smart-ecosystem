@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const ribbonMessages = [
@@ -59,6 +60,15 @@ export default function BrandSplashScreen() {
             <p className="mt-7 text-center text-[13px] font-medium uppercase tracking-[0.26em] text-[#4e235f]">
               Initializing secure connection
             </p>
+
+            <div className="mt-8 grid w-full grid-cols-2 gap-3">
+              <Link href="/auth/login" className="rounded-2xl border border-[#4e235f]/20 bg-white/70 px-4 py-3 text-center text-sm font-bold text-[#4e235f] transition hover:bg-white">
+                Sign in
+              </Link>
+              <Link href="/register" className="rounded-2xl bg-[#4e235f] px-4 py-3 text-center text-sm font-bold text-white shadow-lg shadow-[#4e235f]/20 transition hover:bg-[#6d3b7d]">
+                Create account
+              </Link>
+            </div>
           </div>
         </div>
       </main>
