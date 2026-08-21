@@ -71,7 +71,9 @@ export default function RealEstateHome() {
       <div className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 lg:px-8">
         <header className="-mx-4 flex items-center justify-between bg-[var(--brand-purple-deep)] px-4 py-4 text-white sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4e235f] text-sm font-black text-white">A</span>
+            <span className="relative h-9 w-9 overflow-hidden rounded-xl bg-white/95 p-1">
+              <img src="/assets/ay-smart-logo.png" alt="AY'SMART logo" className="h-full w-full object-contain" />
+            </span>
             <span className="text-sm font-black tracking-[-0.03em] text-white">AY-Smart</span>
           </Link>
           <div className="flex items-center gap-3">

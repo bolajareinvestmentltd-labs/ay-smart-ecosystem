@@ -7,11 +7,12 @@ from rest_framework.routers import DefaultRouter
 from core_api.auth_views import CookieTokenObtainPairView, CookieTokenRefreshView, LogoutView
 from core_api.views import (
     BranchLocationViewSet, BuildProjectViewSet, CheckoutView,
-    InspectionBookingViewSet, KycApprovalView, ListingViewSet, PaymentInitiateView,
-    PaymentVerifyView, ProfileView, PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
-    SupportRequestViewSet, UserInfoView, VehicleViewSet, WalletViewSet,
-    SavedSearchViewSet, FavoriteListingViewSet, HiddenListingViewSet, ConversationViewSet,
-    PaymentTransactionViewSet,
+    HostelBookingViewSet, InspectionBookingViewSet, KycApprovalView, ListingViewSet,
+    PaymentInitiateView, PaymentTransactionViewSet, PaymentVerifyView, ProfileView,
+    PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
+    ServiceApartmentBookingViewSet, SupportRequestViewSet, UserInfoView, VehicleViewSet,
+    WalletViewSet, SavedSearchViewSet, FavoriteListingViewSet, HiddenListingViewSet,
+    ConversationViewSet,
 )
 
 # Explicit High-Contrast Branding Overrides
@@ -26,6 +27,8 @@ router.register(r'vehicles', VehicleViewSet, basename='vehicle')
 router.register(r'properties', PropertyViewSet, basename='property')
 router.register(r'promotions', PromotionViewSet, basename='promotion')
 router.register(r'inspections', InspectionBookingViewSet, basename='inspection')
+router.register(r'hostel-bookings', HostelBookingViewSet, basename='hostel-booking')
+router.register(r'service-apartment-bookings', ServiceApartmentBookingViewSet, basename='service-apartment-booking')
 router.register(r'build-tracker', BuildProjectViewSet, basename='build-tracker')
 router.register(r'listings', ListingViewSet, basename='listing')
 router.register(r'referrals', ReferralViewSet, basename='referral')

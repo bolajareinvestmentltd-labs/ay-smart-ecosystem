@@ -128,14 +128,19 @@ export default function HostelDetailPage() {
     setBookingStatus('submitting');
 
     try {
-      const res = await authFetch(buildApiUrl('/inspections/'), {
+      const phone = (e.target as any).phone?.value || '';
+      const name = (e.target as any).name?.value || 'Student guest';
+      const res = await authFetch(buildApiUrl('/hostel-bookings/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          listing: hostelId,
           hostel_id: hostelId,
-          hostel_name: hostel?.name,
-          preferred_date: new Date().toISOString().split('T')[0],
-          client_phone: (e.target as any).phone?.value || '',
+          student_name: name,
+          student_phone: phone,
+          student_email: 'student@example.com',
+          check_in_date: new Date().toISOString().split('T')[0],
+          total_amount: Number(hostel?.price || 0) + 1500,
         }),
       });
 

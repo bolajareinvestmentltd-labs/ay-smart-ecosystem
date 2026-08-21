@@ -5,12 +5,20 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
+    "build:mobile": "next build && npx cap sync",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
     "start": "next start",
     "smoke": "node ./scripts/smoke.js",
     "e2e": "npx playwright test",
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@paystack/inline-js": "^2.24.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
@@ -28,6 +36,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "playwright": "^1.44.0",

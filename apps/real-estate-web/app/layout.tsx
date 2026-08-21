@@ -33,14 +33,14 @@ export const metadata: Metadata = {
     description: 'Luxury properties, hostels, and automotive marketplace.',
     url: 'https://ay-smart-ecosystem.vercel.app',
     siteName: "AY'SMART ECO",
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: "AY'SMART ECO" }],
+    images: [{ url: '/assets/ay-smart-logo.png', alt: "AY'SMART ECO" }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: "AY'SMART ECO",
     description: 'Luxury properties, hostels, and automotive marketplace.',
-    images: ['/twitter-image'],
+    images: ['/assets/ay-smart-logo.png'],
     creator: '@aysmartinvest',
   },
 };

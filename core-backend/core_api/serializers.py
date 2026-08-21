@@ -10,6 +10,7 @@ from .models import (
     BuildProject, ProjectMilestone, Promotion, ListingImage,
     Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
+    HostelBooking, ServiceApartmentBooking,
 )
 
 
@@ -297,6 +298,46 @@ class SupportRequestSerializer(serializers.ModelSerializer):
         model = SupportRequest
         fields = ['id', 'name', 'email', 'phone', 'category', 'subject', 'message', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'created_at', 'updated_at']
+
+
+class HostelBookingSerializer(serializers.ModelSerializer):
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+    listing_price = serializers.DecimalField(source='listing.price', read_only=True, max_digits=12, decimal_places=2)
+
+    class Meta:
+        model = HostelBooking
+        fields = [
+            'id', 'listing', 'listing_title', 'listing_price', 'student', 'student_name', 'student_email', 'student_phone',
+            'check_in_date', 'check_out_date', 'total_amount', 'service_fee', 'payment_reference',
+            'status', 'admin_approved', 'funds_released', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'payment_reference', 'listing_title', 'listing_price']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['student'] = request.user
+        return super().create(validated_data)
+
+
+class ServiceApartmentBookingSerializer(serializers.ModelSerializer):
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+    listing_price = serializers.DecimalField(source='listing.price', read_only=True, max_digits=12, decimal_places=2)
+
+    class Meta:
+        model = ServiceApartmentBooking
+        fields = [
+            'id', 'listing', 'listing_title', 'listing_price', 'tenant', 'tenant_name', 'tenant_email', 'tenant_phone',
+            'check_in_date', 'duration_days', 'total_amount', 'service_fee', 'payment_reference',
+            'status', 'admin_approved', 'funds_released', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'payment_reference', 'listing_title', 'listing_price']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['tenant'] = request.user
+        return super().create(validated_data)
 
 
 class WalletTransactionSerializer(serializers.ModelSerializer):

@@ -377,6 +377,72 @@ class ListingImage(models.Model):
         return f"Image for {self.listing.title}"
 
 
+class HostelBooking(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Payment'),
+        ('PAID', 'Payment Received'),
+        ('CONFIRMED', 'Confirmed'),
+        ('ACTIVE', 'Active Stay'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    listing = models.ForeignKey(Listing, related_name='hostel_bookings', on_delete=models.CASCADE, limit_choices_to={'category': 'Hostel'})
+    student = models.ForeignKey(User, related_name='hostel_bookings', on_delete=models.CASCADE)
+    student_name = models.CharField(max_length=100)
+    student_email = models.EmailField()
+    student_phone = models.CharField(max_length=20)
+    check_in_date = models.DateField()
+    check_out_date = models.DateField(null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1500.00'))
+    payment_reference = models.CharField(max_length=120, unique=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    admin_approved = models.BooleanField(default=False)
+    funds_released = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Hostel booking: {self.listing.title} by {self.student_name}"
+
+
+class ServiceApartmentBooking(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Payment'),
+        ('PAID', 'Payment Received'),
+        ('CONFIRMED', 'Confirmed'),
+        ('ACTIVE', 'Active Tenancy'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    listing = models.ForeignKey(Listing, related_name='apartment_bookings', on_delete=models.CASCADE, limit_choices_to={'category': 'Service Apartment'})
+    tenant = models.ForeignKey(User, related_name='apartment_bookings', on_delete=models.CASCADE)
+    tenant_name = models.CharField(max_length=100)
+    tenant_email = models.EmailField()
+    tenant_phone = models.CharField(max_length=20)
+    check_in_date = models.DateField()
+    duration_days = models.PositiveIntegerField()
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1500.00'))
+    payment_reference = models.CharField(max_length=120, unique=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    admin_approved = models.BooleanField(default=False)
+    funds_released = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Service apartment booking: {self.listing.title} by {self.tenant_name}"
+
+
 class SavedSearch(models.Model):
     user = models.ForeignKey(User, related_name='saved_searches', on_delete=models.CASCADE)
     name = models.CharField(max_length=150)

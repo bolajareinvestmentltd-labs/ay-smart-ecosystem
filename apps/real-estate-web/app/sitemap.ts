@@ -1,42 +1,44 @@
 import type { MetadataRoute } from 'next';
 
+export const dynamic = 'force-static';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://ay-smart-ecosystem.vercel.app';
 
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: `${baseUrl}/properties`,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/hostel`,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/plans`,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${baseUrl}/privacy-policy`,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'yearly',
       priority: 0.5,
     },
     {
       url: `${baseUrl}/terms-of-service`,
-      lastModified: new Date(),
+      lastModified: '2026-01-01',
       changeFrequency: 'yearly',
       priority: 0.5,
     },

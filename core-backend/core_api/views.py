@@ -29,12 +29,14 @@ from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
     Listing, ListingImage, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction, SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
+    HostelBooking, ServiceApartmentBooking,
 )
 from .serializers import (
     BranchLocationSerializer, VehicleSerializer,
     PropertySerializer, InspectionBookingSerializer, PropertyImageUploadSerializer,
     BuildProjectSerializer, PromotionSerializer, SavedSearchSerializer, FavoriteListingSerializer,
     HiddenListingSerializer, ConversationSerializer, ConversationMessageSerializer,
+    HostelBookingSerializer, ServiceApartmentBookingSerializer,
 )
 from .models import Referral
 from .serializers import (
@@ -607,6 +609,93 @@ class InspectionBookingViewSet(viewsets.ModelViewSet):
         booking.status = 'COMPLETED'
         booking.save(update_fields=['admin_approved', 'contact_released', 'status'])
         return Response(InspectionBookingSerializer(booking).data, status=status.HTTP_200_OK)
+
+class HostelBookingViewSet(viewsets.ModelViewSet):
+    queryset = HostelBooking.objects.all().order_by('-id')
+    serializer_class = HostelBookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = HostelBooking.objects.all().order_by('-id')
+        listing_id = self.request.query_params.get('listing') or self.request.query_params.get('hostel')
+        if listing_id:
+            queryset = queryset.filter(listing_id=listing_id)
+        if self.request.user.is_staff:
+            return queryset
+        return queryset.filter(student=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        listing_id = data.get('listing') or data.get('hostel_id')
+        if not listing_id:
+            return Response({'detail': 'A hostel listing is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            listing = Listing.objects.get(pk=listing_id, category='Hostel')
+        except Listing.DoesNotExist:
+            return Response({'detail': 'Hostel listing not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        data['listing'] = listing.id
+        data['student_name'] = data.get('student_name') or (request.user.get_full_name() or request.user.username if request.user.is_authenticated else data.get('client_name', ''))
+        data['student_email'] = data.get('student_email') or (request.user.email if request.user.is_authenticated else data.get('client_email', ''))
+        data['student_phone'] = data.get('student_phone') or data.get('client_phone', '')
+        data['check_in_date'] = data.get('check_in_date') or data.get('preferred_date')
+        if not data.get('total_amount'):
+            amount = Decimal(str(listing.price)) + Decimal(str(listing.service_fee or '1500'))
+            data['total_amount'] = str(amount)
+        if not data.get('service_fee'):
+            data['service_fee'] = str(listing.service_fee or '1500')
+        if request.user.is_authenticated:
+            data['student'] = request.user.id
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        booking = serializer.save()
+        return Response(self.get_serializer(booking).data, status=status.HTTP_201_CREATED)
+
+
+class ServiceApartmentBookingViewSet(viewsets.ModelViewSet):
+    queryset = ServiceApartmentBooking.objects.all().order_by('-id')
+    serializer_class = ServiceApartmentBookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = ServiceApartmentBooking.objects.all().order_by('-id')
+        listing_id = self.request.query_params.get('listing')
+        if listing_id:
+            queryset = queryset.filter(listing_id=listing_id)
+        if self.request.user.is_staff:
+            return queryset
+        return queryset.filter(tenant=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        listing_id = data.get('listing') or data.get('apartment_id')
+        if not listing_id:
+            return Response({'detail': 'A service apartment listing is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            listing = Listing.objects.get(pk=listing_id, category='Service Apartment')
+        except Listing.DoesNotExist:
+            return Response({'detail': 'Service apartment listing not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        data['listing'] = listing.id
+        data['tenant_name'] = data.get('tenant_name') or (request.user.get_full_name() or request.user.username if request.user.is_authenticated else data.get('client_name', ''))
+        data['tenant_email'] = data.get('tenant_email') or (request.user.email if request.user.is_authenticated else data.get('client_email', ''))
+        data['tenant_phone'] = data.get('tenant_phone') or data.get('client_phone', '')
+        if not data.get('total_amount'):
+            amount = Decimal(str(listing.price)) + Decimal(str(listing.service_fee or '1500'))
+            data['total_amount'] = str(amount)
+        if not data.get('service_fee'):
+            data['service_fee'] = str(listing.service_fee or '1500')
+        if request.user.is_authenticated:
+            data['tenant'] = request.user.id
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        booking = serializer.save()
+        return Response(self.get_serializer(booking).data, status=status.HTTP_201_CREATED)
+
 
 class BuildProjectViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BuildProject.objects.all()

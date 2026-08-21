@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
-from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction
+from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction, HostelBooking
 from .views import send_verification_email
 
 
@@ -41,6 +41,38 @@ class InspectionBookingApiTests(TestCase):
         self.assertEqual(booking.property_to_view, self.property)
         self.assertEqual(booking.scheduled_date.date().isoformat(), "2026-08-20")
         self.assertEqual(booking.status, "PENDING")
+
+    def test_authenticated_user_can_create_hostel_booking_with_frontend_payload(self):
+        user = User.objects.create_user(username="hostelbuyer", email="hostel@example.com", password="secret123")
+        self.client.force_authenticate(user=user)
+        listing = Listing.objects.create(
+            user=user,
+            title="Student Bay Hostel",
+            category='Hostel',
+            location='Abuja',
+            price='200000',
+            service_fee='1500',
+            description='Good accommodation',
+            status='LIVE',
+        )
+
+        response = self.client.post(
+            "/api/hostel-bookings/",
+            {
+                "listing": listing.id,
+                "hostel_id": listing.id,
+                "student_name": "Ada Lovelace",
+                "student_phone": "+2348000000000",
+                "check_in_date": "2026-08-20",
+                "student_email": "ada@example.com",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        booking = HostelBooking.objects.get(student_name="Ada Lovelace")
+        self.assertEqual(booking.listing, listing)
+        self.assertEqual(booking.total_amount, 201500)
 
 
 class ReferralWalletTests(TestCase):
