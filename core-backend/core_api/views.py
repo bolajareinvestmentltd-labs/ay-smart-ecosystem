@@ -472,15 +472,78 @@ class KycApprovalView(APIView):
         if profile.is_kyc_verified and profile.is_admin_approved:
             return Response(UserProfileSerializer(profile).data, status=status.HTTP_200_OK)
 
+        if profile.role in {'seller', 'agent', 'both'}:
+            nin = ''.join(str(request.data.get('nin') or '').split())
+            selfie = str(request.data.get('selfie_image') or '').strip()
+            if not nin or not nin.isdigit() or len(nin) != 11:
+                return Response({'detail': 'Enter a valid 11-digit NIN.'}, status=status.HTTP_400_BAD_REQUEST)
+            if not selfie:
+                return Response({'detail': 'A selfie image is required for face verification.'}, status=status.HTTP_400_BAD_REQUEST)
+            if selfie.startswith('data:'):
+                try:
+                    _, selfie = selfie.split(',', 1)
+                except ValueError:
+                    return Response({'detail': 'The selfie image format is invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+            if len(selfie) > 12_000_000:
+                return Response({'detail': 'The selfie image is too large.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not settings.DOJAH_APP_ID or not settings.DOJAH_SECRET_KEY:
+                return Response({'detail': 'Identity verification is not configured. Contact support.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            try:
+                verification = requests.post(
+                    f'{settings.DOJAH_API_URL}/api/v1/kyc/nin/verify',
+                    headers={
+                        'Authorization': settings.DOJAH_SECRET_KEY,
+                        'AppId': settings.DOJAH_APP_ID,
+                        'Content-Type': 'application/json',
+                    },
+                    json={'nin': nin, 'selfie_image': selfie},
+                    timeout=30,
+                )
+                provider_data = verification.json()
+            except (requests.RequestException, ValueError):
+                return Response({'detail': 'Identity provider unavailable. Please try again.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            if not verification.ok:
+                profile.kyc_status = 'REJECTED'
+                profile.kyc_rejection_reason = 'Identity provider rejected the verification request.'
+                profile.save(update_fields=['kyc_status', 'kyc_rejection_reason', 'updated_at'])
+                return Response({'detail': 'NIN verification could not be completed.'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+            entity = provider_data.get('entity') or {}
+            selfie_result = entity.get('selfie_verification') or {}
+            score = selfie_result.get('confidence_value')
+            matched = selfie_result.get('match') is True
+            try:
+                score_value = float(score)
+            except (TypeError, ValueError):
+                score_value = 0.0
+            if not matched or score_value < settings.DOJAH_FACE_MATCH_THRESHOLD:
+                profile.is_kyc_verified = False
+                profile.is_admin_approved = False
+                profile.kyc_status = 'REJECTED'
+                profile.kyc_provider = 'dojah'
+                profile.kyc_face_match_score = score_value
+                profile.kyc_rejection_reason = 'NIN record and selfie did not meet the face-match threshold.'
+                profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_face_match_score', 'kyc_rejection_reason', 'updated_at'])
+                return Response({'detail': 'NIN and selfie could not be matched.', 'score': score_value}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+            profile.is_kyc_verified = True
+            profile.is_admin_approved = True
+            profile.kyc_status = 'VERIFIED'
+            profile.kyc_provider = 'dojah'
+            profile.kyc_reference = f'nin:{nin[-4:]}'
+            profile.kyc_face_match_score = score_value
+            profile.kyc_verified_at = timezone.now()
+            profile.kyc_rejection_reason = ''
+            profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_face_match_score', 'kyc_verified_at', 'kyc_rejection_reason', 'updated_at'])
+            return Response({'detail': 'NIN and face verified. Your seller/agent account is approved; listings still require admin publication.', **UserProfileSerializer(profile).data}, status=status.HTTP_200_OK)
+
         profile.kyc_status = 'PENDING'
-        profile.kyc_provider = (request.data.get('provider') or profile.kyc_provider or '').strip()[:40]
-        profile.kyc_reference = (request.data.get('reference') or profile.kyc_reference or '').strip()[:120]
         profile.kyc_rejection_reason = ''
-        profile.save(update_fields=['kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_rejection_reason', 'updated_at'])
-        return Response({
-            'detail': 'KYC submitted for admin review. Verification is not complete until an administrator approves it.',
-            **UserProfileSerializer(profile).data,
-        }, status=status.HTTP_202_ACCEPTED)
+        profile.save(update_fields=['kyc_status', 'kyc_rejection_reason', 'updated_at'])
+        return Response({'detail': 'KYC submitted for admin review.', **UserProfileSerializer(profile).data}, status=status.HTTP_202_ACCEPTED)
 
 
 class BranchLocationViewSet(viewsets.ReadOnlyModelViewSet):

@@ -15,6 +15,8 @@ export default function KycPage() {
   const [studentEmail, setStudentEmail] = useState(profile.studentEmail || '');
   const [studentIdFile, setStudentIdFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState('');
+  const [nin, setNin] = useState('');
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const isAgent = profile.role === 'agent';
   const isStudent = profile.role === 'student' || profile.role === 'both';
@@ -100,7 +102,27 @@ export default function KycPage() {
       return;
     }
 
-    const res = await authFetch('/api/kyc/approve/', { method: 'POST' });
+    if ((isAgent || profile.role === 'seller' || profile.role === 'both') && (!/^\d{11}$/.test(nin) || !selfieFile)) {
+      setError('Seller and agent accounts must provide an 11-digit NIN and selfie for verification.');
+      setLoading(false);
+      return;
+    }
+
+    let selfieImage = '';
+    if (selfieFile) {
+      selfieImage = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(selfieFile);
+      });
+    }
+
+    const res = await authFetch('/api/kyc/approve/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nin, selfie_image: selfieImage }),
+    });
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
       setError(payload?.detail || 'Unable to approve KYC right now.');
@@ -142,6 +164,16 @@ export default function KycPage() {
             </div>
           )}
         </div>
+
+        {(isAgent || profile.role === 'seller' || profile.role === 'both') && (
+          <div className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-950/80 p-6">
+            <h2 className="text-lg font-black text-white">NIN and face verification</h2>
+            <p className="mt-2 text-sm text-zinc-400">Your NIN is checked against the identity provider and your selfie is matched against the official NIN photo. The raw NIN and selfie are not stored by AY&apos;SMART.</p>
+            <input value={nin} onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))} inputMode="numeric" maxLength={11} className="mt-4 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="11-digit NIN" />
+            <label className="mt-4 block text-sm text-zinc-400">Selfie image</label>
+            <input type="file" accept="image/jpeg,image/png" capture="user" onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)} className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100" />
+          </div>
+        )}
 
         <form onSubmit={handleSaveStudentInfo} className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-950/80 p-6">
           <h2 className="text-lg font-black text-white">Student verification details</h2>

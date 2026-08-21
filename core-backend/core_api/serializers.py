@@ -178,7 +178,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at',
-            'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_rejection_reason', 'email_verified',
+            'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_face_match_score', 'kyc_verified_at', 'kyc_rejection_reason', 'email_verified',
             'student_matric_number', 'student_email', 'student_id_image',
         ]
 

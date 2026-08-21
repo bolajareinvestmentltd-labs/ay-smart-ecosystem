@@ -206,6 +206,13 @@ PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '').strip()
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY', '').strip()
 PAYSTACK_USE_TEST_MODE = os.getenv('PAYSTACK_USE_TEST_MODE', 'true').lower() in {'1', 'true', 'yes', 'on'}
 
+# Dojah identity verification. Keep the secret server-side; the frontend only
+# submits the NIN and selfie image to our authenticated API.
+DOJAH_API_URL = os.getenv('DOJAH_API_URL', 'https://api.dojah.io').rstrip('/')
+DOJAH_APP_ID = os.getenv('DOJAH_APP_ID', '').strip()
+DOJAH_SECRET_KEY = os.getenv('DOJAH_SECRET_KEY', '').strip()
+DOJAH_FACE_MATCH_THRESHOLD = float(os.getenv('DOJAH_FACE_MATCH_THRESHOLD', '85'))
+
 # WEMA Bank API Configuration
 WEMA_API_KEY = os.getenv('WEMA_API_KEY', '').strip()
 WEMA_BANK_CODE = os.getenv('WEMA_BANK_CODE', '035')  # Standard WEMA bank code

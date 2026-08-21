@@ -71,6 +71,12 @@ EMAIL_PORT=587
 EMAIL_HOST_USER=resend
 EMAIL_HOST_PASSWORD=<your-resend-api-key>
 EMAIL_USE_TLS=True
+
+# Dojah production NIN + selfie face verification (server only)
+DOJAH_API_URL=https://api.dojah.io
+DOJAH_APP_ID=<your-dojah-app-id>
+DOJAH_SECRET_KEY=<your-dojah-secret-key>
+DOJAH_FACE_MATCH_THRESHOLD=85
 ```
 
 > Important: `NEXT_PUBLIC_API_URL` should point to your backend API root. If you set it without `/api`, the frontend now automatically appends it for all internal backend requests.
@@ -89,6 +95,9 @@ NEXT_PUBLIC_SITE_PHONE=+234 700 000 0000
 NEXT_PUBLIC_SITE_WHATSAPP=+234 800 000 0000
 NEXT_PUBLIC_SITE_ADDRESS="Lagos, Nigeria"
 NEXT_PUBLIC_SITE_HOURS="Mon–Sat 8:00am–6:00pm"
+
+# Optional, only if replacing Google Maps links with an embedded JS map
+# NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<browser-restricted-google-maps-key>
 ```
 
 ### DNS mapping

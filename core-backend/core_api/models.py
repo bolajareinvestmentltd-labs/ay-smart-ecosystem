@@ -294,6 +294,8 @@ class UserProfile(models.Model):
     kyc_status = models.CharField(max_length=20, choices=KYC_STATUS_CHOICES, default='NOT_STARTED')
     kyc_provider = models.CharField(max_length=40, blank=True)
     kyc_reference = models.CharField(max_length=120, blank=True)
+    kyc_face_match_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    kyc_verified_at = models.DateTimeField(null=True, blank=True)
     kyc_rejection_reason = models.TextField(blank=True)
     email_verified = models.BooleanField(default=False)  # Added email verification field
     # Timestamp the last time a verification email was sent (for server-side cooldown)

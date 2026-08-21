@@ -79,6 +79,43 @@ class ReferralWalletTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+    @patch('core_api.views.requests.post')
+    @override_settings(DOJAH_APP_ID='test-app', DOJAH_SECRET_KEY='test-secret', DOJAH_FACE_MATCH_THRESHOLD=85)
+    def test_verified_seller_is_auto_approved_but_listing_stays_pending(self, provider_post):
+        provider_post.return_value.ok = True
+        provider_post.return_value.json.return_value = {
+            'entity': {'selfie_verification': {'match': True, 'confidence_value': 97.4}}
+        }
+        user = User.objects.create_user(username='verifiedseller', email='seller@example.com', password='secret123')
+        profile = user.profile
+        profile.role = 'seller'
+        profile.save(update_fields=['role'])
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            '/api/kyc/approve/',
+            {'nin': '70123456789', 'selfie_image': 'data:image/jpeg;base64,ZmFrZQ=='},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        profile.refresh_from_db()
+        self.assertTrue(profile.is_kyc_verified)
+        self.assertTrue(profile.is_admin_approved)
+        self.assertEqual(profile.kyc_status, 'VERIFIED')
+        self.assertEqual(profile.kyc_face_match_score, Decimal('97.40'))
+
+        listing = Listing.objects.create(
+            user=user,
+            title='Pending Seller Listing',
+            category='Property',
+            location='Lagos',
+            price='1000000',
+        )
+        self.assertEqual(listing.status, 'PENDING')
+        self.assertEqual(self.client.get('/api/listings/published/').status_code, 200)
+        self.assertFalse(any(item['id'] == listing.id for item in self.client.get('/api/listings/published/').data))
+
     def test_wallet_is_created_when_user_is_created(self):
         user = User.objects.create_user(username="newuser", email="new@example.com", password="secret123")
 
@@ -258,12 +295,18 @@ class ReferralWalletTests(TestCase):
 
     def test_authenticated_user_can_submit_kyc_for_admin_review(self):
         user = User.objects.create_user(username="kycuser", email="kyc@example.com", password="secret123")
+        profile = UserProfile.objects.get(user=user)
+        profile.role = 'student'
+        profile.student_matric_number = 'MAT-001'
+        profile.student_email = 'student@school.example'
+        profile.student_id_image = SimpleUploadedFile('student-id.jpg', b'fake-image', content_type='image/jpeg')
+        profile.save(update_fields=['role', 'student_matric_number', 'student_email', 'student_id_image'])
         self.client.force_authenticate(user=user)
 
         response = self.client.post("/api/kyc/approve/", format="json")
 
         self.assertEqual(response.status_code, 202, response.data)
-        profile = UserProfile.objects.get(user=user)
+        profile.refresh_from_db()
         self.assertFalse(profile.is_kyc_verified)
         self.assertFalse(profile.is_admin_approved)
         self.assertEqual(profile.kyc_status, 'PENDING')
