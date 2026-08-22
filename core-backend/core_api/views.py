@@ -27,7 +27,7 @@ from django.conf import settings
 
 from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
-    Listing, ListingImage, PaymentTransaction, InspectionInvoice, PickupVoucher, Property, SupportRequest, UserProfile,
+    Listing, ListingImage, PaymentTransaction, InspectionInvoice, Notification, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction, SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
     HostelBooking, ServiceApartmentBooking,
 )
@@ -40,7 +40,7 @@ from .serializers import (
 )
 from .models import Referral
 from .serializers import (
-    ListingSerializer, PaymentTransactionSerializer, InspectionInvoiceSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
+    ListingSerializer, PaymentTransactionSerializer, InspectionInvoiceSerializer, NotificationSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
     WalletSerializer, WalletTransactionSerializer,
 )
 
@@ -663,6 +663,14 @@ class InspectionBookingViewSet(viewsets.ModelViewSet):
         if decision == 'YES':
             booking.agent_confirmed = True
             booking.save(update_fields=['agent_confirmed'])
+            if booking.client_user:
+                Notification.objects.create(
+                    user=booking.client_user,
+                    kind='inspection_accepted',
+                    title='Inspection accepted',
+                    message='Your inspection request was accepted. Continue communicating in the app.',
+                    link=f'/properties/{booking.listing_id}' if booking.listing_id else '/inbox',
+                )
             try:
                 send_mail(
                     'Inspection Agent Accepted',
@@ -884,7 +892,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         return Listing.objects.filter(user=self.request.user).order_by('-id')
 
     def get_permissions(self):
-        if self.action == 'retrieve':
+        if self.action in {'retrieve', 'published'}:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
@@ -1049,6 +1057,13 @@ class InspectionInvoiceViewSet(viewsets.ModelViewSet):
         if inspection.agent_response != 'ACCEPTED' or not inspection.client_user:
             raise serializers.ValidationError('Invoice requires an accepted inspection with an authenticated client.')
         invoice = serializer.save(issuer=self.request.user, recipient=inspection.client_user)
+        Notification.objects.create(
+            user=invoice.recipient,
+            kind='invoice_issued',
+            title='New inspection invoice',
+            message=f'Invoice {invoice.invoice_number} is ready for payment.',
+            link=f'/checkout?invoice={invoice.id}',
+        )
         if invoice.recipient.email:
             checkout_url = f"{getattr(settings, 'FRONTEND_URL', '').rstrip('/')}/checkout?invoice={invoice.id}"
             send_mail(
@@ -1058,6 +1073,27 @@ class InspectionInvoiceViewSet(viewsets.ModelViewSet):
                 [invoice.recipient.email],
                 fail_silently=True,
             )
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        if not notification.is_read:
+            notification.is_read = True
+            notification.save(update_fields=['is_read'])
+        return Response(self.get_serializer(notification).data)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_all_read(self, request):
+        self.get_queryset().filter(is_read=False).update(is_read=True)
+        return Response({'detail': 'Notifications marked as read.'})
 
 
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):
@@ -1269,6 +1305,7 @@ class PaymentVerifyView(APIView):
             transaction.invoice.status = 'PAID'
             transaction.invoice.paid_at = timezone.now()
             transaction.invoice.save(update_fields=['status', 'paid_at'])
+            Notification.objects.create(user=request.user, kind='payment_success', title='Payment confirmed', message=f'Invoice {transaction.invoice.invoice_number} has been paid successfully.', link=f'/success?transactionId={transaction.id}')
             return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -1324,6 +1361,7 @@ class WemaPaymentWebhookView(APIView):
             transaction.invoice.status = 'PAID'
             transaction.invoice.paid_at = timezone.now()
             transaction.invoice.save(update_fields=['status', 'paid_at'])
+            Notification.objects.create(user=transaction.user, kind='payment_success', title='Payment confirmed', message=f'Invoice {transaction.invoice.invoice_number} has been paid successfully.', link=f'/success?transactionId={transaction.id}')
             return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
         profile, _ = UserProfile.objects.get_or_create(user=transaction.user)
         profile.subscription_plan = transaction.plan

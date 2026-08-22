@@ -7,7 +7,7 @@ from .models import (
     PropertyImage, Promotion,
     BuildProject, ProjectMilestone, UserProfile, Listing, ListingImage,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
-    PaymentTransaction, InspectionInvoice,
+    PaymentTransaction, InspectionInvoice, Notification,
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -335,4 +335,12 @@ class InspectionInvoiceAdmin(ModelAdmin):
     list_filter = ('status', 'created_at')
     search_fields = ('invoice_number', 'issuer__username', 'recipient__username', 'description')
     readonly_fields = ('invoice_number', 'created_at', 'paid_at')
+
+
+@admin.register(Notification)
+class NotificationAdmin(ModelAdmin):
+    list_display = ('user', 'kind', 'title', 'is_read', 'created_at')
+    list_filter = ('kind', 'is_read', 'created_at')
+    search_fields = ('user__username', 'user__email', 'title', 'message')
+    readonly_fields = ('created_at',)
 

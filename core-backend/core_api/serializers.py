@@ -3,12 +3,13 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils import timezone
 from rest_framework import serializers
 from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage, PropertyImage,
     BuildProject, ProjectMilestone, Promotion, ListingImage,
-    Listing, PaymentTransaction, InspectionInvoice, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
+    Listing, PaymentTransaction, InspectionInvoice, Notification, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
     HostelBooking, ServiceApartmentBooking,
 )
@@ -116,16 +117,25 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
             return obj.assigned_agent.profile.phone
         return None
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = request.user if request else None
+        if not user or not user.is_staff and user not in {instance.client_user, instance.assigned_agent}:
+            for field in ('inspection_latitude', 'inspection_longitude', 'inspection_location_accuracy', 'location_consented_at'):
+                data.pop(field, None)
+        return data
+
     class Meta:
         model = InspectionBooking
         fields = [
             'id', 'client_user', 'client_name', 'client_phone', 'client_confirmed', 'agent_confirmed',
             'assigned_agent', 'assigned_agent_username', 'agent_contact', 'agent_response', 'property', 'preferred_date',
-            'listing', 'listing_title',
+            'listing', 'listing_title', 'location_consent', 'inspection_latitude', 'inspection_longitude', 'inspection_location_accuracy', 'location_consented_at',
             'status', 'payment_unlocked', 'scheduled_date', 'admin_approved', 'contact_released',
             'agreed_date', 'agreed_time', 'messages',
         ]
-        read_only_fields = ['id', 'scheduled_date', 'payment_unlocked', 'messages', 'assigned_agent_username', 'client_user']
+        read_only_fields = ['id', 'scheduled_date', 'payment_unlocked', 'messages', 'assigned_agent_username', 'client_user', 'location_consented_at']
 
     def create(self, validated_data):
         preferred_date = validated_data.pop('preferred_date')
@@ -133,6 +143,13 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
 
         if not validated_data.get('property_to_view') and not validated_data.get('listing'):
             raise serializers.ValidationError({'listing': 'A live listing is required for new inspections.'})
+
+        if validated_data.get('location_consent') and (
+            validated_data.get('inspection_latitude') is None or validated_data.get('inspection_longitude') is None
+        ):
+            raise serializers.ValidationError({'inspection_latitude': 'Both coordinates are required when location sharing is enabled.'})
+        if validated_data.get('location_consent'):
+            validated_data['location_consented_at'] = timezone.now()
 
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
@@ -379,3 +396,10 @@ class InspectionInvoiceSerializer(serializers.ModelSerializer):
         model = InspectionInvoice
         fields = ['id', 'inspection', 'issuer', 'recipient', 'invoice_number', 'amount', 'description', 'status', 'inspection_title', 'created_at', 'paid_at']
         read_only_fields = ['id', 'issuer', 'recipient', 'invoice_number', 'status', 'inspection_title', 'created_at', 'paid_at']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'kind', 'title', 'message', 'link', 'is_read', 'created_at']
+        read_only_fields = ['id', 'created_at']

@@ -12,7 +12,7 @@ from core_api.views import (
     HostelBookingViewSet, InspectionBookingViewSet, KycApprovalView, ListingViewSet,
     PaymentInitiateView, PaymentTransactionViewSet, PaymentVerifyView, ProfileView,
     PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
-    ServiceApartmentBookingViewSet, SupportRequestViewSet, InspectionInvoiceViewSet, UserInfoView, VehicleViewSet,
+    ServiceApartmentBookingViewSet, SupportRequestViewSet, InspectionInvoiceViewSet, NotificationViewSet, UserInfoView, VehicleViewSet,
     WalletViewSet, SavedSearchViewSet, FavoriteListingViewSet, HiddenListingViewSet,
     ConversationViewSet,
 )
@@ -41,6 +41,7 @@ router.register(r'hidden-listings', HiddenListingViewSet, basename='hidden-listi
 router.register(r'conversations', ConversationViewSet, basename='conversation')
 router.register(r'payments', PaymentTransactionViewSet, basename='payment')
 router.register(r'invoices', InspectionInvoiceViewSet, basename='inspection-invoice')
+router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'support/requests', SupportRequestViewSet, basename='support-request')
 
 urlpatterns = [

@@ -6,11 +6,19 @@ import { getPublishedListings, listingImage, type BackendListing } from "./lib/b
 import ThemeToggle from "./components/ThemeToggle";
 import { getStoredProfile } from "./lib/app-state";
 
+const getStableStoredProfile = (() => {
+  let snapshot: ReturnType<typeof getStoredProfile> | undefined;
+  return () => {
+    snapshot ??= getStoredProfile();
+    return snapshot;
+  };
+})();
+
 export default function RealEstateHome() {
   const [activeCategory, setActiveCategory] = useState<"real-estate" | "hostels">("real-estate");
   const [listings, setListings] = useState<BackendListing[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const storedProfile = useSyncExternalStore(() => () => {}, getStoredProfile, getStoredProfile);
+  const storedProfile = useSyncExternalStore(() => () => {}, getStableStoredProfile, getStableStoredProfile);
   const firstName = (storedProfile.name || storedProfile.username || '').trim().split(/\s+/)[0] || 'there';
   const localHour = new Date().getHours();
   const greeting = localHour < 12 ? 'Good morning' : localHour < 17 ? 'Good afternoon' : 'Good evening';
@@ -68,7 +76,7 @@ export default function RealEstateHome() {
             const image = listing ? listingImage(listing) || "/assets/ay-smart-logo.png" : "/assets/ay-smart-logo.png";
             return (
               <Link key={category.label} href={category.href} className={`relative block h-40 transition-opacity duration-500 sm:h-44 ${index === carouselIndex ? "opacity-100" : "hidden opacity-0"}`}>
-                <img src={image} alt={listing?.title || category.label} className="h-full w-full object-cover opacity-75" />
+                <img src={image} alt={listing?.title || category.label} loading={index === carouselIndex ? 'eager' : 'lazy'} decoding="async" fetchPriority={index === carouselIndex ? 'high' : 'low'} className="h-full w-full object-cover opacity-75" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--brand-accent)]">Explore AY&apos;SMART</p><h2 className="mt-1 text-xl font-black">{category.label}</h2><p className="mt-1 text-xs text-white/75">{listing?.title || "Approved listings will appear here"}</p></div>
               </Link>
@@ -88,7 +96,7 @@ export default function RealEstateHome() {
             {listings.filter((listing) => activeCategory === "hostels" ? listing.category === "Hostel" : listing.category !== "Hostel").slice(0, 4).map((listing) => {
               const image = listingImage(listing) || "/assets/ay-smart-logo.png";
               const href = listing.category === "Hostel" ? `/hostel/${listing.id}` : `/properties/${listing.id}`;
-              return <Link key={listing.id} href={href} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]"><div className="relative h-32"><img src={image} alt={listing.title} className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div><div className="p-3"><div className="flex items-start justify-between gap-2"><h3 className="truncate text-sm font-black">{listing.title}</h3><span className="flex items-center gap-1 text-[11px] font-bold"><Star size={12} fill="#f1a990" className="text-[#e28c72]" />Live</span></div><p className="mt-1 flex items-center gap-1 text-[11px] text-[#817681]"><MapPin size={12} />{listing.location}</p><p className="mt-2 text-sm font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></div></Link>;
+              return <Link key={listing.id} href={href} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]"><div className="relative h-32"><img src={image} alt={listing.title} loading="lazy" decoding="async" className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div><div className="p-3"><div className="flex items-start justify-between gap-2"><h3 className="truncate text-sm font-black">{listing.title}</h3><span className="flex items-center gap-1 text-[11px] font-bold"><Star size={12} fill="#f1a990" className="text-[#e28c72]" />Live</span></div><p className="mt-1 flex items-center gap-1 text-[11px] text-[#817681]"><MapPin size={12} />{listing.location}</p><p className="mt-2 text-sm font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></div></Link>;
             })}
           </div>
           {!listings.some((listing) => activeCategory === "hostels" ? listing.category === "Hostel" : listing.category !== "Hostel") && <p className="rounded-2xl border border-dashed border-[#d7c6cf] p-6 text-center text-sm text-[#817681]">No approved {activeCategory === "hostels" ? "hostel" : "real estate"} listings are live yet.</p>}

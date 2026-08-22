@@ -30,6 +30,8 @@ export default function HostelDetailPage() {
   const [satisfactionPopup, setSatisfactionPopup] = useState(false);
   const [bookingId, setBookingId] = useState<number | null>(null);
   const [adminResponse, setAdminResponse] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED'>('PENDING');
+  const [locationConsent, setLocationConsent] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   useEffect(() => {
     if (!hostelId) {
@@ -96,6 +98,15 @@ export default function HostelDetailPage() {
       const phone = String(form.get('phone') || '');
       const name = String(form.get('name') || '');
       const preferredDate = String(form.get('preferred_date') || '');
+      let location: { latitude: number; longitude: number; accuracy: number } | undefined;
+      if (locationConsent) {
+        if (!navigator.geolocation) throw new Error('Location sharing is unavailable on this device.');
+        location = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+          (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: Math.round(position.coords.accuracy) }),
+          () => reject(new Error('Location permission was not granted.')),
+          { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 },
+        ));
+      }
       const res = await authFetch(buildApiUrl('/inspections/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,6 +115,8 @@ export default function HostelDetailPage() {
           client_name: name,
           client_phone: phone,
           preferred_date: preferredDate,
+          location_consent: Boolean(location),
+          ...(location ? { inspection_latitude: location.latitude, inspection_longitude: location.longitude, inspection_location_accuracy: location.accuracy } : {}),
         }),
       });
 
@@ -119,7 +132,9 @@ export default function HostelDetailPage() {
         setBookingStatus('error');
       }
     } catch (error) {
-      setBookingMessage(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+      const detail = error instanceof Error ? error.message : String(error);
+      setLocationError(detail.includes('Location') ? detail : '');
+      setBookingMessage(`❌ Error: ${detail}`);
       setBookingStatus('error');
     }
   }
@@ -301,6 +316,8 @@ export default function HostelDetailPage() {
                 <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">Preferred inspection date</label>
                 <input type="date" name="preferred_date" required className="w-full rounded-[1.2rem] border border-[color:var(--brand-border)] bg-white px-4 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[#f1b8a5]" />
               </div>
+              <label className="flex items-start gap-3 text-sm text-[var(--text-muted)]"><input type="checkbox" checked={locationConsent} onChange={(event) => { setLocationConsent(event.target.checked); setLocationError(''); }} className="mt-1 h-4 w-4" /><span>I agree to share my current location once for inspection security. It is not tracked continuously.</span></label>
+              {locationError && <p className="text-sm text-red-600">{locationError}</p>}
               <button
                 type="submit"
                 disabled={(bookingStatus as any) === 'submitting'}

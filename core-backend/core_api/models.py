@@ -155,6 +155,11 @@ class InspectionBooking(models.Model):
     client_phone = models.CharField(max_length=20)
     property_to_view = models.ForeignKey(Property, on_delete=models.CASCADE)
     listing = models.ForeignKey('Listing', related_name='inspection_bookings', null=True, blank=True, on_delete=models.SET_NULL)
+    location_consent = models.BooleanField(default=False)
+    inspection_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    inspection_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    inspection_location_accuracy = models.PositiveIntegerField(null=True, blank=True)
+    location_consented_at = models.DateTimeField(null=True, blank=True)
     scheduled_date = models.DateTimeField()
     assigned_agent = models.ForeignKey(User, related_name='assigned_inspections', null=True, blank=True, on_delete=models.SET_NULL)
     agent_response = models.CharField(max_length=20, choices=RESPONSE_CHOICES, default='PENDING')
@@ -290,6 +295,22 @@ class InspectionInvoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} - {self.amount}"
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    kind = models.CharField(max_length=40, default='general')
+    title = models.CharField(max_length=160)
+    message = models.TextField()
+    link = models.CharField(max_length=240, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username}: {self.title}"
 
 
 class UserProfile(models.Model):

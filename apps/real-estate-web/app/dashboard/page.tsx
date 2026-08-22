@@ -189,7 +189,7 @@ export default function DashboardPage() {
             )}
             <div className="mt-4 grid gap-4">
               <input required value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Listing title" />
-              <input required value={location} onChange={(e) => setLocation(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Location" />
+              <input required value={location} onChange={(e) => setLocation(e.target.value)} autoComplete="street-address" className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Location or full address" />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-24 rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]" placeholder="Description" />
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-[#4e235f]">
                 <option value="Landed Property">Landed Property</option>
