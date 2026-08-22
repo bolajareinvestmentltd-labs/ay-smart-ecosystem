@@ -146,10 +146,6 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-:root[data-theme="light"] .text-white {
-  color: var(--text-primary) !important;
-}
-
 :root[data-theme="light"] .bg-zinc-950,
 :root[data-theme="light"] .bg-zinc-900,
 :root[data-theme="light"] .bg-zinc-950\/80,
@@ -208,8 +204,7 @@ textarea {
 }
 
 :root[data-theme="light"] [class~="text-zinc-100"],
-:root[data-theme="light"] [class~="text-zinc-200"],
-:root[data-theme="light"] [class~="text-zinc-300"] {
+:root[data-theme="light"] [class~="text-zinc-200"] {
   color: var(--text-primary) !important;
 }
 

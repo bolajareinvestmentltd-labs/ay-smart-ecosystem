@@ -5,6 +5,7 @@ import { Bell, CalendarDays, ChevronRight, Heart, MapPin, Search, SlidersHorizon
 import { getPublishedListings, listingImage, type BackendListing } from "./lib/backend";
 import BrandSplashScreen from "./components/BrandSplashScreen";
 import ThemeToggle from "./components/ThemeToggle";
+import { getStoredProfile } from "./lib/app-state";
 
 export default function RealEstateHome() {
   const [activeCategory, setActiveCategory] = useState<"real-estate" | "hostels">("real-estate");
@@ -12,6 +13,8 @@ export default function RealEstateHome() {
   const [showSplash, setShowSplash] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [greeting, setGreeting] = useState('Good day');
+  const [firstName, setFirstName] = useState('there');
 
   const carouselCategories = [
     { label: "Hostels", href: "/hostel", match: (listing: BackendListing) => listing.category === "Hostel" },
@@ -19,6 +22,14 @@ export default function RealEstateHome() {
     { label: "Landed properties", href: "/properties", match: (listing: BackendListing) => /land/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
     { label: "Build from scratch", href: "/about", match: (listing: BackendListing) => /build|construction/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
   ];
+
+  useEffect(() => {
+    const profile = getStoredProfile();
+    setFirstName((profile.name || profile.username || '').trim().split(/\s+/)[0] || 'there');
+    const hourPart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: false }).formatToParts(new Date()).find((part) => part.type === 'hour');
+    const localHour = Number(hourPart?.value || new Date().getHours());
+    setGreeting(localHour < 12 ? 'Good morning' : localHour < 17 ? 'Good afternoon' : 'Good evening');
+  }, []);
 
   useEffect(() => {
     // Only run splash logic on the client; avoid duplicate render during
@@ -84,7 +95,7 @@ export default function RealEstateHome() {
         </header>
 
         <section className="pt-5">
-          <p className="text-sm font-medium text-[var(--text-muted)]">Good morning, discover</p>
+          <p className="text-sm font-medium text-[var(--text-muted)]">{greeting}, {firstName}</p>
           <h1 className="mt-1 max-w-md text-3xl font-black leading-tight tracking-[-0.06em] text-[var(--text-primary)] sm:text-4xl">A place you&apos;ll love to come home to.</h1>
           <div className="mt-5 flex items-center gap-2 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-4 py-3 shadow-[0_8px_24px_rgba(78,35,95,0.06)]">
             <Search size={18} className="shrink-0 text-[var(--text-muted)]" />

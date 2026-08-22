@@ -12,7 +12,7 @@ export default function NewsletterSlideUp(){
   if(!visible) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-80 rounded-xl border border-zinc-800 bg-zinc-900/95 p-4 shadow-lg">
+    <div className="fixed bottom-28 right-4 z-40 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-zinc-800 bg-zinc-900/95 p-4 shadow-lg sm:bottom-6 sm:right-6">
       <div className="flex items-start justify-between">
         <div>
           <div className="text-sm font-semibold text-zinc-100">Stay updated</div>

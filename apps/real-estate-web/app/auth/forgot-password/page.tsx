@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { buildApiUrl } from '../../lib/api';
 import { API } from '../../config/site';
 import PasswordInput from '../../components/PasswordInput';
@@ -11,13 +12,24 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const searchParams = useSearchParams();
+  const uid = searchParams.get('uid');
+  const token = searchParams.get('token');
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setMessage('');
 
-    if (newPassword !== confirmPassword) {
+    if (!uid && !email) {
+      setError('Enter your registered email address.');
+      return;
+    }
+    if (uid && !token) {
+      setError('This password reset link is incomplete.');
+      return;
+    }
+    if (newPassword && newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
@@ -26,7 +38,7 @@ export default function ForgotPasswordPage() {
       const response = await fetch(buildApiUrl('/auth/password-reset/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, new_password: newPassword }),
+        body: JSON.stringify(uid ? { uid, token, new_password: newPassword } : { email }),
       });
       const payload = await response.json().catch(() => ({}));
 
@@ -35,7 +47,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      setMessage('Password reset request submitted. Check your email for confirmation.');
+      setMessage(uid ? 'Password updated successfully. You can now sign in.' : 'If an account exists, a reset link has been sent to your email.');
     } catch {
       setError('Network error while resetting password.');
     }
@@ -46,12 +58,11 @@ export default function ForgotPasswordPage() {
       <div className="mx-auto max-w-2xl rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-8 shadow-2xl">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Reset password</p>
         <h1 className="mt-2 text-3xl font-black">Forgot your password?</h1>
-        <p className="mt-3 text-sm text-zinc-400">Enter your registered email and choose a new password for your account.</p>
+        <p className="mt-3 text-sm text-zinc-400">{uid ? 'Choose a new password for your account.' : 'Enter your registered email to receive a secure reset link.'}</p>
 
         <form onSubmit={handleReset} className="mt-6 space-y-4">
-          <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Registered email address" />
-          <PasswordInput required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" />
-          <PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" />
+          {!uid && <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Registered email address" />}
+          {uid && <><PasswordInput required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="New password" /><PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Confirm new password" /></>}
           <button className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-semibold text-zinc-950">Reset password</button>
         </form>
 

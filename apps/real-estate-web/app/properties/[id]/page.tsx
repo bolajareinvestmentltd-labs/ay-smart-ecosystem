@@ -286,7 +286,7 @@ export default function PropertyDetailPage() {
               <div id="book">
                 <InspectionBookingForm propertyId={Number(propertyId)} />
               </div>
-              <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
+              {user && ['seller', 'agent', 'both'].includes(user.role) && <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
                 <h2 className="text-lg font-black">Upload property media</h2>
                 <p className="mt-2 text-sm text-zinc-400">Trusted agents and authenticated sellers can submit photos or walkthrough videos for this listing.</p>
                 <input
@@ -300,7 +300,7 @@ export default function PropertyDetailPage() {
                   {uploading ? 'Uploading...' : 'Upload media'}
                 </button>
                 {uploadMessage && <p className="mt-3 text-sm text-zinc-300">{uploadMessage}</p>}
-              </form>
+              </form>}
             </div>
           </div>
         </div>

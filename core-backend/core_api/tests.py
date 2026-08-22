@@ -1,5 +1,6 @@
 from decimal import Decimal
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 from django.test import TestCase, override_settings
 from django.conf import settings
@@ -189,21 +190,40 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(args[2], settings.DEFAULT_FROM_EMAIL)
         self.assertIn('verify your', args[0].lower())
 
-    def test_password_reset_endpoint_updates_user_password(self):
+    @patch('core_api.views.send_mail')
+    def test_password_reset_endpoint_updates_user_password(self, mock_send_mail):
         user = User.objects.create_user(username='resetuser', email='resetuser@example.com', password='oldsecret123')
 
         response = self.client.post(
             '/api/auth/password-reset/',
             {
                 'email': 'resetuser@example.com',
-                'new_password': 'newsecret456',
             },
             format='json',
         )
 
         self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(mock_send_mail.called)
+        reset_message = mock_send_mail.call_args.args[1]
+        reset_url = next(line for line in reset_message.splitlines() if 'uid=' in line and 'token=' in line)
+        reset_parts = parse_qs(urlsplit(reset_url).query)
+        response = self.client.post(
+            '/api/auth/password-reset/',
+            {'uid': reset_parts['uid'][0], 'token': reset_parts['token'][0], 'new_password': 'newsecret456'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
         user.refresh_from_db()
         self.assertTrue(user.check_password('newsecret456'))
+
+    def test_authenticated_user_can_delete_account_with_confirmation(self):
+        user = User.objects.create_user(username='deleteuser', email='delete@example.com', password='secret123')
+        self.client.force_authenticate(user=user)
+
+        response = self.client.delete('/api/auth/profile/', {'confirmation': 'DELETE'}, format='json')
+
+        self.assertEqual(response.status_code, 204, response.data)
+        self.assertFalse(User.objects.filter(pk=user.pk).exists())
 
     def test_invalid_refresh_cookie_returns_session_expired_message(self):
         self.client.cookies['refresh'] = 'not.a.valid.jwt'

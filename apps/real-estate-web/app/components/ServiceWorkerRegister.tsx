@@ -41,7 +41,7 @@ export default function ServiceWorkerRegister() {
   }
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex items-center gap-3 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)]/95 px-3 py-2 shadow-xl backdrop-blur-xl sm:bottom-6">
+    <div className="fixed bottom-44 right-4 z-40 flex items-center gap-3 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)]/95 px-3 py-2 shadow-xl backdrop-blur-xl sm:bottom-6">
       <span className="text-xs font-semibold text-[var(--text-primary)]">GET APP</span>
         <button
           type="button"

@@ -1,5 +1,5 @@
 'use client';
-import { Home, Search, Calendar, User } from 'lucide-react';
+import { Home, Search, Calendar, User, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -8,13 +8,14 @@ const navItems = [
   { href: '/saved', label: 'Saved', icon: Home },
   { href: '/inbox', label: 'Messages', icon: Calendar },
   { href: '/dashboard', label: 'Profile', icon: User },
+  { href: '/support', label: 'Support', icon: MessageCircle },
 ];
 
 export default function DockNavbar() {
   const pathname = usePathname();
   return (
     <nav className="fixed bottom-3 left-1/2 z-50 w-[min(98vw,480px)] -translate-x-1/2 rounded-[2rem] border border-[#4e235f]/20 bg-white/95 p-2.5 shadow-[0_18px_48px_rgba(46,17,54,0.16)] backdrop-blur-xl">
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-5 gap-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href));
           return (

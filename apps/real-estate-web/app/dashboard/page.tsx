@@ -124,6 +124,8 @@ export default function DashboardPage() {
     );
   }
 
+  const canManageListings = ['seller', 'agent', 'both'].includes(profile.role);
+
   return (
     <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -151,7 +153,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <form onSubmit={handleCreateListing} className="rounded-[2rem] border border-[var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)] backdrop-blur-xl">
+          {canManageListings ? <form onSubmit={handleCreateListing} className="rounded-[2rem] border border-[var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)] backdrop-blur-xl">
             <h2 className="text-xl font-black">Create a listing</h2>
             <p className="mt-2 text-sm text-[var(--text-muted)]">All uploads stay pending until admin verifies them before appearing on the home screen.</p>
             {!profile.isKycVerified && (
@@ -229,7 +231,7 @@ export default function DashboardPage() {
 
               <button disabled={submitting || !profile.isKycVerified} className="rounded-2xl bg-[#4e235f] px-4 py-3 font-bold text-white transition hover:bg-[#6b2d82] disabled:cursor-not-allowed disabled:opacity-70">{submitting ? 'Submitting...' : profile.isKycVerified ? 'Submit for review' : 'Complete KYC first'}</button>
             </div>
-          </form>
+          </form> : <section className="rounded-[2rem] border border-[var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)] backdrop-blur-xl"><h2 className="text-xl font-black">Account workspace</h2><p className="mt-2 text-sm text-[var(--text-muted)]">Property and video uploads are available only to verified sellers and agents.</p><Link href="/kyc" className="mt-5 inline-flex rounded-2xl bg-[#4e235f] px-4 py-3 text-sm font-bold text-white">Complete verification</Link></section>}
 
           <div className="rounded-[2rem] border border-[var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)] backdrop-blur-xl">
             <h2 className="text-xl font-black">Pending submissions</h2>

@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -86,42 +87,53 @@ export default function ProfilePage() {
     setIsSaving(false);
   }
 
-  function handleResetPassword(e: React.FormEvent) {
+  async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setMessage('');
-
-    if (!profile.password) {
-      setError('Please register first to set a password.');
-      return;
-    }
-
-    if (currentPassword !== profile.password) {
-      const failedCount = profile.failedLoginAttempts + 1;
-      const nextProfile = { ...profile, failedLoginAttempts: failedCount, lastFailedLoginAt: new Date().toLocaleString() };
-      saveStoredProfile(nextProfile);
-      setProfile(nextProfile);
-      setError(`Current password is incorrect. Attempts: ${failedCount}/3.`);
-      if (failedCount >= 3) {
-        setMessage('Unauthorized access alert triggered. A notification would be sent to your email.');
-      }
-      return;
-    }
 
     if (newPassword !== confirmPassword) {
       setError('New passwords must match.');
       return;
     }
 
-    const nextProfile = { ...profile, password: newPassword, failedLoginAttempts: 0 };
-    saveStoredProfile(nextProfile);
-    setProfile(nextProfile);
-    setMessage('Password reset successfully.');
+    const response = await authFetch('/api/auth/profile/', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(payload?.detail || 'Unable to update password.');
+      return;
+    }
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setMessage('Password updated successfully.');
   }
 
   function handleCompleteOnboarding() {
     // After onboarding (profile setup), redirect to dashboard or properties
     router.push('/dashboard');
+  }
+
+  async function handleDeleteAccount() {
+    if (!window.confirm('This permanently deletes your account and submitted data. Continue?')) return;
+    setDeleting(true);
+    const res = await authFetch('/api/auth/profile/', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmation: 'DELETE' }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload?.detail || 'Unable to delete account.');
+      setDeleting(false);
+      return;
+    }
+    localStorage.clear();
+    router.replace('/');
   }
 
   // Show onboarding flow for first-time users
@@ -249,6 +261,7 @@ export default function ProfilePage() {
         <div className="flex flex-wrap gap-3">
           <Link href="/dashboard" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Back to dashboard</Link>
           <Link href="/plans" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Manage subscription</Link>
+          <button type="button" onClick={handleDeleteAccount} disabled={deleting} className="rounded-full border border-rose-500/50 px-4 py-2 text-sm text-rose-400 disabled:opacity-70">{deleting ? 'Deleting...' : 'Delete account'}</button>
         </div>
       </div>
     </main>

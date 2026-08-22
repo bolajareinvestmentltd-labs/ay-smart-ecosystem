@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginWithPassword, getCurrentUser } from '../../lib/auth';
 import PasswordInput from '../../components/PasswordInput';
 import SocialAuthButtons from '../../components/SocialAuthButtons';
+import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    BiometricAuth.checkBiometry().then((result) => setBiometricAvailable(result.isAvailable)).catch(() => setBiometricAvailable(false));
+  }, []);
 
   function handleSocialAuth(provider: string) {
     setError(`${provider} sign-in will be available after its OAuth credentials are configured.`);
@@ -54,6 +60,27 @@ export default function LoginPage() {
     }
   }
 
+  async function handleBiometricLogin() {
+    setError('');
+    try {
+      await BiometricAuth.authenticate({
+        reason: 'Unlock your AY\'SMART account',
+        allowDeviceCredential: true,
+        iosFallbackTitle: 'Use passcode',
+        androidTitle: 'Unlock AY\'SMART',
+        androidSubtitle: 'Use your fingerprint or face',
+      });
+      const user = await getCurrentUser();
+      if (!user) {
+        setError('Sign in with your password once on this device before using biometric unlock.');
+        return;
+      }
+      router.replace(searchParams.get('next') || '/auth/profile');
+    } catch {
+      setError('Biometric authentication was cancelled or unavailable.');
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
       <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] shadow-2xl backdrop-blur-xl">
@@ -68,6 +95,7 @@ export default function LoginPage() {
             <input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-brand-purple" placeholder="Email or username" />
             <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-brand-purple" placeholder="Password" />
             <button className="w-full rounded-2xl bg-brand-purple px-4 py-3 font-semibold text-white transition hover:bg-brand-magenta">Sign in</button>
+            {biometricAvailable && <button type="button" onClick={handleBiometricLogin} className="w-full rounded-2xl border border-brand-purple px-4 py-3 font-semibold text-brand-purple transition hover:bg-brand-purple/10">Unlock with Face ID / fingerprint</button>}
           </form>
 
           <div className="mt-4 flex flex-wrap gap-3">

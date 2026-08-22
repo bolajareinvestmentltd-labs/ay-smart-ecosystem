@@ -186,17 +186,31 @@ class PasswordResetView(APIView):
         email = (request.data.get('email') or '').strip().lower()
         new_password = request.data.get('new_password') or request.data.get('password') or ''
 
-        if not email or not new_password:
-            return Response({'detail': 'Email and a new password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        if uid and token and new_password:
+            try:
+                user = User.objects.get(pk=force_str(urlsafe_base64_decode(uid)))
+            except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+                user = None
+            if not user or not default_token_generator.check_token(user, token):
+                return Response({'detail': 'This password reset link is invalid or expired.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+            return Response({'detail': 'Password updated successfully.'}, status=status.HTTP_200_OK)
+
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(email__iexact=email).first()
         if user:
-            user.set_password(new_password)
-            user.save(update_fields=['password'])
+            reset_token = default_token_generator.make_token(user)
+            reset_uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/auth/forgot-password?uid={reset_uid}&token={reset_token}"
             try:
                 send_mail(
-                    'Your AY\'SMART password was updated',
-                    'Your password was successfully updated. If you did not request this change, contact support immediately.',
+                    'Reset your AY\'SMART password',
+                    f'Use this link to choose a new password: {reset_url}\n\nIf you did not request this, ignore this email.',
                     getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'),
                     [user.email],
                     fail_silently=True,
@@ -204,7 +218,7 @@ class PasswordResetView(APIView):
             except Exception:
                 pass
 
-        return Response({'detail': 'If an account exists for that email, the password has been updated.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'If an account exists for that email, a password reset link has been sent.'}, status=status.HTTP_200_OK)
 
 
 class ResendVerificationView(APIView):
@@ -299,6 +313,16 @@ class ProfileView(APIView):
         return Response(data)
 
     def put(self, request):
+        if any(key in request.data for key in ('current_password', 'new_password')):
+            current_password = request.data.get('current_password') or ''
+            new_password = request.data.get('new_password') or ''
+            if not request.user.check_password(current_password):
+                return Response({'detail': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+            if len(new_password) < 8:
+                return Response({'detail': 'New password must be at least 8 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+            request.user.set_password(new_password)
+            request.user.save(update_fields=['password'])
+            return Response({'detail': 'Password updated successfully.'}, status=status.HTTP_200_OK)
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         serializer = UserProfileSerializer(instance=profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -311,6 +335,16 @@ class ProfileView(APIView):
             'name': ' '.join(filter(None, [request.user.first_name, request.user.last_name])).strip(),
         })
         return Response(data)
+
+    def delete(self, request):
+        user = request.user
+        if user.is_staff:
+            return Response({'detail': 'Staff accounts cannot be deleted through this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+        confirmation = (request.data.get('confirmation') or '').strip().upper()
+        if confirmation != 'DELETE':
+            return Response({'detail': 'Type DELETE to confirm account deletion.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.delete()
+        return Response({'detail': 'Account deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class EmailWebhookView(APIView):

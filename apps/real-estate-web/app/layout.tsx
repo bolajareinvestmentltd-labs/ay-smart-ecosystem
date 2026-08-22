@@ -8,6 +8,7 @@ import NewsletterSlideUp from './components/NewsletterSlideUp';
 import AppHeader from './components/AppHeader';
 import ServiceWorkerRegister from './components/ServiceWorkerRegister';
 import Analytics from './components/Analytics';
+import SupportAssistant from './components/SupportAssistant';
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
@@ -61,6 +62,7 @@ export default function RootLayout({
           <NewsletterSlideUp />
           <ServiceWorkerRegister />
           <Analytics />
+          <SupportAssistant />
         </ThemeProvider>
       </body>
     </html>

@@ -21,40 +21,10 @@ type PropertyCard = {
   images?: Array<{ url?: string; image?: string }>;
 };
 
-const sampleListings: PropertyCard[] = [
-  {
-    id: 1,
-    title: '5-Bedroom Luxury Smart Duplex',
-    location: 'Lekki Phase 1, Lagos',
-    price: '₦450,000,000',
-    property_type: 'RESIDENTIAL',
-    property_type_display: 'For Sale',
-    main_image_url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 2,
-    title: 'Executive Corporate Office Suite',
-    location: 'Victoria Island, Lagos',
-    price: '₦15,000,000 / yr',
-    property_type: 'COMMERCIAL',
-    property_type_display: 'Rent/Lease',
-    main_image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 3,
-    title: 'Fully Serviced Student Hostel Block',
-    location: 'Akoka, Lagos',
-    price: '₦350,000 / semester',
-    property_type: 'RESIDENTIAL',
-    property_type_display: 'Rent',
-    main_image_url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
-  },
-];
-
 export default function PropertiesPage() {
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [properties, setProperties] = useState<PropertyCard[]>(sampleListings);
+  const [properties, setProperties] = useState<PropertyCard[]>([]);
   const [savingSearch, setSavingSearch] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
@@ -75,7 +45,7 @@ export default function PropertiesPage() {
           })));
         }
       } catch {
-        // Keep the premium sample data as a graceful fallback.
+        setProperties([]);
       }
     }
     loadProperties();
@@ -193,7 +163,8 @@ export default function PropertiesPage() {
           const imageUrl = prop.main_image_url || prop.images?.[0]?.url || prop.images?.[0]?.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
           const label = prop.property_type_display || prop.property_type || 'For Sale';
           return (
-            <div
+            <Link
+              href={`/properties/${prop.id}`}
               key={prop.id}
               className="group mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl transition-all hover:border-brand-accent/40"
             >
@@ -221,15 +192,14 @@ export default function PropertiesPage() {
 
                 <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
                   <span className="text-sm font-black text-brand-purple">{typeof prop.price === 'number' ? `₦${Number(prop.price).toLocaleString()}` : prop.price}</span>
-                  <Link
-                    href={`/properties/${prop.id}`}
+                  <span
                     className="rounded-xl bg-brand-purple px-3.5 py-1.5 text-xs font-bold text-white shadow transition group-hover:bg-brand-magenta"
                   >
                     Book Inspection
-                  </Link>
+                  </span>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
         {!visibleProperties.length && (
