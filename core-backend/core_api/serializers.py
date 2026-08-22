@@ -8,7 +8,7 @@ from .models import (
     BranchLocation, Vehicle, PickupVoucher,
     Property, InspectionBooking, InspectionBookingMessage, PropertyImage,
     BuildProject, ProjectMilestone, Promotion, ListingImage,
-    Listing, PaymentTransaction, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
+    Listing, PaymentTransaction, InspectionInvoice, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
     HostelBooking, ServiceApartmentBooking,
 )
@@ -98,12 +98,18 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
         queryset=Property.objects.all(),
         write_only=True,
         source='property_to_view',
+        required=False,
     )
+    listing = serializers.PrimaryKeyRelatedField(queryset=Listing.objects.filter(status='LIVE'), required=False, allow_null=True)
     preferred_date = serializers.DateField(write_only=True)
     assigned_agent_username = serializers.CharField(source='assigned_agent.username', read_only=True)
     messages = InspectionBookingMessageSerializer(many=True, read_only=True)
     contact_released = serializers.BooleanField(read_only=True)
     agent_contact = serializers.SerializerMethodField()
+    listing_title = serializers.SerializerMethodField()
+
+    def get_listing_title(self, obj):
+        return obj.listing.title if obj.listing else obj.property_to_view.title
 
     def get_agent_contact(self, obj):
         if obj.contact_released and obj.assigned_agent:
@@ -115,6 +121,7 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'client_user', 'client_name', 'client_phone', 'client_confirmed', 'agent_confirmed',
             'assigned_agent', 'assigned_agent_username', 'agent_contact', 'agent_response', 'property', 'preferred_date',
+            'listing', 'listing_title',
             'status', 'payment_unlocked', 'scheduled_date', 'admin_approved', 'contact_released',
             'agreed_date', 'agreed_time', 'messages',
         ]
@@ -124,11 +131,14 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
         preferred_date = validated_data.pop('preferred_date')
         validated_data['scheduled_date'] = datetime.combine(preferred_date, time.min)
 
+        if not validated_data.get('property_to_view') and not validated_data.get('listing'):
+            raise serializers.ValidationError({'listing': 'A live listing is required for new inspections.'})
+
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             validated_data['client_user'] = request.user
 
-        assigned_agent = self.assign_agent()
+        assigned_agent = self.assign_agent(validated_data.get('listing'))
         validated_data['assigned_agent'] = assigned_agent
         if assigned_agent:
             validated_data['status'] = 'AGENT_OFFERED'
@@ -138,7 +148,7 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
             subject = 'New Inspection Booking Assigned'
             message = (
                 f"Hello {assigned_agent.get_full_name() or assigned_agent.username},\n\n"
-                f"A new inspection booking has been created for {booking.property_to_view.title}.\n"
+                f"A new inspection booking has been created for {booking.listing.title if booking.listing else booking.property_to_view.title}.\n"
                 f"Client: {booking.client_name}\n"
                 f"Phone: {booking.client_phone}\n"
                 "Please respond with your availability in the admin portal.\n\n"
@@ -150,7 +160,9 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
                 pass
         return booking
 
-    def assign_agent(self):
+    def assign_agent(self, listing=None):
+        if listing and listing.user.profile.role in {'agent', 'seller', 'both'} and listing.user.profile.is_admin_approved:
+            return listing.user
         agent_profile = UserProfile.objects.filter(role__in=['agent', 'both'], is_admin_approved=True).order_by('user__id').first()
         return agent_profile.user if agent_profile else None
 
@@ -174,11 +186,13 @@ class WalletSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    identity_document = serializers.FileField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = UserProfile
         fields = [
             'phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at',
-            'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_face_match_score', 'kyc_verified_at', 'kyc_rejection_reason', 'email_verified',
+            'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_face_match_score', 'kyc_verified_at', 'identity_document_type', 'identity_document_number', 'identity_document', 'kyc_rejection_reason', 'email_verified',
             'student_matric_number', 'student_email', 'student_id_image',
         ]
 
@@ -233,12 +247,13 @@ class SavedSearchSerializer(serializers.ModelSerializer):
 
 
 class FavoriteListingSerializer(serializers.ModelSerializer):
+    listing_details = ListingSerializer(source='listing', read_only=True)
     listing_title = serializers.CharField(source='listing.title', read_only=True)
     listing_location = serializers.CharField(source='listing.location', read_only=True)
 
     class Meta:
         model = FavoriteListing
-        fields = ['id', 'user', 'listing', 'listing_title', 'listing_location', 'created_at']
+        fields = ['id', 'user', 'listing', 'listing_details', 'listing_title', 'listing_location', 'created_at']
         read_only_fields = ['id', 'user', 'created_at']
 
 
@@ -350,5 +365,17 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
 class PaymentTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTransaction
-        fields = ['id', 'user', 'plan', 'amount', 'provider', 'provider_reference', 'status', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'invoice', 'plan', 'amount', 'provider', 'provider_reference', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user', 'provider_reference', 'status', 'created_at', 'updated_at']
+
+
+class InspectionInvoiceSerializer(serializers.ModelSerializer):
+    inspection_title = serializers.SerializerMethodField()
+
+    def get_inspection_title(self, obj):
+        return obj.inspection.listing.title if obj.inspection.listing else obj.inspection.property_to_view.title
+
+    class Meta:
+        model = InspectionInvoice
+        fields = ['id', 'inspection', 'issuer', 'recipient', 'invoice_number', 'amount', 'description', 'status', 'inspection_title', 'created_at', 'paid_at']
+        read_only_fields = ['id', 'issuer', 'recipient', 'invoice_number', 'status', 'inspection_title', 'created_at', 'paid_at']

@@ -1,16 +1,31 @@
 'use client';
 import React, { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { getCurrentUser } from '../lib/auth';
 import { authFetch } from '../lib/auth';
 
-export default function InspectionBookingForm({ propertyId }: { propertyId: number }) {
+type InspectionResult = {
+  status?: string;
+  assigned_agent_username?: string;
+  agent_contact?: string | null;
+};
+
+export default function InspectionBookingForm({ propertyId, listingId }: { propertyId?: number; listingId?: number }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState<any>(null);
+  const [success, setSuccess] = useState<InspectionResult | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  React.useEffect(() => {
+    getCurrentUser().then((user) => setAuthenticated(Boolean(user))).catch(() => setAuthenticated(false));
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -19,7 +34,7 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          property: propertyId,
+          ...(listingId ? { listing: listingId } : { property: propertyId }),
           client_name: name,
           client_phone: phone,
           preferred_date: preferredDate,
@@ -29,7 +44,7 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 401) {
-          window.location.href = '/auth/login';
+          router.push(`/auth/login?next=${encodeURIComponent(pathname)}`);
           return;
         }
         setError(payload?.detail || 'Failed to create booking.');
@@ -37,7 +52,7 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
         return;
       }
       setSuccess(payload);
-    } catch (err) {
+    } catch {
       setError('Network error while creating booking.');
     } finally {
       setLoading(false);
@@ -59,6 +74,15 @@ export default function InspectionBookingForm({ propertyId }: { propertyId: numb
             <div className="mt-1 text-sm text-zinc-300">Agent contact will be shared after admin approval.</div>
           )
         )}
+      </div>
+    );
+  }
+
+  if (authenticated === false) {
+    return (
+      <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <p className="text-sm text-zinc-300">Sign in or create an account before requesting an inspection.</p>
+        <button type="button" onClick={() => router.push(`/auth/login?next=${encodeURIComponent(pathname)}`)} className="w-full rounded-2xl bg-amber-500 px-4 py-2 font-semibold text-zinc-950">Sign in to book inspection</button>
       </div>
     );
   }

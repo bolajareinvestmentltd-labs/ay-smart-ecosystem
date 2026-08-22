@@ -7,6 +7,7 @@ import { buildApiUrl } from '../../lib/api';
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const next = searchParams.get('next') || '';
   const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [message, setMessage] = useState('Verifying your email...');
 
@@ -37,7 +38,7 @@ export default function VerifyEmailPage() {
         setStatus('success');
         setMessage('Your email has been verified successfully. Redirecting to login...');
         // Auto-redirect to login after 2 seconds
-        setTimeout(() => router.push('/auth/login'), 2000);
+        setTimeout(() => router.push(`/auth/login${next ? `?next=${encodeURIComponent(next)}` : ''}`), 2000);
       } catch {
         setStatus('failed');
         setMessage('Network error while verifying your email. Please try again.');
@@ -54,7 +55,7 @@ export default function VerifyEmailPage() {
         <h1 className="mt-4 text-3xl font-black">{status === 'success' ? 'Verified!' : status === 'failed' ? 'Verification failed' : 'Verifying...'}</h1>
         <p className="mt-4 text-sm leading-7 text-zinc-400">{message}</p>
         {status === 'success' ? (
-          <button onClick={() => router.push('/auth/login')} className="mt-8 rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-magenta">
+          <button onClick={() => router.push(`/auth/login${next ? `?next=${encodeURIComponent(next)}` : ''}`)} className="mt-8 rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-magenta">
             Go to login
           </button>
         ) : status === 'failed' ? (

@@ -3,9 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, MapPin, BookmarkPlus, Heart, EyeOff } from 'lucide-react';
-import AdSlot from '../components/AdSlot';
 import { authFetch } from '../lib/auth';
-import { buildApiUrl } from '../lib/api';
+import { getPublishedListings, listingImage, type BackendListing } from '../lib/backend';
 
 type PropertyCard = {
   id: number;
@@ -21,6 +20,19 @@ type PropertyCard = {
   images?: Array<{ url?: string; image?: string }>;
 };
 
+function listingToProperty(listing: BackendListing): PropertyCard {
+  return {
+    id: listing.id,
+    title: listing.title,
+    location: listing.location,
+    price: listing.price,
+    property_type: listing.category,
+    property_type_display: listing.category,
+    main_image_url: listingImage(listing),
+    images: listing.images,
+  };
+}
+
 export default function PropertiesPage() {
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,22 +40,15 @@ export default function PropertiesPage() {
   const [savingSearch, setSavingSearch] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
 
   useEffect(() => {
     let mounted = true;
     async function loadProperties() {
       try {
-        const res = await fetch(buildApiUrl('/api/properties/'));
-        if (!res.ok) return;
-        const payload = await res.json();
-        if (mounted && Array.isArray(payload) && payload.length) {
-          setProperties(payload.map((item: any) => ({
-            ...item,
-            location: item.location_address || item.location,
-            property_type_display: item.property_type_display || item.property_type,
-            main_image_url: item.main_image_url || item.images?.[0]?.url || item.images?.[0]?.image,
-          })));
-        }
+        const payload = await getPublishedListings();
+        if (mounted) setProperties(Array.isArray(payload) ? payload.map(listingToProperty) : []);
       } catch {
         setProperties([]);
       }
@@ -51,6 +56,36 @@ export default function PropertiesPage() {
     loadProperties();
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    Promise.all([authFetch('/api/favorites/'), authFetch('/api/hidden-listings/')]).then(async ([favorites, hidden]) => {
+      if (favorites.ok) setFavoriteIds((await favorites.json()).map((item: { listing: number }) => item.listing));
+      if (hidden.ok) setHiddenIds((await hidden.json()).map((item: { listing: number }) => item.listing));
+    }).catch(() => undefined);
+  }, []);
+
+  async function toggleFavorite(event: React.MouseEvent, id: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (favoriteIds.includes(id)) {
+      const response = await authFetch('/api/favorites/');
+      if (response.ok) {
+        const item = (await response.json()).find((favorite: { id: number; listing: number }) => favorite.listing === id);
+        if (item && (await authFetch(`/api/favorites/${item.id}/`, { method: 'DELETE' })).ok) setFavoriteIds((current) => current.filter((value) => value !== id));
+      }
+      return;
+    }
+    if ((await authFetch('/api/favorites/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listing: id }) })).ok) setFavoriteIds((current) => [...current, id]);
+  }
+
+  async function toggleHidden(event: React.MouseEvent, id: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    if ((await authFetch('/api/hidden-listings/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listing: id }) })).ok) {
+      setHiddenIds((current) => [...current, id]);
+      setProperties((current) => current.filter((property) => property.id !== id));
+    }
+  }
 
   const visibleProperties = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -158,9 +193,8 @@ export default function PropertiesPage() {
       </section>
 
       <section className="px-4 mt-4 space-y-4">
-        <AdSlot title="Google AdSense placeholder - leaderboard slot" size="728x90" />
         {visibleProperties.map((prop) => {
-          const imageUrl = prop.main_image_url || prop.images?.[0]?.url || prop.images?.[0]?.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
+          const imageUrl = prop.main_image_url || prop.images?.[0]?.url || prop.images?.[0]?.image || '/assets/ay-smart-logo.png';
           const label = prop.property_type_display || prop.property_type || 'For Sale';
           return (
             <Link
@@ -172,10 +206,10 @@ export default function PropertiesPage() {
                 <Image src={imageUrl} alt={prop.title} fill className="object-cover transition duration-300 group-hover:scale-[1.02]" unoptimized />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#07070D]/70 via-transparent to-transparent" />
                 <div className="absolute right-3 top-3 flex gap-2">
-                  <button type="button" title="Save property" className="rounded-full border border-white/10 bg-black/30 p-2 text-white backdrop-blur-md transition hover:bg-brand-purple/80">
+                  <button type="button" title="Save property" onClick={(event) => void toggleFavorite(event, prop.id)} className={`rounded-full border border-white/10 bg-black/30 p-2 text-white backdrop-blur-md transition hover:bg-brand-purple/80 ${favoriteIds.includes(prop.id) ? 'bg-brand-purple/80' : ''}`}>
                     <Heart size={14} />
                   </button>
-                  <button type="button" title="Hide property" className="rounded-full border border-white/10 bg-black/30 p-2 text-white backdrop-blur-md transition hover:bg-red-500/80">
+                  <button type="button" title="Hide property" onClick={(event) => void toggleHidden(event, prop.id)} className={`rounded-full border border-white/10 bg-black/30 p-2 text-white backdrop-blur-md transition hover:bg-red-500/80 ${hiddenIds.includes(prop.id) ? 'bg-red-500/80' : ''}`}>
                     <EyeOff size={14} />
                   </button>
                 </div>

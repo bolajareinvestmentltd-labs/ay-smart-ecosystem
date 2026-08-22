@@ -49,7 +49,7 @@ export default function BrandSplashScreen() {
               </div>
             </div>
 
-            <h1 className="mt-8 text-[2.2rem] font-black tracking-[-0.08em] text-[#261a2a]">A Y</h1>
+            <h1 className="mt-8 text-xl font-black tracking-[0.18em] text-[#261a2a]">AY&apos;SMART ECO</h1>
 
             <div className="mt-4 w-full">
               <div className="h-2 overflow-hidden rounded-full bg-[#f5d8cb]">

@@ -284,7 +284,11 @@ export default function PropertyDetailPage() {
             <p className="mt-4 text-zinc-300">{property.location_address}</p>
             <div className="mt-6 space-y-4">
               <div id="book">
-                <InspectionBookingForm propertyId={Number(propertyId)} />
+                <InspectionBookingForm
+                  {...(property.source === 'listing'
+                    ? { listingId: Number(propertyId) }
+                    : { propertyId: Number(propertyId) })}
+                />
               </div>
               {user && ['seller', 'agent', 'both'].includes(user.role) && <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
                 <h2 className="text-lg font-black">Upload property media</h2>

@@ -35,19 +35,8 @@ export default function LoginPage() {
       return;
     }
 
-    setMessage('Login successful. Loading profile...');
-
-    // Poll for current user to ensure profile is available before redirect.
-    const maxAttempts = 6;
-    const delayMs = 500;
-    let user = null;
-    for (let i = 0; i < maxAttempts; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      user = await getCurrentUser();
-      if (user) break;
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((res) => setTimeout(res, delayMs));
-    }
+    setMessage('Login successful. Redirecting...');
+    const user = await getCurrentUser();
 
     const nextParam = searchParams.get('next') || '/auth/profile';
     if (user) {

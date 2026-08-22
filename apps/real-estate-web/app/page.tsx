@@ -1,20 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, CalendarDays, ChevronRight, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound } from "lucide-react";
 import { getPublishedListings, listingImage, type BackendListing } from "./lib/backend";
-import BrandSplashScreen from "./components/BrandSplashScreen";
 import ThemeToggle from "./components/ThemeToggle";
 import { getStoredProfile } from "./lib/app-state";
 
 export default function RealEstateHome() {
   const [activeCategory, setActiveCategory] = useState<"real-estate" | "hostels">("real-estate");
   const [listings, setListings] = useState<BackendListing[]>([]);
-  const [showSplash, setShowSplash] = useState(true);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const [greeting, setGreeting] = useState('Good day');
-  const [firstName, setFirstName] = useState('there');
+  const storedProfile = useSyncExternalStore(() => () => {}, getStoredProfile, getStoredProfile);
+  const firstName = (storedProfile.name || storedProfile.username || '').trim().split(/\s+/)[0] || 'there';
+  const localHour = new Date().getHours();
+  const greeting = localHour < 12 ? 'Good morning' : localHour < 17 ? 'Good afternoon' : 'Good evening';
 
   const carouselCategories = [
     { label: "Hostels", href: "/hostel", match: (listing: BackendListing) => listing.category === "Hostel" },
@@ -22,39 +21,6 @@ export default function RealEstateHome() {
     { label: "Landed properties", href: "/properties", match: (listing: BackendListing) => /land/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
     { label: "Build from scratch", href: "/about", match: (listing: BackendListing) => /build|construction/i.test(`${listing.category} ${listing.title} ${listing.description || ""}`) },
   ];
-
-  useEffect(() => {
-    const profile = getStoredProfile();
-    setFirstName((profile.name || profile.username || '').trim().split(/\s+/)[0] || 'there');
-    const hourPart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: false }).formatToParts(new Date()).find((part) => part.type === 'hour');
-    const localHour = Number(hourPart?.value || new Date().getHours());
-    setGreeting(localHour < 12 ? 'Good morning' : localHour < 17 ? 'Good afternoon' : 'Good evening');
-  }, []);
-
-  useEffect(() => {
-    // Only run splash logic on the client; avoid duplicate render during
-    // SSR and ensure single splash instance per user via localStorage.
-    const run = async () => {
-      const hasSeenSplash = window.localStorage.getItem("aysmart-splash-seen");
-      if (hasSeenSplash === "true") {
-        setShowSplash(false);
-        return;
-      }
-
-      // Give the splash a graceful duration and a short transition.
-      const splashTimer = window.setTimeout(() => {
-        setIsTransitioning(true);
-        window.setTimeout(() => {
-          window.localStorage.setItem("aysmart-splash-seen", "true");
-          setShowSplash(false);
-        }, 300);
-      }, 2200);
-
-      return () => window.clearTimeout(splashTimer);
-    };
-
-    if (typeof window !== 'undefined') run();
-  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setCarouselIndex((current) => (current + 1) % carouselCategories.length), 5000);
@@ -68,14 +34,6 @@ export default function RealEstateHome() {
     }).catch(() => undefined);
     return () => { mounted = false; };
   }, []);
-
-  if (showSplash) {
-    return (
-      <div className={`transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
-        <BrandSplashScreen />
-      </div>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-[var(--brand-surface)] pb-28 text-[var(--text-primary)]">
@@ -104,15 +62,15 @@ export default function RealEstateHome() {
           </div>
         </section>
 
-        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] shadow-[0_16px_40px_rgba(78,35,95,0.1)]">
+        <section className="mx-auto mt-6 max-w-3xl overflow-hidden rounded-[1.5rem] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] shadow-[0_16px_40px_rgba(78,35,95,0.1)]">
           {carouselCategories.map((category, index) => {
             const listing = listings.find(category.match);
             const image = listing ? listingImage(listing) || "/assets/ay-smart-logo.png" : "/assets/ay-smart-logo.png";
             return (
-              <Link key={category.label} href={category.href} className={`relative block h-56 transition-opacity duration-500 ${index === carouselIndex ? "opacity-100" : "hidden opacity-0"}`}>
+              <Link key={category.label} href={category.href} className={`relative block h-40 transition-opacity duration-500 sm:h-44 ${index === carouselIndex ? "opacity-100" : "hidden opacity-0"}`}>
                 <img src={image} alt={listing?.title || category.label} className="h-full w-full object-cover opacity-75" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 text-white"><p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--brand-accent)]">Explore AY&apos;SMART</p><h2 className="mt-1 text-2xl font-black">{category.label}</h2><p className="mt-1 text-xs text-white/75">{listing?.title || "Approved listings will appear here"}</p></div>
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--brand-accent)]">Explore AY&apos;SMART</p><h2 className="mt-1 text-xl font-black">{category.label}</h2><p className="mt-1 text-xs text-white/75">{listing?.title || "Approved listings will appear here"}</p></div>
               </Link>
             );
           })}

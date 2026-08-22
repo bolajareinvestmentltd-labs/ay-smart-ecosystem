@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # Compatibility shim: ensure django.utils.cache exposes names some third-party
 # packages (e.g., older/newer DRF) expect (cc_delim_re, patch_vary_headers).
@@ -35,8 +36,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_ENV_FILE = BASE_DIR.parent / '.env'
 load_dotenv(ROOT_ENV_FILE)
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-aysmart-ecosystem-secret-key-change-in-production')
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('1', 'true', 'yes')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-local-development-only'
+    else:
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set when DEBUG=False.')
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv(
@@ -150,12 +156,16 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
     # Throttle rates for specific endpoints (used by custom throttles)
     'DEFAULT_THROTTLE_RATES': {
         'resend_verification': '5/hour',
+        'support': '10/hour',
     },
 }
 
@@ -199,6 +209,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', os.getenv('RESEND_API_KEY
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', os.getenv('RESEND_EMAIL_USE_TLS', 'True')).lower() in ('1', 'true', 'yes')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('RESEND_FROM_EMAIL', 'support@aysmartinvestmentltd.com'))
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', DEFAULT_FROM_EMAIL)
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
 RESEND_WEBHOOK_SIGNING_SECRET = os.getenv('RESEND_WEBHOOK_SIGNING_SECRET', '')
 

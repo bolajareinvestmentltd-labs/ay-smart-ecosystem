@@ -18,6 +18,7 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planKey = (searchParams.get('plan') || 'basic') as keyof typeof plans;
+  const invoiceId = searchParams.get('invoice');
   const plan = plans[planKey] || plans.basic;
   const [provider, setProvider] = useState<Provider>('paystack');
   const [email, setEmail] = useState('');
@@ -51,9 +52,10 @@ function CheckoutContent() {
       setProcessing(false);
       return;
     }
-    setMessage('Payment confirmed. Your subscription is now active.');
+    setMessage(invoiceId ? 'Payment confirmed. Your invoice is now paid.' : 'Payment confirmed. Your subscription is now active.');
     setSession(null);
     setProcessing(false);
+    router.replace(`/success?transactionId=${payload.id}`);
   }
 
   async function startPayment(event: React.FormEvent) {
@@ -64,7 +66,7 @@ function CheckoutContent() {
     const response = await authFetch('/api/payments/initiate/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: planKey, amount: plan.amount, provider }),
+      body: JSON.stringify(invoiceId ? { invoice_id: invoiceId, provider } : { plan: planKey, amount: plan.amount, provider }),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -92,9 +94,9 @@ function CheckoutContent() {
         <Link href="/plans" className="text-sm font-semibold text-[#4e235f]">Back to plans</Link>
         <section className="mt-5 rounded-[2rem] border border-[var(--brand-border)] bg-white/85 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#4e235f]">Secure checkout</p>
-          <h1 className="mt-2 text-3xl font-black">Activate the {plan.label} plan</h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">Payment is verified by Django before your subscription becomes active.</p>
-          <div className="mt-6 flex justify-between rounded-2xl bg-[#f9efe9] p-4 text-lg font-black text-[#4e235f]"><span>Total</span><span>₦{plan.amount.toLocaleString()}</span></div>
+          <h1 className="mt-2 text-3xl font-black">{invoiceId ? 'Pay inspection invoice' : `Activate the ${plan.label} plan`}</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Payment is verified by Django before it is marked successful.</p>
+          <div className="mt-6 flex justify-between rounded-2xl bg-[#f9efe9] p-4 text-lg font-black text-[#4e235f]"><span>Total</span><span>{invoiceId ? 'Amount confirmed by invoice' : `₦${plan.amount.toLocaleString()}`}</span></div>
         </section>
 
         <form onSubmit={startPayment} className="mt-4 rounded-[2rem] border border-[var(--brand-border)] bg-white/85 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)]">
@@ -103,7 +105,7 @@ function CheckoutContent() {
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {(['paystack', 'wema'] as Provider[]).map((item) => <button type="button" key={item} onClick={() => setProvider(item)} className={`rounded-xl border p-4 text-left ${provider === item ? 'border-[#4e235f] bg-[#f9efe9]' : 'border-[var(--brand-border)] bg-white'}`}><strong>{item === 'paystack' ? 'Paystack' : 'ALAT Pay by Wema'}</strong><span className="mt-1 block text-xs text-[var(--text-muted)]">{item === 'paystack' ? 'Card, bank, USSD and mobile money in a secure in-app window.' : 'Wema session or bank instructions shown here.'}</span></button>)}
           </div>
-          <button type="submit" disabled={processing} className="mt-5 w-full rounded-xl bg-[#4e235f] px-4 py-3 font-bold text-white disabled:opacity-60">{processing ? 'Processing...' : `Pay ₦${plan.amount.toLocaleString()}`}</button>
+          <button type="submit" disabled={processing} className="mt-5 w-full rounded-xl bg-[#4e235f] px-4 py-3 font-bold text-white disabled:opacity-60">{processing ? 'Processing...' : invoiceId ? 'Pay invoice' : `Pay ₦${plan.amount.toLocaleString()}`}</button>
         </form>
 
         {session?.payment_url && provider === 'wema' && <section className="mt-4 overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-white p-3"><p className="p-3 text-sm font-semibold">Complete ALAT Pay in this secure panel</p><iframe title="ALAT Pay checkout" src={session.payment_url} className="h-[560px] w-full rounded-xl border-0" /></section>}

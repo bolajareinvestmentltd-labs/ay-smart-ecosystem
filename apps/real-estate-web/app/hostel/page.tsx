@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin, Star, Bookmark } from 'lucide-react';
 import { getPublishedListings, listingImage, type BackendListing } from '../lib/backend';
+import { authFetch } from '../lib/auth';
 
 export default function HostelPage() {
   const [hostels, setHostels] = useState<BackendListing[]>([]);
@@ -13,6 +14,28 @@ export default function HostelPage() {
       setHostels((listings || []).filter((listing) => listing.category === 'Hostel'));
     }).catch(() => setHostels([]));
   }, []);
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState('All Hostels');
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    authFetch('/api/favorites/').then(async (response) => {
+      if (response.ok) setFavoriteIds((await response.json()).map((item: { listing: number }) => item.listing));
+    }).catch(() => undefined);
+  }, []);
+
+  const visibleHostels = useMemo(() => hostels.filter((hostel) => {
+    const matchesQuery = !query.trim() || `${hostel.title} ${hostel.location}`.toLowerCase().includes(query.trim().toLowerCase());
+    const matchesTab = tab === 'All Hostels' || (tab === 'New' && new Date(hostel.created_at).getTime() > Date.now() - 30 * 86400000) || (tab === 'Deals' && Number(hostel.cashback) > 0) || tab === 'Popular';
+    return matchesQuery && matchesTab;
+  }), [hostels, query, tab]);
+
+  async function toggleFavorite(event: React.MouseEvent, id: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (favoriteIds.includes(id)) return;
+    if ((await authFetch('/api/favorites/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listing: id }) })).ok) setFavoriteIds((current) => [...current, id]);
+  }
 
   return (
     <main className="min-h-screen bg-[color:var(--brand-surface)] px-4 py-4 text-[var(--text-primary)] pb-32">
@@ -25,6 +48,8 @@ export default function HostelPage() {
           </div>
           <input
             type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by location or hostel name..."
             className="w-full rounded-full border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/60 outline-none backdrop-blur-sm focus:border-[#f1b8a5]"
           />
@@ -32,23 +57,22 @@ export default function HostelPage() {
 
         {/* Category Tabs */}
         <div className="mb-6 flex gap-2">
-          {['All Hostels', 'Popular', 'New', 'Deals'].map((tab) => (
+          {['All Hostels', 'Popular', 'New', 'Deals'].map((tabOption) => (
             <button
-              key={tab}
+              key={tabOption}
+              onClick={() => setTab(tabOption)}
               className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] transition ${
-                tab === 'All Hostels'
+                tab === tabOption
                   ? 'bg-[#4e235f] text-white shadow-lg shadow-[#4e235f]/20'
                   : 'border border-[color:var(--brand-border)] bg-white/70 text-[var(--text-primary)] hover:bg-[#f9efe9]'
               }`}
-            >
-              {tab}
-            </button>
+            >{tabOption}</button>
           ))}
         </div>
 
         {/* Grid of Hostels */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-          {hostels.map((hostel) => (
+          {visibleHostels.map((hostel) => (
             <Link
               key={hostel.id}
               href={`/hostel/${hostel.id}`}
@@ -58,7 +82,7 @@ export default function HostelPage() {
               <div className="relative h-40 overflow-hidden bg-[#f0e6df]">
                 <img src={listingImage(hostel) || '/assets/ay-smart-logo.png'} alt={hostel.title} className="h-full w-full object-cover transition group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#4e235f] transition hover:bg-white">
+                <button onClick={(event) => void toggleFavorite(event, hostel.id)} className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#4e235f] transition hover:bg-white ${favoriteIds.includes(hostel.id) ? 'bg-[#f1b8a5]' : ''}`}>
                   <Bookmark size={18} />
                 </button>
               </div>
@@ -92,7 +116,7 @@ export default function HostelPage() {
               </div>
             </Link>
           ))}
-          {!hostels.length && <p className="col-span-full rounded-2xl border border-dashed border-[var(--brand-border)] p-8 text-center text-sm text-[var(--text-muted)]">No approved hostels are live yet.</p>}
+          {!visibleHostels.length && <p className="col-span-full rounded-2xl border border-dashed border-[var(--brand-border)] p-8 text-center text-sm text-[var(--text-muted)]">No approved hostels match this search.</p>}
         </div>
       </div>
     </main>

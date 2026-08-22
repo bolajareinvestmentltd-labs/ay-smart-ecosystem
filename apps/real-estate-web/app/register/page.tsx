@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { buildApiUrl } from '../lib/api';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 import PasswordInput from '../components/PasswordInput';
@@ -17,6 +17,7 @@ const planOptions: Array<{ key: ListingPlan; label: string; price: string }> = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const profile = getStoredProfile();
   const [name, setName] = useState(profile.name || '');
   const [username, setUsername] = useState(profile.username || '');
@@ -145,7 +146,8 @@ export default function RegisterPage() {
         setError(payload.warning);
       }
       // Keep the verification landing as the first post-signup step, then direct the user into profile setup after they confirm their email.
-      router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}`);
+      const next = searchParams.get('next');
+      router.push(`/auth/verification-sent?email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ''}`);
     } catch (err) {
       console.error('[Register] Fetch error:', err);
       setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error while creating your account.'}`);

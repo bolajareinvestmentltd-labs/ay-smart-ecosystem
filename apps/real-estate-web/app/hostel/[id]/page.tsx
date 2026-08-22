@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
 import { getPublishedListings, listingImage } from '../../lib/backend';
-import { MapPin, Star, Bookmark, Bed, Bath, Zap, Home, Clock, Phone, Mail, ArrowLeft, Share2 } from 'lucide-react';
+import { MapPin, Bed, Zap, Home, Clock } from 'lucide-react';
 
 interface HostelDetail {
   id: number;
@@ -18,42 +18,6 @@ interface HostelDetail {
   amenities?: string[];
   rules?: string[];
 }
-
-const HOSTEL_DETAILS: Record<number, HostelDetail> = {
-  1: {
-    id: 1,
-    name: 'Royal Crown Hostel',
-    location: 'Abuja Gwarinpa',
-    price: 180000,
-    capacity: 'Single room',
-    description: 'Private study lounge, fast Wi-Fi, and 24/7 security ideal for serious students.',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80',
-    amenities: ['Private Study Lounge', 'Fast Wi-Fi', '24/7 Security', 'Air Conditioning', 'Hot Water', 'Laundry Service'],
-    rules: ['Quiet hours: 10 PM - 7 AM', 'No visitors after 9 PM', 'Monthly cleaning included', 'Electricity included in rent'],
-  },
-  2: {
-    id: 2,
-    name: 'Metro Lodge',
-    location: 'Lagos Yaba',
-    price: 145000,
-    capacity: 'Shared apartment',
-    description: 'Clean and quiet apartments close to main campuses and transport links.',
-    image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
-    amenities: ['Shared Kitchen', 'Common Room', 'Gym Access', 'Cafeteria', 'Generator Backup'],
-    rules: ['Shared bathroom', 'No pets allowed', 'Weekly waste collection', 'Community events monthly'],
-  },
-  3: {
-    id: 3,
-    name: 'Harbor Terrace',
-    location: 'Port Harcourt',
-    price: 160000,
-    capacity: 'Studio room',
-    description: 'Premium student-friendly rooms with laundry, cafeteria, and inspection-ready setup.',
-    image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80',
-    amenities: ['Private Bathroom', 'Kitchenette', 'Work Desk', 'DSTV', 'Parking Space'],
-    rules: ['No noise after 11 PM', 'Furnished room', 'Maintenance response within 24h', 'Security deposit refundable'],
-  },
-};
 
 export default function HostelDetailPage() {
   const router = useRouter();
@@ -93,7 +57,7 @@ export default function HostelDetailPage() {
       // Check for existing inspection booking
       const checkBooking = async () => {
         try {
-          const res = await authFetch(buildApiUrl(`/inspections/?hostel=${hostelId}`));
+          const res = await authFetch(buildApiUrl(`/inspections/?listing=${hostelId}`));
           if (res.ok) {
             const data = await res.json();
             if (data.length > 0) {
@@ -123,24 +87,23 @@ export default function HostelDetailPage() {
     loadHostel().catch(() => setLoading(false));
   }, [hostelId]);
 
-  async function handleBookInspection(e: React.FormEvent) {
+  async function handleBookInspection(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBookingStatus('submitting');
 
     try {
-      const phone = (e.target as any).phone?.value || '';
-      const name = (e.target as any).name?.value || 'Student guest';
-      const res = await authFetch(buildApiUrl('/hostel-bookings/'), {
+      const form = new FormData(e.currentTarget);
+      const phone = String(form.get('phone') || '');
+      const name = String(form.get('name') || '');
+      const preferredDate = String(form.get('preferred_date') || '');
+      const res = await authFetch(buildApiUrl('/inspections/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           listing: hostelId,
-          hostel_id: hostelId,
-          student_name: name,
-          student_phone: phone,
-          student_email: 'student@example.com',
-          check_in_date: new Date().toISOString().split('T')[0],
-          total_amount: Number(hostel?.price || 0) + 1500,
+          client_name: name,
+          client_phone: phone,
+          preferred_date: preferredDate,
         }),
       });
 
@@ -292,22 +255,8 @@ export default function HostelDetailPage() {
 
         {/* Agent Contact */}
         <div className="mb-6 rounded-[1.8rem] border border-[color:var(--brand-border)] bg-gradient-to-br from-[#4e235f] to-[#6b2d82] p-6 text-white shadow-[0_12px_32px_rgba(46,17,54,0.16)]">
-          <h2 className="text-lg font-black">Contact Agent</h2>
-          <div className="mt-4 flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-white/20" />
-            <div>
-              <p className="font-bold">Sarah Williams</p>
-              <p className="text-sm text-white/80">International Sales Manager</p>
-              <div className="mt-2 flex gap-3">
-                <a href="tel:+2348000000000" className="flex items-center gap-1 text-xs font-semibold">
-                  <Phone size={14} /> Call
-                </a>
-                <a href="mailto:agent@aysmart.com" className="flex items-center gap-1 text-xs font-semibold">
-                  <Mail size={14} /> Message
-                </a>
-              </div>
-            </div>
-          </div>
+          <h2 className="text-lg font-black">Secure in-app communication</h2>
+          <p className="mt-2 text-sm text-white/80">Agent contact details remain protected until the inspection workflow is approved. Messages stay inside AY&apos;SMART.</p>
         </div>
 
         {/* Book Inspection CTA */}
@@ -335,6 +284,10 @@ export default function HostelDetailPage() {
           ) : (
             <form onSubmit={handleBookInspection} className="space-y-4">
               <div>
+                <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">Your name</label>
+                <input type="text" name="name" required className="w-full rounded-[1.2rem] border border-[color:var(--brand-border)] bg-white px-4 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[#f1b8a5]" />
+              </div>
+              <div>
                 <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">Your Phone Number</label>
                 <input
                   type="tel"
@@ -343,6 +296,10 @@ export default function HostelDetailPage() {
                   required
                   className="w-full rounded-[1.2rem] border border-[color:var(--brand-border)] bg-white px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none focus:border-[#f1b8a5]"
                 />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">Preferred inspection date</label>
+                <input type="date" name="preferred_date" required className="w-full rounded-[1.2rem] border border-[color:var(--brand-border)] bg-white px-4 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[#f1b8a5]" />
               </div>
               <button
                 type="submit"

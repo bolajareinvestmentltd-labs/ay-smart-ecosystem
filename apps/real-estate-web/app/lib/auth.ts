@@ -1,8 +1,14 @@
 import { buildApiUrl } from './api';
 
+async function ensureCsrfCookie() {
+  if (typeof document === 'undefined' || document.cookie.includes('csrftoken=')) return;
+  await fetch(buildApiUrl('/api/auth/csrf/'), { credentials: 'include' });
+}
+
 // Cookie-based auth: login will set HttpOnly cookies; use credentials: 'include'.
 export async function loginWithPassword(identifier: string, password: string) {
   try {
+    await ensureCsrfCookie();
     const res = await fetch(buildApiUrl('/api/auth/login-cookie/'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -18,6 +24,7 @@ export async function loginWithPassword(identifier: string, password: string) {
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   const url = buildApiUrl(input);
+  if (init.method && !['GET', 'HEAD', 'OPTIONS'].includes(init.method.toUpperCase())) await ensureCsrfCookie();
   const opts: RequestInit = { ...init, credentials: 'include' };
   let res = await fetch(url, opts);
   if (res.status === 401) {

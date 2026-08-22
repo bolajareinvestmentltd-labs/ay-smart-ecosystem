@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBackendListings, getBackendProfile, getBackendWallet, createBackendListing, type BackendListing } from '../lib/backend';
 import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
+import { authFetch } from '../lib/auth';
+
+type Inspection = { id: number; status: string; agent_response: string; client_name: string; listing?: number; listing_title?: string };
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,6 +27,9 @@ export default function DashboardPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [invoiceAmounts, setInvoiceAmounts] = useState<Record<number, string>>({});
+  const [invoiceMessage, setInvoiceMessage] = useState('');
 
   useEffect(() => {
     async function loadDashboard() {
@@ -52,6 +58,11 @@ export default function DashboardPage() {
         listingsCount: listingPayload?.length || 0,
       };
       setListings(listingPayload || []);
+      const inspectionResponse = await authFetch('/api/inspections/');
+      if (inspectionResponse.ok) {
+        const inspectionPayload = await inspectionResponse.json();
+        setInspections(Array.isArray(inspectionPayload) ? inspectionPayload : []);
+      }
       saveStoredProfile({ ...getStoredProfile(), ...nextProfile });
       setProfile(nextProfile);
       setLoading(false);
@@ -110,6 +121,21 @@ export default function DashboardPage() {
     setDurationUnit('month');
     setMapUrl('');
     setSubmitting(false);
+  }
+
+  async function issueInvoice(inspection: Inspection) {
+    const amount = invoiceAmounts[inspection.id];
+    if (!amount || Number(amount) <= 0) {
+      setInvoiceMessage('Enter a valid invoice amount.');
+      return;
+    }
+    const response = await authFetch('/api/invoices/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inspection: inspection.id, amount, description: `Inspection and booking invoice for ${inspection.listing_title || 'the inspected listing'}` }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setInvoiceMessage(response.ok ? `Invoice ${payload.invoice_number} issued and emailed to the client.` : payload?.detail || 'Unable to issue invoice.');
   }
 
   if (loading) {
@@ -250,6 +276,19 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {['agent', 'both', 'seller'].includes(profile.role) && inspections.length > 0 && <section className="rounded-[2rem] border border-[var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.08)] backdrop-blur-xl">
+          <h2 className="text-xl font-black">Inspection requests</h2>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Accepted inspections can receive an invoice. Client and agent communication stays in the app.</p>
+          <div className="mt-4 space-y-3">
+            {inspections.filter((inspection) => inspection.agent_response === 'ACCEPTED').map((inspection) => <div key={inspection.id} className="rounded-2xl border border-[var(--brand-border)] bg-[#f9efe9] p-4">
+              <p className="font-semibold">{inspection.listing_title || `Inspection #${inspection.id}`}</p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">Client: {inspection.client_name}</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row"><input type="number" min="1" value={invoiceAmounts[inspection.id] || ''} onChange={(event) => setInvoiceAmounts((current) => ({ ...current, [inspection.id]: event.target.value }))} placeholder="Invoice amount" className="min-w-0 flex-1 rounded-xl border border-[var(--brand-border)] bg-white px-3 py-2" /><button type="button" onClick={() => void issueInvoice(inspection)} className="rounded-xl bg-[#4e235f] px-4 py-2 text-sm font-bold text-white">Issue invoice</button></div>
+            </div>)}
+          </div>
+          {invoiceMessage && <p className="mt-3 text-sm text-[var(--text-muted)]">{invoiceMessage}</p>}
+        </section>}
       </div>
     </main>
   );

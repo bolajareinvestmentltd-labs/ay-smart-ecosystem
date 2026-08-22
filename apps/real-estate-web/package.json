@@ -22,7 +22,6 @@
     "@capacitor/ios": "^8.5.0",
     "@paystack/inline-js": "^2.24.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.42.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^1.26.0",

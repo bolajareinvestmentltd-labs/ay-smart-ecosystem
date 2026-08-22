@@ -17,6 +17,9 @@ export default function KycPage() {
   const [filePreview, setFilePreview] = useState('');
   const [nin, setNin] = useState('');
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [identityDocumentType, setIdentityDocumentType] = useState('Voters Card');
+  const [identityDocumentNumber, setIdentityDocumentNumber] = useState('');
+  const [identityDocumentFile, setIdentityDocumentFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const isAgent = profile.role === 'agent';
   const isStudent = profile.role === 'student' || profile.role === 'both';
@@ -102,8 +105,8 @@ export default function KycPage() {
       return;
     }
 
-    if ((isAgent || profile.role === 'seller' || profile.role === 'both') && (!/^\d{11}$/.test(nin) || !selfieFile)) {
-      setError('Seller and agent accounts must provide an 11-digit NIN and selfie for verification.');
+    if ((isAgent || profile.role === 'seller' || profile.role === 'both') && (!/^\d{11}$/.test(nin) || !selfieFile || !identityDocumentNumber || !identityDocumentFile)) {
+      setError('Seller and agent accounts must provide an 11-digit NIN, identity document number, identity document, and selfie.');
       setLoading(false);
       return;
     }
@@ -118,10 +121,15 @@ export default function KycPage() {
       });
     }
 
+    const verificationData = new FormData();
+    verificationData.append('nin', nin);
+    verificationData.append('selfie_image', selfieImage);
+    verificationData.append('identity_document_type', identityDocumentType);
+    verificationData.append('identity_document_number', identityDocumentNumber);
+    if (identityDocumentFile) verificationData.append('identity_document', identityDocumentFile);
     const res = await authFetch('/api/kyc/approve/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nin, selfie_image: selfieImage }),
+      body: verificationData,
     });
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
@@ -172,6 +180,10 @@ export default function KycPage() {
             <input value={nin} onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))} inputMode="numeric" maxLength={11} className="mt-4 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="11-digit NIN" />
             <label className="mt-4 block text-sm text-zinc-400">Selfie image</label>
             <input type="file" accept="image/jpeg,image/png" capture="user" onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)} className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100" />
+            <select value={identityDocumentType} onChange={(e) => setIdentityDocumentType(e.target.value)} className="mt-4 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm"><option>Voters Card</option><option>International Passport</option><option>Drivers License</option><option>National ID</option></select>
+            <input value={identityDocumentNumber} onChange={(e) => setIdentityDocumentNumber(e.target.value)} className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm" placeholder="Identity document number" />
+            <label className="mt-4 block text-sm text-zinc-400">Identity document</label>
+            <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(e) => setIdentityDocumentFile(e.target.files?.[0] ?? null)} className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100" />
           </div>
         )}
 

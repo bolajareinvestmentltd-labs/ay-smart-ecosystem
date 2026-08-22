@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { getPlanBenefits, getPlanPrice, getStoredProfile, type ListingPlan } from '../lib/app-state';
+import { getPlanBenefits, getPlanPrice, getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 
 const plans: Array<{ key: ListingPlan; name: string; subtitle: string; accent: string }> = [
   { key: 'basic', name: 'Basic', subtitle: 'For first-time sellers', accent: 'from-amber-500 to-orange-500' },
@@ -19,6 +19,7 @@ export default function PlansPage() {
 
   function choosePlan(plan: ListingPlan) {
     setProfile({ ...profile, selectedPlan: plan });
+    saveStoredProfile({ ...profile, selectedPlan: plan });
     setSelectedPlan(plan);
   }
 

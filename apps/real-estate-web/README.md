@@ -65,6 +65,7 @@ NEXT_PUBLIC_API_URL=https://api.aysmartinvestmentltd.com/api
 RESEND_API_KEY=<your-resend-api-key>
 RESEND_WEBHOOK_SIGNING_SECRET=<your-resend-webhook-signing-secret>
 DEFAULT_FROM_EMAIL=noreply@aysmartinvestmentltd.com
+SUPPORT_EMAIL=support@aysmartinvestmentltd.com
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.resend.com
 EMAIL_PORT=587
@@ -77,7 +78,17 @@ DOJAH_API_URL=https://api.dojah.io
 DOJAH_APP_ID=<your-dojah-app-id>
 DOJAH_SECRET_KEY=<your-dojah-secret-key>
 DOJAH_FACE_MATCH_THRESHOLD=85
+
+# Seller/agent supporting identity evidence is uploaded through the KYC form.
+# Accepted types include Voters Card, International Passport, Drivers License, and National ID.
 ```
+
+### Support and KYC requirements
+
+- Support requests submitted through the app are emailed to `SUPPORT_EMAIL`; if it is unset, the backend falls back to `DEFAULT_FROM_EMAIL`. The production recipient is `support@aysmartinvestmentltd.com`.
+- Seller and agent KYC submissions require an 11-digit NIN, selfie, identity-document type, identity-document number, and an uploaded identity document. Accepted document types are Voters Card, International Passport, Drivers License, and National ID.
+- Student verification requires a matric number, student email, and student ID image.
+- Listing location links open in Google Maps externally. No embedded Google Maps API key is required for the current navigation flow.
 
 > Important: `NEXT_PUBLIC_API_URL` should point to your backend API root. If you set it without `/api`, the frontend now automatically appends it for all internal backend requests.
 

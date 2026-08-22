@@ -7,7 +7,7 @@ from .models import (
     PropertyImage, Promotion,
     BuildProject, ProjectMilestone, UserProfile, Listing, ListingImage,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
-    PaymentTransaction,
+    PaymentTransaction, InspectionInvoice,
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -327,4 +327,12 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
     def mark_failed(self, request, queryset):
         updated = queryset.update(status='FAILED')
         self.message_user(request, f'{updated} transaction(s) marked as failed.')
+
+
+@admin.register(InspectionInvoice)
+class InspectionInvoiceAdmin(ModelAdmin):
+    list_display = ('invoice_number', 'inspection', 'issuer', 'recipient', 'amount', 'status', 'created_at', 'paid_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('invoice_number', 'issuer__username', 'recipient__username', 'description')
+    readonly_fields = ('invoice_number', 'created_at', 'paid_at')
 

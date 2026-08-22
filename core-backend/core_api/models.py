@@ -1,5 +1,6 @@
 ﻿from datetime import timedelta
 from decimal import Decimal
+import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -19,6 +20,10 @@ VIDEO_STORAGE = (
     if VideoMediaCloudinaryStorage and settings.CLOUDINARY_STORAGE.get('CLOUD_NAME')
     else default_storage
 )
+
+
+def generate_invoice_number():
+    return f"INV-{uuid.uuid4().hex[:12].upper()}"
 
 # ==========================================
 # 1. AUTOMOTIVE DIVISION MODELS
@@ -149,6 +154,7 @@ class InspectionBooking(models.Model):
     client_name = models.CharField(max_length=100)
     client_phone = models.CharField(max_length=20)
     property_to_view = models.ForeignKey(Property, on_delete=models.CASCADE)
+    listing = models.ForeignKey('Listing', related_name='inspection_bookings', null=True, blank=True, on_delete=models.SET_NULL)
     scheduled_date = models.DateTimeField()
     assigned_agent = models.ForeignKey(User, related_name='assigned_inspections', null=True, blank=True, on_delete=models.SET_NULL)
     agent_response = models.CharField(max_length=20, choices=RESPONSE_CHOICES, default='PENDING')
@@ -260,12 +266,30 @@ class PaymentTransaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     provider = models.CharField(max_length=20, default='paystack')
     provider_reference = models.CharField(max_length=120, unique=True)
+    invoice = models.ForeignKey('InspectionInvoice', related_name='payments', null=True, blank=True, on_delete=models.SET_NULL)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username} {self.plan} {self.status}"
+
+
+class InspectionInvoice(models.Model):
+    STATUS_CHOICES = [('ISSUED', 'Issued'), ('PAID', 'Paid'), ('VOID', 'Void')]
+
+    inspection = models.OneToOneField('InspectionBooking', related_name='invoice', on_delete=models.PROTECT)
+    issuer = models.ForeignKey(User, related_name='issued_inspection_invoices', on_delete=models.PROTECT)
+    recipient = models.ForeignKey(User, related_name='received_inspection_invoices', on_delete=models.PROTECT)
+    invoice_number = models.CharField(max_length=40, unique=True, default=generate_invoice_number)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    description = models.CharField(max_length=240)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ISSUED')
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.amount}"
 
 
 class UserProfile(models.Model):
@@ -296,6 +320,9 @@ class UserProfile(models.Model):
     kyc_reference = models.CharField(max_length=120, blank=True)
     kyc_face_match_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     kyc_verified_at = models.DateTimeField(null=True, blank=True)
+    identity_document_type = models.CharField(max_length=30, blank=True)
+    identity_document_number = models.CharField(max_length=100, blank=True)
+    identity_document = models.FileField(upload_to='identity_documents/', blank=True, null=True)
     kyc_rejection_reason = models.TextField(blank=True)
     email_verified = models.BooleanField(default=False)  # Added email verification field
     # Timestamp the last time a verification email was sent (for server-side cooldown)

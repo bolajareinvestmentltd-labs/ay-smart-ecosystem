@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.db import models
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -27,7 +27,7 @@ from django.conf import settings
 
 from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
-    Listing, ListingImage, PaymentTransaction, PickupVoucher, Property, SupportRequest, UserProfile,
+    Listing, ListingImage, PaymentTransaction, InspectionInvoice, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction, SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
     HostelBooking, ServiceApartmentBooking,
 )
@@ -40,7 +40,7 @@ from .serializers import (
 )
 from .models import Referral
 from .serializers import (
-    ListingSerializer, PaymentTransactionSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
+    ListingSerializer, PaymentTransactionSerializer, InspectionInvoiceSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
     WalletSerializer, WalletTransactionSerializer,
 )
 
@@ -494,6 +494,7 @@ class EmailWebhookView(APIView):
 
 class KycApprovalView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def post(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -513,6 +514,10 @@ class KycApprovalView(APIView):
                 return Response({'detail': 'Enter a valid 11-digit NIN.'}, status=status.HTTP_400_BAD_REQUEST)
             if not selfie:
                 return Response({'detail': 'A selfie image is required for face verification.'}, status=status.HTTP_400_BAD_REQUEST)
+            document_number = str(request.data.get('identity_document_number') or '').strip()
+            document_type = str(request.data.get('identity_document_type') or '').strip()[:30]
+            if not document_number or not document_type or not profile.identity_document:
+                return Response({'detail': 'Select an identity document type, enter its number, and upload the document before verification.'}, status=status.HTTP_400_BAD_REQUEST)
             if selfie.startswith('data:'):
                 try:
                     _, selfie = selfie.split(',', 1)
@@ -624,14 +629,19 @@ class InspectionBookingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
+        listing_id = self.request.query_params.get('listing') or self.request.query_params.get('hostel')
         if self.request.user.is_staff:
-            return InspectionBooking.objects.all().order_by('-id')
-        if self.request.user.is_authenticated:
-            return InspectionBooking.objects.filter(
+            queryset = InspectionBooking.objects.all().order_by('-id')
+        elif self.request.user.is_authenticated:
+            queryset = InspectionBooking.objects.filter(
                 models.Q(client_user=self.request.user) |
                 models.Q(assigned_agent=self.request.user)
             ).order_by('-id')
-        return InspectionBooking.objects.filter(status='AGENT_OFFERED').order_by('-id')
+        else:
+            queryset = InspectionBooking.objects.filter(status='AGENT_OFFERED').order_by('-id')
+        if listing_id:
+            queryset = queryset.filter(listing_id=listing_id)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save()
@@ -656,7 +666,7 @@ class InspectionBookingViewSet(viewsets.ModelViewSet):
             try:
                 send_mail(
                     'Inspection Agent Accepted',
-                    f"Your inspection booking for {booking.property_to_view.title} has been accepted by {request.user.get_full_name() or request.user.username}.",
+                    f"Your inspection booking for {booking.listing.title if booking.listing else booking.property_to_view.title} has been accepted by {request.user.get_full_name() or request.user.username}. Agent contact will be shared after the inspection is approved.",
                     getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'),
                     [booking.client_user.email] if booking.client_user and booking.client_user.email else [],
                     fail_silently=True,
@@ -1005,6 +1015,49 @@ class SupportRequestViewSet(viewsets.ModelViewSet):
     queryset = SupportRequest.objects.all().order_by('-created_at')
     serializer_class = SupportRequestSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'support'
+
+    def perform_create(self, serializer):
+        support_request = serializer.save()
+        try:
+            send_mail(
+                f"AY'SMART support: {support_request.subject}",
+                f"Category: {support_request.get_category_display()}\nFrom: {support_request.name} <{support_request.email}>\nPhone: {support_request.phone}\n\n{support_request.message}",
+                getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@aysmartinvestmentltd.com'),
+                [getattr(settings, 'SUPPORT_EMAIL', getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@aysmartinvestmentltd.com'))],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+
+class InspectionInvoiceViewSet(viewsets.ModelViewSet):
+    serializer_class = InspectionInvoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return InspectionInvoice.objects.all().order_by('-created_at')
+        return InspectionInvoice.objects.filter(
+            models.Q(issuer=self.request.user) | models.Q(recipient=self.request.user)
+        ).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        inspection = serializer.validated_data['inspection']
+        if inspection.assigned_agent != self.request.user:
+            raise serializers.ValidationError('Only the assigned agent can issue this invoice.')
+        if inspection.agent_response != 'ACCEPTED' or not inspection.client_user:
+            raise serializers.ValidationError('Invoice requires an accepted inspection with an authenticated client.')
+        invoice = serializer.save(issuer=self.request.user, recipient=inspection.client_user)
+        if invoice.recipient.email:
+            checkout_url = f"{getattr(settings, 'FRONTEND_URL', '').rstrip('/')}/checkout?invoice={invoice.id}"
+            send_mail(
+                f'AY\'SMART inspection invoice {invoice.invoice_number}',
+                f'Your inspection invoice for {invoice.inspection_title if hasattr(invoice, "inspection_title") else invoice.description} is ready. Pay securely in the app: {checkout_url}',
+                getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev'),
+                [invoice.recipient.email],
+                fail_silently=True,
+            )
 
 
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):
@@ -1021,7 +1074,7 @@ class WalletViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(wallet)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def transactions(self, request):
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
         serializer = WalletTransactionSerializer(data=request.data)
@@ -1084,9 +1137,18 @@ class PaymentInitiateView(APIView):
         provider = (request.data.get('provider') or 'paystack').strip().lower()
         if provider not in {'paystack', 'wema'}:
             return Response({'detail': 'Unsupported payment provider.'}, status=status.HTTP_400_BAD_REQUEST)
-        amount_value = self.PLAN_AMOUNTS.get(plan)
-        if amount_value is None:
-            return Response({'detail': 'Unsupported subscription plan.'}, status=status.HTTP_400_BAD_REQUEST)
+        invoice = None
+        invoice_id = request.data.get('invoice_id')
+        if invoice_id:
+            invoice = InspectionInvoice.objects.filter(id=invoice_id, recipient=request.user, status='ISSUED').first()
+            if not invoice:
+                return Response({'detail': 'Invoice not found or already paid.'}, status=status.HTTP_404_NOT_FOUND)
+            plan = 'inspection_invoice'
+            amount_value = invoice.amount
+        else:
+            amount_value = self.PLAN_AMOUNTS.get(plan)
+            if amount_value is None:
+                return Response({'detail': 'Unsupported subscription plan.'}, status=status.HTTP_400_BAD_REQUEST)
         if request.data.get('amount') is not None:
             try:
                 requested_amount = Decimal(str(request.data.get('amount')))
@@ -1102,6 +1164,7 @@ class PaymentInitiateView(APIView):
             amount=amount_value,
             provider=provider,
             provider_reference=reference,
+            invoice=invoice,
             status='PENDING',
         )
 
@@ -1202,6 +1265,12 @@ class PaymentVerifyView(APIView):
             except requests.RequestException:
                 return Response({'detail': 'Payment verification service unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
+        if transaction.invoice:
+            transaction.invoice.status = 'PAID'
+            transaction.invoice.paid_at = timezone.now()
+            transaction.invoice.save(update_fields=['status', 'paid_at'])
+            return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
+
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         profile.subscription_plan = transaction.plan
         profile.subscription_status = 'active'
@@ -1251,6 +1320,11 @@ class WemaPaymentWebhookView(APIView):
 
         transaction.status = 'SUCCESS'
         transaction.save(update_fields=['status', 'updated_at'])
+        if transaction.invoice:
+            transaction.invoice.status = 'PAID'
+            transaction.invoice.paid_at = timezone.now()
+            transaction.invoice.save(update_fields=['status', 'paid_at'])
+            return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
         profile, _ = UserProfile.objects.get_or_create(user=transaction.user)
         profile.subscription_plan = transaction.plan
         profile.subscription_status = 'active'

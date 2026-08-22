@@ -8,6 +8,7 @@ export default function VerificationSentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get('email') || '';
+  const next = searchParams.get('next') || '';
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [message, setMessage] = useState('A verification email has been sent to your address.');
   const [cooldown, setCooldown] = useState<number>(0);
@@ -76,7 +77,7 @@ export default function VerificationSentPage() {
           <button onClick={resend} disabled={status === 'sending' || cooldown > 0 || !email} className="rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">
             {cooldown > 0 ? `Resend available in ${cooldown}s` : status === 'sending' ? 'Sending...' : 'Resend verification email'}
           </button>
-          <button onClick={() => router.push('/auth/login')} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white">
+          <button onClick={() => router.push(`/auth/login${next ? `?next=${encodeURIComponent(next)}` : ''}`)} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white">
             Go to login
           </button>
         </div>

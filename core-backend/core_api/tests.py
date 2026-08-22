@@ -90,12 +90,15 @@ class ReferralWalletTests(TestCase):
         user = User.objects.create_user(username='verifiedseller', email='seller@example.com', password='secret123')
         profile = user.profile
         profile.role = 'seller'
-        profile.save(update_fields=['role'])
+        profile.identity_document_type = 'Voters Card'
+        profile.identity_document_number = 'VC-001'
+        profile.identity_document = SimpleUploadedFile('voters-card.jpg', b'fake-image', content_type='image/jpeg')
+        profile.save(update_fields=['role', 'identity_document_type', 'identity_document_number', 'identity_document'])
         self.client.force_authenticate(user=user)
 
         response = self.client.post(
             '/api/kyc/approve/',
-            {'nin': '70123456789', 'selfie_image': 'data:image/jpeg;base64,ZmFrZQ=='},
+            {'nin': '70123456789', 'selfie_image': 'data:image/jpeg;base64,ZmFrZQ==', 'identity_document_type': 'Voters Card', 'identity_document_number': 'VC-001'},
             format='json',
         )
 
@@ -133,7 +136,7 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(referral.status, "CONFIRMED")
         self.assertEqual(referrer.wallet.balance, 200.00)
 
-    def test_authenticated_user_can_create_wallet_transaction(self):
+    def test_authenticated_user_cannot_create_wallet_transaction(self):
         user = User.objects.create_user(username="walletuser", email="wallet@example.com", password="secret123")
         self.client.force_authenticate(user=user)
 
@@ -147,10 +150,10 @@ class ReferralWalletTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.status_code, 403, response.data)
         wallet = Wallet.objects.get(user=user)
-        self.assertEqual(wallet.balance, -150.00)
-        self.assertTrue(WalletTransaction.objects.filter(user=user, description="Inspection booking").exists())
+        self.assertEqual(wallet.balance, 0)
+        self.assertFalse(WalletTransaction.objects.filter(user=user, description="Inspection booking").exists())
 
     def test_registration_endpoint_creates_user_and_wallet(self):
         response = self.client.post(
