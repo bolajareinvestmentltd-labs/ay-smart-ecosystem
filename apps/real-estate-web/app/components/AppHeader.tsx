@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import LiveClock from './LiveClock';
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -15,8 +16,8 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]/95 px-4 py-3 shadow-sm backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-        <Link href="/" className="group flex items-center gap-3 rounded-3xl bg-[var(--brand-surface-3)] px-3 py-2 transition hover:opacity-90">
+      <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-2 sm:gap-4">
+        <Link href="/" className="group flex min-w-0 items-center gap-2 rounded-3xl bg-[var(--brand-surface-3)] px-2 py-2 transition hover:opacity-90 sm:gap-3 sm:px-3">
           <div className="relative h-11 w-11 overflow-hidden rounded-3xl bg-[var(--brand-surface)] ring-1 ring-[var(--brand-border)]">
             <Image
               src="/assets/ay-smart-logo.png"
@@ -26,13 +27,14 @@ export default function AppHeader() {
               priority
             />
           </div>
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.28em] text-[var(--text-primary)]">AY'SMART</p>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--brand-purple)]">Property & Automotive</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black uppercase tracking-[0.28em] text-[var(--text-primary)]">AY&apos;SMART</p>
+            <p className="hidden truncate text-[11px] uppercase tracking-[0.32em] text-[var(--brand-purple)] sm:block">Property & Automotive</p>
           </div>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <LiveClock />
           <ThemeToggle />
           {showBack ? (
             <button

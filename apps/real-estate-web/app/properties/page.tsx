@@ -198,7 +198,7 @@ export default function PropertiesPage() {
           const label = prop.property_type_display || prop.property_type || 'For Sale';
           return (
             <Link
-              href={`/properties/${prop.id}`}
+              href={prop.property_type === 'Service Apartment' ? `/service-apartments/${prop.id}` : `/properties/${prop.id}`}
               key={prop.id}
               className="group mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent shadow-2xl backdrop-blur-xl transition-all hover:border-brand-accent/40"
             >

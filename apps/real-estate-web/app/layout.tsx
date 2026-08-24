@@ -9,6 +9,13 @@ import AppHeader from './components/AppHeader';
 import ServiceWorkerRegister from './components/ServiceWorkerRegister';
 import Analytics from './components/Analytics';
 import SupportAssistant from './components/SupportAssistant';
+import type { Viewport } from 'next';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: "AY'SMART ECO | Real Estate & Construction",
@@ -53,7 +60,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen overflow-x-hidden antialiased">
         <ThemeProvider>
           <AppHeader />
           <PageTransition>{children}</PageTransition>

@@ -358,7 +358,8 @@ class ReferralWalletTests(TestCase):
         listing.refresh_from_db()
         self.assertEqual(listing.status, "LIVE")
 
-    def test_authenticated_user_can_initiate_provider_payment(self):
+    @override_settings(PAYSTACK_SECRET_KEY='', PAYSTACK_PUBLIC_KEY='')
+    def test_authenticated_user_cannot_initiate_unconfigured_provider_payment(self):
         user = User.objects.create_user(username="payone", email="payone@example.com", password="secret123")
         self.client.force_authenticate(user=user)
 
@@ -368,8 +369,8 @@ class ReferralWalletTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertTrue(PaymentTransaction.objects.filter(user=user, plan="basic").exists())
+        self.assertEqual(response.status_code, 503, response.data)
+        self.assertFalse(PaymentTransaction.objects.filter(user=user, plan="basic").exists())
 
     @patch('core_api.views.requests.get')
     def test_authenticated_user_can_verify_provider_payment(self, mock_get):

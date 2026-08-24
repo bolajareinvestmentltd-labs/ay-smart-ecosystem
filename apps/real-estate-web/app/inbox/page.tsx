@@ -108,7 +108,7 @@ export default function InboxPage() {
             </div>
           ) : (
             conversations.map((conversation) => (
-              <div key={conversation.id} className="rounded-[1.5rem] border border-[color:var(--brand-border)] bg-white/80 p-4 shadow-[0_8px_16px_rgba(46,17,54,0.06)]">
+              <Link href={`/inbox/${conversation.id}`} key={conversation.id} className="block rounded-[1.5rem] border border-[color:var(--brand-border)] bg-white/80 p-4 shadow-[0_8px_16px_rgba(46,17,54,0.06)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-bold text-[var(--text-primary)]">{conversation.subject}</p>
@@ -121,7 +121,7 @@ export default function InboxPage() {
                 {conversation.messages?.[0] && (
                   <p className="mt-3 text-sm text-[var(--text-muted)]">{conversation.messages[0].text}</p>
                 )}
-              </div>
+              </Link>
             ))
           )}
         </section>

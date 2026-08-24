@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell, CalendarDays, ChevronRight, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound } from "lucide-react";
 import { getPublishedListings, listingImage, type BackendListing } from "./lib/backend";
 import ThemeToggle from "./components/ThemeToggle";
+import LiveClock from "./components/LiveClock";
 import { getStoredProfile } from "./lib/app-state";
 
 const getStableStoredProfile = (() => {
@@ -53,7 +54,8 @@ export default function RealEstateHome() {
             </span>
             <span className="text-sm font-black tracking-[-0.03em] text-white">AY-Smart</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LiveClock />
             <ThemeToggle />
             <button type="button" aria-label="Notifications" className="rounded-full p-2 text-white hover:bg-white/10"><Bell size={18} /></button>
             <Link href="/dashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-purple-deep)]"><UserRound size={16} /></Link>

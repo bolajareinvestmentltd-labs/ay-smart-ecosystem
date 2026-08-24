@@ -153,7 +153,7 @@ class InspectionBooking(models.Model):
     client_user = models.ForeignKey(User, related_name='inspection_requests', null=True, blank=True, on_delete=models.SET_NULL)
     client_name = models.CharField(max_length=100)
     client_phone = models.CharField(max_length=20)
-    property_to_view = models.ForeignKey(Property, on_delete=models.CASCADE)
+    property_to_view = models.ForeignKey(Property, null=True, blank=True, on_delete=models.CASCADE)
     listing = models.ForeignKey('Listing', related_name='inspection_bookings', null=True, blank=True, on_delete=models.SET_NULL)
     location_consent = models.BooleanField(default=False)
     inspection_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -175,7 +175,8 @@ class InspectionBooking(models.Model):
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
-        return f"Inspection: {self.property_to_view.title} by {self.client_name}"
+        listing_title = self.listing.title if self.listing else self.property_to_view.title
+        return f"Inspection: {listing_title} by {self.client_name}"
 
 
 class InspectionBookingMessage(models.Model):

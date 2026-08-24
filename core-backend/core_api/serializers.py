@@ -161,6 +161,14 @@ class InspectionBookingSerializer(serializers.ModelSerializer):
             validated_data['status'] = 'AGENT_OFFERED'
 
         booking = super().create(validated_data)
+        if assigned_agent:
+            Notification.objects.create(
+                user=assigned_agent,
+                kind='inspection_requested',
+                title='New inspection request',
+                message=f'New inspection request for {booking.listing.title if booking.listing else booking.property_to_view.title}.',
+                link=f'/inspections/{booking.id}',
+            )
         if assigned_agent and assigned_agent.email:
             subject = 'New Inspection Booking Assigned'
             message = (

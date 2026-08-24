@@ -1050,6 +1050,13 @@ class InspectionInvoiceViewSet(viewsets.ModelViewSet):
             models.Q(issuer=self.request.user) | models.Q(recipient=self.request.user)
         ).order_by('-created_at')
 
+    def get_permissions(self):
+        if self.action in {'list', 'retrieve'}:
+            return [IsAuthenticated()]
+        if self.action == 'create':
+            return [IsAuthenticated()]
+        return [permissions.IsAdminUser()]
+
     def perform_create(self, serializer):
         inspection = serializer.validated_data['inspection']
         if inspection.assigned_agent != self.request.user:
@@ -1073,6 +1080,17 @@ class InspectionInvoiceViewSet(viewsets.ModelViewSet):
                 [invoice.recipient.email],
                 fail_silently=True,
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def void(self, request, pk=None):
+        invoice = self.get_object()
+        if invoice.issuer != request.user and not request.user.is_staff:
+            return Response({'detail': 'Only the issuing agent can void this invoice.'}, status=status.HTTP_403_FORBIDDEN)
+        if invoice.status == 'PAID':
+            return Response({'detail': 'Paid invoices cannot be voided.'}, status=status.HTTP_400_BAD_REQUEST)
+        invoice.status = 'VOID'
+        invoice.save(update_fields=['status'])
+        return Response(self.get_serializer(invoice).data)
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):

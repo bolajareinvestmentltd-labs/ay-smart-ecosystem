@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { getCurrentUser } from '../lib/auth';
 import { authFetch } from '../lib/auth';
+import Link from 'next/link';
 
 type InspectionResult = {
+  id?: number;
   status?: string;
   assigned_agent_username?: string;
   agent_contact?: string | null;
@@ -91,6 +93,7 @@ export default function InspectionBookingForm({ propertyId, listingId }: { prope
             <div className="mt-1 text-sm text-zinc-300">Agent contact will be shared after admin approval.</div>
           )
         )}
+        {success.id && <Link href={`/inspections/${success.id}`} className="mt-3 inline-block text-sm font-semibold text-emerald-800">Open inspection conversation</Link>}
       </div>
     );
   }
