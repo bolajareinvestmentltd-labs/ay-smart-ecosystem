@@ -22,6 +22,8 @@ export default function AdminWorkspacePage() {
     else setMessage('Administrator access is required for this workspace.');
   }
 
+  // Load the staff workspace once after the client session is available.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
   async function approveInspection(id: number) {
@@ -30,8 +32,9 @@ export default function AdminWorkspacePage() {
     if (response.ok) await load();
   }
 
-  async function updateSupport(id: number, status: string) {
-    const response = await authFetch(`/api/support/requests/${id}/${status.toLowerCase()}/`, { method: 'POST' });
+  async function updateSupport(id: number, _status: string) {
+    void _status;
+    const response = await authFetch(`/api/support/requests/${id}/resolved/`, { method: 'POST' });
     setMessage(response.ok ? 'Support ticket updated.' : 'Unable to update support ticket.');
     if (response.ok) await load();
   }

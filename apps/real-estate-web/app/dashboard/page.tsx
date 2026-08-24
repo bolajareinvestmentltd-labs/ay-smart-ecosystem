@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getBackendListings, getBackendProfile, getBackendWallet, createBackendListing, type BackendListing } from '../lib/backend';
 import { getStoredProfile, saveStoredProfile, type ListingPlan } from '../lib/app-state';
 import { authFetch } from '../lib/auth';
+import LoadingScreen from '../components/LoadingScreen';
 
 type Inspection = { id: number; status: string; agent_response: string; client_name: string; listing?: number; listing_title?: string };
 
@@ -151,15 +152,7 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
-        <div className="mx-auto flex min-h-[60vh] max-w-4xl items-center justify-center">
-          <div className="rounded-3xl border border-[var(--brand-border)] bg-white/80 p-10 text-center shadow-[0_18px_48px_rgba(46,17,54,0.08)]">
-            <p className="text-sm text-[var(--text-muted)]">Checking your account...</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <LoadingScreen label="Checking your account" />;
   }
 
   const canManageListings = ['seller', 'agent', 'both'].includes(profile.role);

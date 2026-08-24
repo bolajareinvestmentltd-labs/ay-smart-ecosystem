@@ -68,6 +68,9 @@ export default function AppHeader() {
               <Link href="/notifications" className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--brand-surface-3)]">
                 Updates
               </Link>
+              <Link href="/hostel-bookings" className="hidden rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--brand-surface-3)] lg:block">
+                Bookings
+              </Link>
             </>
           )}
         </div>

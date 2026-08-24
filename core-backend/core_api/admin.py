@@ -7,7 +7,7 @@ from .models import (
     PropertyImage, Promotion,
     BuildProject, ProjectMilestone, UserProfile, Listing, ListingImage,
     SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
-    PaymentTransaction, InspectionInvoice, Notification,
+    PaymentTransaction, InspectionInvoice, Notification, HostelBooking, ServiceApartmentBooking,
 )
 from .models import Referral, SupportRequest, Wallet, SiteBrand
 
@@ -199,11 +199,27 @@ class InspectionBookingMessageInline(admin.TabularInline):
 @admin.register(InspectionBooking)
 class InspectionBookingAdmin(ModelAdmin):
     list_display = (
-        'client_name', 'client_phone', 'property_to_view', 'assigned_agent', 'agent_response', 'status', 'payment_unlocked', 'admin_approved', 'contact_released'
+        'client_name', 'client_phone', 'listing', 'property_to_view', 'assigned_agent', 'agent_response', 'status', 'payment_unlocked', 'admin_approved', 'contact_released'
     )
     list_filter = ('status', 'payment_unlocked', 'agent_response', 'admin_approved')
     search_fields = ('client_name', 'client_phone', 'property_to_view__title', 'assigned_agent__username')
     inlines = [InspectionBookingMessageInline]
+
+
+@admin.register(HostelBooking)
+class HostelBookingAdmin(ModelAdmin):
+    list_display = ('listing', 'student', 'student_name', 'check_in_date', 'total_amount', 'status', 'admin_approved', 'created_at')
+    list_filter = ('status', 'admin_approved', 'funds_released', 'created_at')
+    search_fields = ('listing__title', 'student__username', 'student__email', 'student_name')
+    readonly_fields = ('created_at', 'updated_at', 'payment_reference')
+
+
+@admin.register(ServiceApartmentBooking)
+class ServiceApartmentBookingAdmin(ModelAdmin):
+    list_display = ('listing', 'tenant', 'tenant_name', 'check_in_date', 'duration_days', 'total_amount', 'status', 'admin_approved', 'created_at')
+    list_filter = ('status', 'admin_approved', 'funds_released', 'created_at')
+    search_fields = ('listing__title', 'tenant__username', 'tenant__email', 'tenant_name')
+    readonly_fields = ('created_at', 'updated_at', 'payment_reference')
 
 
 # --- BUILD TRACKER ADMIN ---

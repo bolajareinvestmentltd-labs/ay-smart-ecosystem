@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { authFetch } from '../lib/auth';
 import { buildApiUrl } from '../lib/api';
+import LoadingScreen from '../components/LoadingScreen';
 
 function SuccessContent() {
   const router = useRouter();
@@ -102,7 +103,7 @@ function SuccessContent() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <LoadingScreen label="Confirming payment" />;
   }
 
   if (!transactionId) {
@@ -231,7 +232,7 @@ function SuccessContent() {
 
 export default function SuccessPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading success page...</div>}>
+    <Suspense fallback={<LoadingScreen label="Loading receipt" />}>
       <SuccessContent />
     </Suspense>
   );

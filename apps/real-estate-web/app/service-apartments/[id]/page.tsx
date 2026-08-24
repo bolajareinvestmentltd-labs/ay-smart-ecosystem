@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { getPublishedListings, listingImage, type BackendListing } from '../../lib/backend';
 import { authFetch, getCurrentUser } from '../../lib/auth';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function ServiceApartmentDetailPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function ServiceApartmentDetailPage() {
     setSubmitting(false);
   }
 
-  if (loading) return <main className="min-h-screen p-6 text-center">Loading service apartment...</main>;
+  if (loading) return <LoadingScreen label="Loading service apartment" />;
   if (!listing) return <main className="min-h-screen p-6 text-center"><p>Service apartment not found.</p><Link href="/properties" className="mt-4 inline-block font-semibold text-[#4e235f]">Browse listings</Link></main>;
   const image = listingImage(listing) || '/assets/ay-smart-logo.png';
 

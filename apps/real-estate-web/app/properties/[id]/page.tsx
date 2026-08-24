@@ -6,6 +6,7 @@ import PropertyGallery from '../../components/PropertyGallery';
 import InspectionBookingForm from '../../components/InspectionBookingForm';
 import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function PropertyDetailPage() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function PropertyDetailPage() {
     load();
   }, [propertyId]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) return <LoadingScreen label="Loading property" />;
   if (errorMessage)
     return (
       <div className="min-h-screen flex items-center justify-center px-4 text-center">

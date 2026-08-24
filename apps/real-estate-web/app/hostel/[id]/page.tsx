@@ -6,6 +6,7 @@ import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
 import { getPublishedListings, listingImage } from '../../lib/backend';
 import { MapPin, Bed, Zap, Home, Clock } from 'lucide-react';
+import LoadingScreen from '../../components/LoadingScreen';
 
 interface HostelDetail {
   id: number;
@@ -152,7 +153,7 @@ export default function HostelDetailPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <LoadingScreen label="Loading hostel" />;
   }
 
   if (!hostel) {

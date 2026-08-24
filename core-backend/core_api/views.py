@@ -777,6 +777,37 @@ class HostelBookingViewSet(viewsets.ModelViewSet):
         booking = serializer.save()
         return Response(self.get_serializer(booking).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def transition(self, request, pk=None):
+        booking = self.get_object()
+        next_status = str(request.data.get('status') or '').upper()
+        if next_status not in {'PENDING', 'PAID', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED'}:
+            return Response({'detail': 'Invalid hostel booking status.'}, status=status.HTTP_400_BAD_REQUEST)
+        if booking.status == 'COMPLETED' and next_status != 'COMPLETED':
+            return Response({'detail': 'Completed bookings cannot be changed.'}, status=status.HTTP_400_BAD_REQUEST)
+        booking.status = next_status
+        booking.admin_approved = next_status in {'CONFIRMED', 'ACTIVE', 'COMPLETED'}
+        booking.save(update_fields=['status', 'admin_approved', 'updated_at'])
+        Notification.objects.create(
+            user=booking.student,
+            kind='hostel_booking_status',
+            title='Hostel booking updated',
+            message=f'Your booking for {booking.listing.title} is now {booking.get_status_display()}.',
+            link=f'/hostel/{booking.listing_id}',
+        )
+        return Response(self.get_serializer(booking).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+        if booking.student != request.user and not request.user.is_staff:
+            return Response({'detail': 'Only the booking owner can cancel this booking.'}, status=status.HTTP_403_FORBIDDEN)
+        if booking.status in {'ACTIVE', 'COMPLETED', 'CANCELLED'}:
+            return Response({'detail': 'This booking can no longer be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+        booking.status = 'CANCELLED'
+        booking.save(update_fields=['status', 'updated_at'])
+        return Response(self.get_serializer(booking).data)
+
 
 class ServiceApartmentBookingViewSet(viewsets.ModelViewSet):
     queryset = ServiceApartmentBooking.objects.all().order_by('-id')
@@ -1135,6 +1166,18 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         self.get_queryset().filter(is_read=False).update(is_read=True)
         return Response({'detail': 'Notifications marked as read.'})
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def admin_mark_read(self, request, pk=None):
+        notification = Notification.objects.get(pk=pk)
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+        return Response(self.get_serializer(notification).data)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def admin_mark_all_read(self, request):
+        Notification.objects.filter(is_read=False).update(is_read=True)
+        return Response({'detail': 'All notifications marked as read.'})
+
 
 class AdminOperationsDashboardView(APIView):
     permission_classes = [permissions.IsAdminUser]
@@ -1153,11 +1196,13 @@ class AdminOperationsDashboardView(APIView):
                 'support': SupportRequest.objects.count(),
                 'open_support': SupportRequest.objects.exclude(status='RESOLVED').count(),
                 'notifications': Notification.objects.filter(is_read=False).count(),
+                    'hostel_bookings': HostelBooking.objects.count(),
             },
             'inspections': InspectionBookingSerializer(inspections, many=True, context={'request': request}).data,
             'invoices': InspectionInvoiceSerializer(invoices, many=True, context={'request': request}).data,
             'support': SupportRequestSerializer(support, many=True).data,
             'notifications': NotificationSerializer(notifications, many=True).data,
+            'hostel_bookings': HostelBookingSerializer(HostelBooking.objects.select_related('listing', 'student').order_by('-created_at')[:50], many=True).data,
         })
 
 
