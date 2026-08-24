@@ -11,6 +11,7 @@ from core_api.views import (
     BranchLocationViewSet, BuildProjectViewSet, CheckoutView,
     HostelBookingViewSet, InspectionBookingViewSet, KycApprovalView, ListingViewSet,
     PaymentInitiateView, PaymentTransactionViewSet, PaymentVerifyView, ProfileView,
+    AdminOperationsDashboardView,
     PropertyViewSet, PromotionViewSet, RegisterView, ReferralViewSet,
     ServiceApartmentBookingViewSet, SupportRequestViewSet, InspectionInvoiceViewSet, NotificationViewSet, UserInfoView, VehicleViewSet,
     WalletViewSet, SavedSearchViewSet, FavoriteListingViewSet, HiddenListingViewSet,
@@ -66,6 +67,7 @@ urlpatterns = [
     path("api/payments/initiate/", PaymentInitiateView.as_view(), name="payment_initiate"),
     path("api/payments/verify/", PaymentVerifyView.as_view(), name="payment_verify"),
     path("api/payments/wema/webhook/", __import__('core_api.views', fromlist=['']).WemaPaymentWebhookView.as_view(), name="wema_payment_webhook"),
+    path("api/admin/operations/", AdminOperationsDashboardView.as_view(), name="admin_operations"),
     path("api/", include(router.urls)),
 ]
 

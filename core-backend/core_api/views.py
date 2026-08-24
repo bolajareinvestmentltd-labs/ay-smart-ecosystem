@@ -699,6 +699,15 @@ class InspectionBookingViewSet(viewsets.ModelViewSet):
             sender_role=role,
             text=message,
         )
+        recipient = booking.assigned_agent if booking.client_user == request.user else booking.client_user
+        if recipient and recipient != request.user:
+            Notification.objects.create(
+                user=recipient,
+                kind='inspection_message',
+                title='New inspection message',
+                message=f'{request.user.get_full_name() or request.user.username} sent a message about {booking.listing.title if booking.listing else booking.property_to_view.title}.',
+                link=f'/inspections/{booking.id}',
+            )
         return Response(InspectionBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -1022,8 +1031,14 @@ class ReferralViewSet(viewsets.ModelViewSet):
 class SupportRequestViewSet(viewsets.ModelViewSet):
     queryset = SupportRequest.objects.all().order_by('-created_at')
     serializer_class = SupportRequestSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
     throttle_scope = 'support'
+
+    def get_permissions(self):
+        return [permissions.AllowAny()] if self.action == 'create' else [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        return SupportRequest.objects.all().order_by('-created_at') if self.request.user.is_staff else SupportRequest.objects.none()
 
     def perform_create(self, serializer):
         support_request = serializer.save()
@@ -1037,6 +1052,13 @@ class SupportRequestViewSet(viewsets.ModelViewSet):
             )
         except Exception:
             pass
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser], url_path='resolved')
+    def resolve(self, request, pk=None):
+        support_request = self.get_object()
+        support_request.status = 'RESOLVED'
+        support_request.save(update_fields=['status', 'updated_at'])
+        return Response(self.get_serializer(support_request).data)
 
 
 class InspectionInvoiceViewSet(viewsets.ModelViewSet):
@@ -1112,6 +1134,31 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def mark_all_read(self, request):
         self.get_queryset().filter(is_read=False).update(is_read=True)
         return Response({'detail': 'Notifications marked as read.'})
+
+
+class AdminOperationsDashboardView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        inspections = InspectionBooking.objects.select_related('listing', 'property_to_view', 'client_user', 'assigned_agent').order_by('-id')[:50]
+        invoices = InspectionInvoice.objects.select_related('inspection', 'issuer', 'recipient').order_by('-created_at')[:50]
+        support = SupportRequest.objects.all().order_by('-created_at')[:50]
+        notifications = Notification.objects.select_related('user').order_by('-created_at')[:50]
+        return Response({
+            'counts': {
+                'inspections': InspectionBooking.objects.count(),
+                'pending_inspections': InspectionBooking.objects.filter(status__in=['PENDING', 'AGENT_OFFERED', 'CONFIRMED', 'AWAITING_ADMIN']).count(),
+                'invoices': InspectionInvoice.objects.count(),
+                'issued_invoices': InspectionInvoice.objects.filter(status='ISSUED').count(),
+                'support': SupportRequest.objects.count(),
+                'open_support': SupportRequest.objects.exclude(status='RESOLVED').count(),
+                'notifications': Notification.objects.filter(is_read=False).count(),
+            },
+            'inspections': InspectionBookingSerializer(inspections, many=True, context={'request': request}).data,
+            'invoices': InspectionInvoiceSerializer(invoices, many=True, context={'request': request}).data,
+            'support': SupportRequestSerializer(support, many=True).data,
+            'notifications': NotificationSerializer(notifications, many=True).data,
+        })
 
 
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):
