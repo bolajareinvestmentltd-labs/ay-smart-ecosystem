@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -8,12 +8,19 @@ import { authFetch } from '../lib/auth';
 import { buildApiUrl } from '../lib/api';
 import LoadingScreen from '../components/LoadingScreen';
 
+type Transaction = {
+  amount?: number | string;
+  hostel_name?: string;
+  status?: string;
+  provider?: string;
+  created_at?: string;
+};
+
 function SuccessContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const transactionId = searchParams.get('transactionId');
   const hostelName = searchParams.get('hostelName');
-  const [transaction, setTransaction] = useState<any>(null);
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [message, setMessage] = useState('');
@@ -31,8 +38,8 @@ function SuccessContent() {
           const data = await res.json();
           setTransaction(data);
         }
-      } catch (err) {
-        console.error('Failed to fetch transaction:', err);
+      } catch {
+        console.error('Failed to fetch transaction');
       } finally {
         setLoading(false);
       }
@@ -53,7 +60,7 @@ function SuccessContent() {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`receipt-${transactionId}.pdf`);
       setMessage('✅ Receipt downloaded successfully!');
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to download receipt');
     }
   }
@@ -75,7 +82,7 @@ function SuccessContent() {
           setMessage('✅ Receipt image saved successfully!');
         }
       });
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to save receipt image');
     }
   }
@@ -166,7 +173,7 @@ function SuccessContent() {
           </div>
 
           <div className="mt-6 border-t border-[#d4e9dd] pt-4 text-center">
-            <p className="text-xs text-[var(--text-muted)]">Thank you for using AY'SMART!</p>
+            <p className="text-xs text-[var(--text-muted)]">Thank you for using AY&apos;SMART!</p>
             <p className="mt-1 text-xs text-[#7b7481]">Your booking confirmation has been sent to your email.</p>
           </div>
         </div>
@@ -202,7 +209,7 @@ function SuccessContent() {
         )}
 
         <div className="mb-8 rounded-[1.8rem] border border-[color:var(--brand-border)] bg-white/80 p-6 shadow-[0_18px_48px_rgba(46,17,54,0.06)]">
-          <h2 className="mb-3 font-black">What's Next?</h2>
+          <h2 className="mb-3 font-black">What&apos;s Next?</h2>
           <ul className="space-y-2 text-sm text-[var(--text-muted)]">
             <li className="flex items-center gap-2"><span>✓</span> Your payment has been confirmed and receipt generated</li>
             <li className="flex items-center gap-2"><span>✓</span> Check your email for booking confirmation</li>

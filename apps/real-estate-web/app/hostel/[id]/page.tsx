@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authFetch } from '../../lib/auth';
@@ -35,59 +36,59 @@ export default function HostelDetailPage() {
   const [locationError, setLocationError] = useState('');
 
   useEffect(() => {
-    if (!hostelId) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    const loadHostel = async () => {
-      const listings = await getPublishedListings();
-      const listing = listings?.find((item) => item.id === hostelId && item.category === 'Hostel');
-      const selectedHostel = listing ? {
-        id: listing.id,
-        name: listing.title,
-        location: listing.location,
-        price: Number(listing.price),
-        capacity: listing.duration_unit === 'year' ? 'Annual student rent' : 'Student accommodation',
-        description: listing.description || 'Approved student accommodation.',
-        image: listingImage(listing) || '/assets/ay-smart-logo.png',
-        amenities: listing.facilities || [],
-        rules: ['Rent duration: per year', 'Inspect before payment', 'Contact support for assistance'],
-      } : null;
-      if (selectedHostel) {
-        setHostel(selectedHostel);
+    async function loadHostel() {
+      if (!hostelId) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
 
-      // Check for existing inspection booking
-      const checkBooking = async () => {
-        try {
-          const res = await authFetch(buildApiUrl(`/inspections/?listing=${hostelId}`));
-          if (res.ok) {
-            const data = await res.json();
-            if (data.length > 0) {
+      try {
+        const listings = await getPublishedListings();
+        const listing = listings?.find((item) => item.id === hostelId && item.category === 'Hostel');
+        if (cancelled) return;
+
+        const selectedHostel = listing ? {
+          id: listing.id,
+          name: listing.title,
+          location: listing.location,
+          price: Number(listing.price),
+          capacity: listing.duration_unit === 'year' ? 'Annual student rent' : 'Student accommodation',
+          description: listing.description || 'Approved student accommodation.',
+          image: listingImage(listing) || '/assets/ay-smart-logo.png',
+          amenities: listing.facilities || [],
+          rules: ['Rent duration: per year', 'Inspect before payment', 'Contact support for assistance'],
+        } : null;
+
+        if (selectedHostel) {
+          setHostel(selectedHostel);
+          try {
+            const res = await authFetch(buildApiUrl(`/inspections/?listing=${hostelId}`));
+            if (!cancelled && res.ok) {
+              const data = await res.json();
               const latestBooking = data[0];
-              setBookingId(latestBooking.id);
-              setAdminResponse(latestBooking.agent_response || 'PENDING');
-              
-              // Show satisfaction popup if admin approved
-              if (latestBooking.agent_response === 'ACCEPTED') {
-                setSatisfactionPopup(true);
+              if (latestBooking) {
+                setBookingId(latestBooking.id);
+                setAdminResponse(latestBooking.agent_response || 'PENDING');
+                if (latestBooking.agent_response === 'ACCEPTED') {
+                  setSatisfactionPopup(true);
+                }
               }
             }
+          } catch {
+            if (!cancelled) console.log('Could not fetch booking status');
           }
-        } catch (err) {
-          console.log('Could not fetch booking status');
-        } finally {
-          setLoading(false);
         }
-      };
-
-        checkBooking();
-      } else {
-        setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    };
+    }
 
-    loadHostel().catch(() => setLoading(false));
+    loadHostel();
+    return () => {
+      cancelled = true;
+    };
   }, [hostelId]);
 
   async function handleBookInspection(e: React.FormEvent<HTMLFormElement>) {
@@ -188,7 +189,7 @@ export default function HostelDetailPage() {
       <div className="mx-auto max-w-4xl px-4 py-6">
         {/* Large Hero Image */}
         <div className="mb-6 overflow-hidden rounded-[2.2rem] border border-[color:var(--brand-border)] shadow-[0_24px_56px_rgba(46,17,54,0.12)]">
-          <img src={hostel.image} alt={hostel.name} className="h-80 w-full object-cover" />
+          <Image src={hostel.image} alt={hostel.name} width={1200} height={800} className="h-80 w-full object-cover" />
         </div>
 
         {/* Title & Badge */}
@@ -321,10 +322,10 @@ export default function HostelDetailPage() {
               {locationError && <p className="text-sm text-red-600">{locationError}</p>}
               <button
                 type="submit"
-                disabled={(bookingStatus as any) === 'submitting'}
+                disabled={bookingStatus === 'submitting'}
                 className="w-full rounded-[1.2rem] bg-gradient-to-r from-[#4e235f] to-[#6b2d82] px-4 py-4 font-black text-white shadow-lg shadow-[#4e235f]/20 transition hover:shadow-lg disabled:opacity-50"
               >
-                {(bookingStatus as any) === 'submitting' ? '⏳ Booking...' : '📋 Book Inspection'}
+                {bookingStatus === 'submitting' ? '⏳ Booking...' : '📋 Book Inspection'}
               </button>
             </form>
           )}

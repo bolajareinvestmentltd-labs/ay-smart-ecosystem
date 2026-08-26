@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -189,7 +190,7 @@ export default function DashboardPage() {
             <p className="mt-2 text-sm text-[var(--text-muted)]">All uploads stay pending until admin verifies them before appearing on the home screen.</p>
             {!profile.isKycVerified && (
               <div className="rounded-3xl border border-[#f1b8a5]/50 bg-[#f9efe9] p-4 text-[#4e235f]">
-                Complete KYC before submitting a listing. Click "Complete KYC" above to proceed.
+                Complete KYC before submitting a listing. Click Complete KYC above to proceed.
               </div>
             )}
             <div className="mt-4 grid gap-4">
@@ -247,7 +248,7 @@ export default function DashboardPage() {
                 {imagePreviews.length > 0 && (
                   <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                     {imagePreviews.map((preview, index) => (
-                      <img key={`${preview}-${index}`} src={preview} alt={`Preview ${index + 1}`} className="h-16 w-full rounded-xl object-cover" />
+                      <Image key={`${preview}-${index}`} src={preview} alt={`Preview ${index + 1}`} width={120} height={64} className="h-16 w-full rounded-xl object-cover" />
                     ))}
                   </div>
                 )}

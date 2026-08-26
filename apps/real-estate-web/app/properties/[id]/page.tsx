@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PropertyGallery from '../../components/PropertyGallery';
 import InspectionBookingForm from '../../components/InspectionBookingForm';
@@ -8,11 +8,29 @@ import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
 import LoadingScreen from '../../components/LoadingScreen';
 
+type PropertyImageItem = { id?: number; url?: string; image?: string; video_url?: string; caption?: string };
+type FavoriteItem = { id?: number; listing?: { id?: number | string } | null };
+type HiddenItem = { id?: number; listing?: { id?: number | string } | null };
+type UserProfile = { role?: string };
+type PropertyData = {
+  id?: number | string;
+  title?: string;
+  price?: number | string;
+  property_type_display?: string;
+  location_address?: string;
+  main_image_url?: string;
+  source?: string;
+  map_url?: string;
+  latitude?: number | string;
+  longitude?: number | string;
+  images?: PropertyImageItem[];
+  virtual_tour_url?: string;
+};
+
 export default function PropertyDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const propertyId = params?.id ? String(params.id) : null;
-  const [property, setProperty] = useState<any>(null);
+  const [property, setProperty] = useState<PropertyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -21,7 +39,7 @@ export default function PropertyDetailPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isFavorited, setIsFavorited] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -71,7 +89,7 @@ export default function PropertyDetailPage() {
             const favRes = await authFetch(buildApiUrl('/favorites/'));
             if (favRes.ok) {
               const favorites = await favRes.json();
-              const isFav = favorites.some((fav: any) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
+              const isFav = favorites.some((fav: FavoriteItem) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
               setIsFavorited(isFav);
             }
 
@@ -79,11 +97,11 @@ export default function PropertyDetailPage() {
             const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
             if (hiddenRes.ok) {
               const hidden = await hiddenRes.json();
-              const isHid = hidden.some((hid: any) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
+              const isHid = hidden.some((hid: HiddenItem) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
               setIsHidden(isHid);
             }
           }
-        } catch (err) {
+        } catch {
           console.log('User not authenticated');
         }
       } catch (error) {
@@ -103,9 +121,9 @@ export default function PropertyDetailPage() {
           <h1 className="text-2xl font-black text-white">Unable to load property</h1>
           <p className="mt-4 text-sm text-zinc-400">{errorMessage}</p>
           <div className="mt-6">
-            <a href="/properties" className="rounded-full bg-brand-purple px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
+            <Link href="/properties" className="rounded-full bg-brand-purple px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
               Back to listings
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -113,10 +131,11 @@ export default function PropertyDetailPage() {
   if (!property) return <div className="min-h-screen flex items-center justify-center">Property not found</div>;
 
   const openMap = () => {
+    const locationQuery = property.location_address ?? 'property location';
     if (property.latitude && property.longitude) {
       window.open(`https://www.google.com/maps?q=${property.latitude},${property.longitude}`, '_blank');
     } else {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location_address)}`, '_blank');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`, '_blank');
     }
   };
 
@@ -132,7 +151,7 @@ export default function PropertyDetailPage() {
         const favRes = await authFetch(buildApiUrl('/favorites/'));
         if (favRes.ok) {
           const favorites = await favRes.json();
-          const favToDelete = favorites.find((fav: any) => fav.listing?.id === propertyId || fav.id === propertyId);
+          const favToDelete = favorites.find((fav: FavoriteItem) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
           if (favToDelete) {
             await authFetch(buildApiUrl(`/favorites/${favToDelete.id}/`), { method: 'DELETE' });
             setIsFavorited(false);
@@ -168,7 +187,7 @@ export default function PropertyDetailPage() {
         const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
         if (hiddenRes.ok) {
           const hidden = await hiddenRes.json();
-          const hidToDelete = hidden.find((hid: any) => hid.listing?.id === propertyId || hid.id === propertyId);
+          const hidToDelete = hidden.find((hid: HiddenItem) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
           if (hidToDelete) {
             await authFetch(buildApiUrl(`/hidden-listings/${hidToDelete.id}/`), { method: 'DELETE' });
             setIsHidden(false);
@@ -220,10 +239,7 @@ export default function PropertyDetailPage() {
     const payload = await res.json().catch(() => null);
     if (payload && payload.id) {
       const newImage = { id: payload.id, url: payload.image || payload.url, video_url: payload.video, caption: payload.caption || '' };
-      setProperty((prev: any) => ({
-        ...prev,
-        images: prev.images ? [newImage, ...prev.images] : [newImage],
-      }));
+      setProperty((prev) => (prev ? { ...prev, images: prev.images ? [newImage, ...prev.images] : [newImage] } : prev));
       setUploadMessage('Image uploaded successfully.');
       setSelectedFile(null);
       setSelectedVideo(null);
@@ -273,7 +289,7 @@ export default function PropertyDetailPage() {
 
         <div className="mt-4 grid gap-6 md:grid-cols-2">
           <div>
-            <PropertyGallery images={property.images && property.images.length ? property.images : [{ id: 0, url: property.main_image_url }]} />
+            <PropertyGallery images={property.images && property.images.length ? property.images.map((item, index) => ({ id: item.id ?? index, url: item.url ?? item.image, video_url: item.video_url, caption: item.caption })) : [{ id: 0, url: property.main_image_url }]} />
             {property.virtual_tour_url && (
               <a href={property.virtual_tour_url} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full border border-zinc-700 px-4 py-2">Open Virtual Tour</a>
             )}
@@ -291,7 +307,7 @@ export default function PropertyDetailPage() {
                     : { propertyId: Number(propertyId) })}
                 />
               </div>
-              {user && ['seller', 'agent', 'both'].includes(user.role) && <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
+              {user && user.role && ['seller', 'agent', 'both'].includes(user.role) && <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
                 <h2 className="text-lg font-black">Upload property media</h2>
                 <p className="mt-2 text-sm text-zinc-400">Trusted agents and authenticated sellers can submit photos or walkthrough videos for this listing.</p>
                 <input

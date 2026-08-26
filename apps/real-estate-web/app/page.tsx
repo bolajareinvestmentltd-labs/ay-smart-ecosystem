@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, CalendarDays, ChevronRight, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound } from "lucide-react";
@@ -50,7 +51,7 @@ export default function RealEstateHome() {
         <header className="-mx-4 flex items-center justify-between bg-[var(--brand-purple-deep)] px-4 py-4 text-white sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <span className="relative h-9 w-9 overflow-hidden rounded-xl bg-white/95 p-1">
-              <img src="/assets/ay-smart-logo.png" alt="AY'SMART logo" className="h-full w-full object-contain" />
+              <Image src="/assets/ay-smart-logo.png" alt="AY'SMART logo" width={36} height={36} className="h-full w-full object-contain" />
             </span>
             <span className="text-sm font-black tracking-[-0.03em] text-white">AY-Smart</span>
           </Link>
@@ -78,7 +79,7 @@ export default function RealEstateHome() {
             const image = listing ? listingImage(listing) || "/assets/ay-smart-logo.png" : "/assets/ay-smart-logo.png";
             return (
               <Link key={category.label} href={category.href} className={`relative block h-40 transition-opacity duration-500 sm:h-44 ${index === carouselIndex ? "opacity-100" : "hidden opacity-0"}`}>
-                <img src={image} alt={listing?.title || category.label} loading={index === carouselIndex ? 'eager' : 'lazy'} decoding="async" fetchPriority={index === carouselIndex ? 'high' : 'low'} className="h-full w-full object-cover opacity-75" />
+                <Image src={image} alt={listing?.title || category.label} fill sizes="(max-width: 768px) 100vw, 70vw" className="object-cover opacity-75" priority={index === carouselIndex} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--brand-accent)]">Explore AY&apos;SMART</p><h2 className="mt-1 text-xl font-black">{category.label}</h2><p className="mt-1 text-xs text-white/75">{listing?.title || "Approved listings will appear here"}</p></div>
               </Link>
@@ -98,7 +99,7 @@ export default function RealEstateHome() {
             {listings.filter((listing) => activeCategory === "hostels" ? listing.category === "Hostel" : listing.category !== "Hostel").slice(0, 4).map((listing) => {
               const image = listingImage(listing) || "/assets/ay-smart-logo.png";
               const href = listing.category === "Hostel" ? `/hostel/${listing.id}` : `/properties/${listing.id}`;
-              return <Link key={listing.id} href={href} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]"><div className="relative h-32"><img src={image} alt={listing.title} loading="lazy" decoding="async" className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div><div className="p-3"><div className="flex items-start justify-between gap-2"><h3 className="truncate text-sm font-black">{listing.title}</h3><span className="flex items-center gap-1 text-[11px] font-bold"><Star size={12} fill="#f1a990" className="text-[#e28c72]" />Live</span></div><p className="mt-1 flex items-center gap-1 text-[11px] text-[#817681]"><MapPin size={12} />{listing.location}</p><p className="mt-2 text-sm font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></div></Link>;
+              return <Link key={listing.id} href={href} className="min-w-[235px] snap-start overflow-hidden rounded-2xl border border-[#eaded9] bg-white shadow-[0_10px_26px_rgba(78,35,95,0.08)]"><div className="relative h-32"><Image src={image} alt={listing.title} width={235} height={128} className="h-full w-full object-cover" /><span className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-[#4e235f]"><Heart size={14} /></span></div><div className="p-3"><div className="flex items-start justify-between gap-2"><h3 className="truncate text-sm font-black">{listing.title}</h3><span className="flex items-center gap-1 text-[11px] font-bold"><Star size={12} fill="#f1a990" className="text-[#e28c72]" />Live</span></div><p className="mt-1 flex items-center gap-1 text-[11px] text-[#817681]"><MapPin size={12} />{listing.location}</p><p className="mt-2 text-sm font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></div></Link>;
             })}
           </div>
           {!listings.some((listing) => activeCategory === "hostels" ? listing.category === "Hostel" : listing.category !== "Hostel") && <p className="rounded-2xl border border-dashed border-[#d7c6cf] p-6 text-center text-sm text-[#817681]">No approved {activeCategory === "hostels" ? "hostel" : "real estate"} listings are live yet.</p>}
@@ -107,7 +108,7 @@ export default function RealEstateHome() {
 
         <section className="mt-6"><div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Live locations</h2><Link href="/properties" className="text-xs font-bold text-[#4e235f]">View all</Link></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">{Array.from(new Set(listings.map((listing) => listing.location))).slice(0, 4).map((location) => <Link href={`/properties?search=${encodeURIComponent(location)}`} key={location} className="rounded-xl border border-[#eaded9] bg-white p-4 text-center text-xs font-semibold text-[#5f5260]">{location}</Link>)}</div></section>
 
-        <section className="mt-6"><div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Popular rentals</h2><Link href="/hostel" className="text-xs font-bold text-[#4e235f]">See all</Link></div><div className="mt-3 space-y-2">{listings.filter((listing) => listing.category === "Hostel").slice(0, 2).map((listing) => <Link href={`/hostel/${listing.id}`} key={listing.id} className="flex items-center gap-3 rounded-2xl border border-[#eaded9] bg-white p-2 shadow-[0_6px_18px_rgba(78,35,95,0.05)]"><img src={listingImage(listing) || "/assets/ay-smart-logo.png"} alt={listing.title} className="h-16 w-20 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{listing.title}</p><p className="mt-1 text-[11px] text-[#817681]">{listing.location} · <Star size={10} fill="#f1a990" className="inline text-[#e28c72]" /> Live</p></div><p className="text-xs font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></Link>)}</div></section>
+        <section className="mt-6"><div className="flex items-center justify-between"><h2 className="text-lg font-black tracking-[-0.04em]">Popular rentals</h2><Link href="/hostel" className="text-xs font-bold text-[#4e235f]">See all</Link></div><div className="mt-3 space-y-2">{listings.filter((listing) => listing.category === "Hostel").slice(0, 2).map((listing) => <Link href={`/hostel/${listing.id}`} key={listing.id} className="flex items-center gap-3 rounded-2xl border border-[#eaded9] bg-white p-2 shadow-[0_6px_18px_rgba(78,35,95,0.05)]"><Image src={listingImage(listing) || "/assets/ay-smart-logo.png"} alt={listing.title} width={80} height={64} className="h-16 w-20 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{listing.title}</p><p className="mt-1 text-[11px] text-[#817681]">{listing.location} · <Star size={10} fill="#f1a990" className="inline text-[#e28c72]" /> Live</p></div><p className="text-xs font-black text-[#4e235f]">₦{Number(listing.price || 0).toLocaleString()}</p></Link>)}</div></section>
 
         <Link href="/properties" className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-[#4e235f] py-3 text-sm font-bold text-white shadow-lg shadow-[#4e235f]/20"><CalendarDays size={16} /> Book a viewing</Link>
       </div>
