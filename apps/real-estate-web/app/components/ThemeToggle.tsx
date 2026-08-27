@@ -1,14 +1,19 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribeToTheme = (onStoreChange: () => void) => {
+  const observer = new MutationObserver(onStoreChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  return () => observer.disconnect();
+};
+
+const getThemeSnapshot = () => document.documentElement.dataset.theme === 'dark';
+const getServerThemeSnapshot = () => false;
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {
-  const [dark, setDark] = useState(false);
-
-  useEffect(() => {
-    setDark(document.documentElement.dataset.theme === 'dark');
-  }, []);
+  const dark = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerThemeSnapshot);
 
   function toggleTheme() {
     const next = dark ? 'light' : 'dark';
@@ -16,7 +21,6 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     document.documentElement.classList.toggle('dark', next === 'dark');
     document.body.dataset.theme = next;
     window.localStorage.setItem('aysmart-theme', next);
-    setDark(next === 'dark');
   }
 
   return (
