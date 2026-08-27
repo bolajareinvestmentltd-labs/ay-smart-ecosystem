@@ -1,7 +1,6 @@
 'use client';
 import Image from 'next/image';
-import Link from 'next/link';
-import { ShieldCheck, Truck, Sparkles, BadgeCheck, Star } from 'lucide-react';
+import { ShieldCheck, Truck, Sparkles, BadgeCheck, Award } from 'lucide-react';
 import { SITE } from '../config/site';
 
 export default function AboutPage() {
@@ -27,7 +26,7 @@ export default function AboutPage() {
             <div className="mt-4 flex items-center gap-4">
               <div className="h-16 w-16 overflow-hidden rounded-full bg-white/5" />
               <div>
-                <p className="font-semibold">CEO — AY'SMART Investment Ltd</p>
+                <p className="font-semibold">CEO — AY&apos;SMART Investment Ltd</p>
                 <p className="text-sm text-zinc-400">Founder & Chief Executive. Passionate about building reliable marketplaces and trusted verification systems.</p>
               </div>
             </div>
@@ -44,7 +43,7 @@ export default function AboutPage() {
 
             <div className="mt-6">
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Follow Us</h3>
-              <div className="mt-3 flex gap-3">
+              <div className="mt-3 flex gap-4 p-1">
                 <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Web</a>
                 <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Twitter</a>
                 <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Instagram</a>
@@ -54,7 +53,7 @@ export default function AboutPage() {
         </section>
 
         <section className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6">
-          <h2 className="text-xl font-bold">Trust & Assurance</h2>
+          <h2 className="text-xl font-bold">Investment Assurance</h2>
           <p className="mt-3 text-sm text-zinc-400">We verify sellers and agents, and review every high-value listing for accuracy. Our verification workflows include automated checks and manual review when needed.</p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -88,6 +87,17 @@ export default function AboutPage() {
                 <p className="text-sm text-zinc-300">Warranty Available</p>
                 <p className="text-xs text-zinc-400">Selected listings include warranty options.</p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6">
+          <h2 className="text-xl font-bold">Certifications & Awards</h2>
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <Award className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <p className="font-semibold">CAC registration</p>
+              <p className="mt-1 text-sm text-zinc-400">AY&apos;SMART Investment Ltd operates as a registered business. Certification details can be confirmed through the company records.</p>
             </div>
           </div>
         </section>

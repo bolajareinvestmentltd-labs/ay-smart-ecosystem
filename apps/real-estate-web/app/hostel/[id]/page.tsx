@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { authFetch } from '../../lib/auth';
 import { buildApiUrl } from '../../lib/api';
 import { getPublishedListings, listingImage } from '../../lib/backend';
-import { MapPin, Bed, Zap, Home, Clock } from 'lucide-react';
+import { MapPin, Bed, Zap, Home, Clock, Share2, X } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 
 interface HostelDetail {
@@ -153,6 +153,12 @@ export default function HostelDetailPage() {
     setBookingStatus('idle');
   }
 
+  async function handleShare() {
+    const shareData = { title: hostel?.name || 'AY\'SMART hostel', url: window.location.href };
+    if (navigator.share) await navigator.share(shareData).catch(() => undefined);
+    else await navigator.clipboard?.writeText(window.location.href);
+  }
+
   if (loading) {
     return <LoadingScreen label="Loading hostel" />;
   }
@@ -177,11 +183,11 @@ export default function HostelDetailPage() {
       {/* Header with Back Button */}
       <header className="sticky top-0 z-40 border-b border-[color:var(--brand-border)] bg-[color:var(--brand-surface-2)]/95 px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <Link href="/hostel" className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--brand-border)] bg-white/70 text-[#4e235f] transition hover:bg-white">
-            ←
+          <Link href="/hostel" aria-label="Back to hostels" className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--brand-border)] bg-white/70 text-[#4e235f] transition hover:bg-white">
+            <span aria-hidden="true">←</span>
           </Link>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--brand-border)] bg-white/70 text-[#4e235f] transition hover:bg-white">
-            ↗
+          <button type="button" aria-label="Share hostel" onClick={() => void handleShare()} className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--brand-border)] bg-white/70 text-[#4e235f] transition hover:bg-white">
+            <Share2 size={16} />
           </button>
         </div>
       </header>
@@ -336,9 +342,10 @@ export default function HostelDetailPage() {
       </div>
 
       {satisfactionPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="max-w-md rounded-[2rem] border border-[color:var(--brand-border)] bg-white p-8 shadow-2xl">
-            <h2 className="text-2xl font-black text-[var(--text-primary)]">Are you satisfied?</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" role="presentation" onClick={() => setSatisfactionPopup(false)}>
+          <div className="relative max-w-md rounded-[2rem] border border-[color:var(--brand-border)] bg-white p-8 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="satisfaction-title" onClick={(event) => event.stopPropagation()}>
+            <button type="button" aria-label="Close approval prompt" onClick={() => setSatisfactionPopup(false)} className="absolute right-4 top-4 rounded-full p-2 text-[var(--text-muted)] transition hover:bg-[color:var(--brand-surface)] hover:text-[var(--text-primary)]"><X size={18} /></button>
+            <h2 id="satisfaction-title" className="pr-8 text-2xl font-black text-[var(--text-primary)]">Are you satisfied?</h2>
             <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">Admin has approved your inspection. Would you like to proceed to payment?</p>
             <div className="mt-6 flex gap-3">
               <button

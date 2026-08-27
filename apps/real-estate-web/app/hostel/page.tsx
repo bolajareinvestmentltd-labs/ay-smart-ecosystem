@@ -17,6 +17,7 @@ export default function HostelPage() {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('All Hostels');
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [loadedAt] = useState(() => Date.now());
 
   useEffect(() => {
     authFetch('/api/favorites/').then(async (response) => {
@@ -26,9 +27,9 @@ export default function HostelPage() {
 
   const visibleHostels = useMemo(() => hostels.filter((hostel) => {
     const matchesQuery = !query.trim() || `${hostel.title} ${hostel.location}`.toLowerCase().includes(query.trim().toLowerCase());
-    const matchesTab = tab === 'All Hostels' || (tab === 'New' && new Date(hostel.created_at).getTime() > Date.now() - 30 * 86400000) || (tab === 'Deals' && Number(hostel.cashback) > 0) || tab === 'Popular';
+    const matchesTab = tab === 'All Hostels' || (tab === 'New' && new Date(hostel.created_at).getTime() > loadedAt - 30 * 86400000) || (tab === 'Deals' && Number(hostel.cashback) > 0) || tab === 'Popular';
     return matchesQuery && matchesTab;
-  }), [hostels, query, tab]);
+  }), [hostels, query, tab, loadedAt]);
 
   async function toggleFavorite(event: React.MouseEvent, id: number) {
     event.preventDefault();
@@ -42,8 +43,8 @@ export default function HostelPage() {
       <div className="mx-auto max-w-6xl">
         {/* Header with Search */}
         <div className="mb-6 rounded-[1.6rem] border border-[#4e235f]/20 bg-gradient-to-br from-[#4e235f] to-[#6b2d82] p-5 shadow-lg">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">🏠</span>
+          <div className="mb-4 flex items-center gap-2">
+            <Image src="/assets/ay-smart-logo.png" alt="AY'SMART logo" width={28} height={28} className="h-7 w-7 rounded-lg object-contain" />
             <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f1b8a5]">Hostels & Stays</p>
           </div>
           <input
@@ -80,7 +81,7 @@ export default function HostelPage() {
             >
               {/* Image */}
               <div className="relative h-40 overflow-hidden bg-[#f0e6df]">
-                <img src={listingImage(hostel) || '/assets/ay-smart-logo.png'} alt={hostel.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                <Image src={listingImage(hostel) || '/assets/ay-smart-logo.png'} alt={hostel.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <button onClick={(event) => void toggleFavorite(event, hostel.id)} className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#4e235f] transition hover:bg-white ${favoriteIds.includes(hostel.id) ? 'bg-[#f1b8a5]' : ''}`}>
                   <Bookmark size={18} />
