@@ -6,9 +6,10 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from .private_storage import PrivateIdentityDocumentStorage
 
 try:
     from cloudinary_storage.storage import VideoMediaCloudinaryStorage
@@ -344,7 +345,7 @@ class UserProfile(models.Model):
     kyc_verified_at = models.DateTimeField(null=True, blank=True)
     identity_document_type = models.CharField(max_length=30, blank=True)
     identity_document_number = models.CharField(max_length=100, blank=True)
-    identity_document = models.FileField(upload_to='identity_documents/', blank=True, null=True)
+    identity_document = models.FileField(storage=PrivateIdentityDocumentStorage(), upload_to='identity_documents/', blank=True, null=True)
     kyc_rejection_reason = models.TextField(blank=True)
     email_verified = models.BooleanField(default=False)  # Added email verification field
     # Timestamp the last time a verification email was sent (for server-side cooldown)
@@ -353,12 +354,20 @@ class UserProfile(models.Model):
     email_bounced = models.BooleanField(default=False)
     student_matric_number = models.CharField(max_length=100, blank=True)
     student_email = models.EmailField(blank=True)
-    student_id_image = models.ImageField(upload_to='student_id_images/', blank=True, null=True)
+    student_id_image = models.ImageField(storage=PrivateIdentityDocumentStorage(), upload_to='student_id_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username} profile"
+
+
+@receiver(post_delete, sender=UserProfile)
+def delete_private_identity_documents(sender, instance, **kwargs):
+    for field_name in ('identity_document', 'student_id_image'):
+        field = getattr(instance, field_name, None)
+        if field and field.name:
+            field.delete(save=False)
 
 
 class Listing(models.Model):

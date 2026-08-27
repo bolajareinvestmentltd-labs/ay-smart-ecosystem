@@ -62,6 +62,7 @@ urlpatterns = [
     path("api/auth/email-webhook/", __import__('core_api.views', fromlist=['']).EmailWebhookView.as_view(), name="auth_email_webhook"),
     path("api/auth/me/", UserInfoView.as_view(), name="auth_me"),
     path("api/auth/profile/", ProfileView.as_view(), name="auth_profile"),
+    path("api/admin/identity-documents/<int:profile_id>/<str:document_type>/", __import__('core_api.views', fromlist=['']).PrivateIdentityDocumentView.as_view(), name="private_identity_document"),
     path("api/kyc/approve/", KycApprovalView.as_view(), name="kyc_approve"),
     path("api/payments/checkout/", CheckoutView.as_view(), name="checkout"),
     path("api/payments/initiate/", PaymentInitiateView.as_view(), name="payment_initiate"),

@@ -181,6 +181,17 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(profile.phone, "+2348000000000")
         self.assertEqual(profile.location, "Lagos")
 
+    def test_identity_documents_are_staff_only(self):
+        user = User.objects.create_user(username='documentowner', email='documentowner@example.com', password='secret123')
+        profile = UserProfile.objects.get(user=user)
+
+        anonymous_response = self.client.get(f'/api/admin/identity-documents/{profile.id}/identity/')
+        self.assertIn(anonymous_response.status_code, {401, 403})
+
+        self.client.force_authenticate(user=user)
+        user_response = self.client.get(f'/api/admin/identity-documents/{profile.id}/identity/')
+        self.assertEqual(user_response.status_code, 403)
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     @patch('core_api.views.send_mail')
     def test_verification_email_uses_resend_configured_sender(self, mock_send_mail):

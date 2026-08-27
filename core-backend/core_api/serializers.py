@@ -212,6 +212,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     identity_document = serializers.FileField(write_only=True, required=False, allow_null=True)
+    student_id_image = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = UserProfile

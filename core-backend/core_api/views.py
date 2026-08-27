@@ -8,6 +8,7 @@ import requests
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.http import FileResponse
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -536,6 +537,37 @@ class EmailWebhookView(APIView):
         return Response(data)
 
 
+class PrivateIdentityDocumentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, profile_id, document_type):
+        if not request.user.is_staff:
+            return Response({'detail': 'Only authorized staff may access identity documents.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            profile = UserProfile.objects.get(pk=profile_id)
+        except UserProfile.DoesNotExist:
+            return Response({'detail': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if document_type not in {'identity', 'student'}:
+            return Response({'detail': 'Unknown document type.'}, status=status.HTTP_400_BAD_REQUEST)
+        field = profile.identity_document if document_type == 'identity' else profile.student_id_image
+        if not field or not field.name:
+            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            return FileResponse(field.open('rb'), as_attachment=True, filename=os.path.basename(field.name))
+        except (FileNotFoundError, OSError):
+            return Response({'detail': 'Document is unavailable.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+def purge_rejected_identity_documents(profile):
+    for field_name in ('identity_document', 'student_id_image'):
+        field = getattr(profile, field_name, None)
+        if field and field.name:
+            field.delete(save=False)
+            setattr(profile, field_name, None)
+    profile.save(update_fields=['identity_document', 'student_id_image', 'updated_at'])
+
+
 class KycApprovalView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
@@ -592,6 +624,7 @@ class KycApprovalView(APIView):
                 profile.kyc_status = 'REJECTED'
                 profile.kyc_rejection_reason = 'Identity provider rejected the verification request.'
                 profile.save(update_fields=['kyc_status', 'kyc_rejection_reason', 'updated_at'])
+                purge_rejected_identity_documents(profile)
                 return Response({'detail': 'NIN verification could not be completed.'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
             entity = provider_data.get('entity') or {}
@@ -610,6 +643,7 @@ class KycApprovalView(APIView):
                 profile.kyc_face_match_score = score_value
                 profile.kyc_rejection_reason = 'NIN record and selfie did not meet the face-match threshold.'
                 profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_face_match_score', 'kyc_rejection_reason', 'updated_at'])
+                purge_rejected_identity_documents(profile)
                 return Response({'detail': 'NIN and selfie could not be matched.', 'score': score_value}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
             profile.is_kyc_verified = True
