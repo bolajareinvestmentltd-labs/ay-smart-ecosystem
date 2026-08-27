@@ -12,14 +12,14 @@ from django.http import FileResponse
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.db import models
+from django.db import models, transaction as db_transaction
 from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle
 import hashlib
 import hmac
 import base64
@@ -1170,6 +1170,85 @@ class SupportRequestViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(support_request).data)
 
 
+class SupportAssistantView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'support_assistant'
+
+    KNOWLEDGE_BASE = (
+        "AY'SMART is a property, student hostel, construction, automotive, and investment marketplace. "
+        "Users can browse approved listings without signing in. To book an inspection, open a live listing, "
+        "review its details, and submit the inspection request. Sellers and agents must complete KYC before "
+        "publishing listings. Students should provide matriculation and student ID details when required. "
+        "Payments are verified by the AY'SMART server; users should never send card details in chat. "
+        "For complaints, payment issues, account problems, or questions outside this information, use Contact Support."
+    )
+    FALLBACK_ANSWERS = {
+        'listing': 'Verified sellers and agents can open Dashboard, complete the listing form, add the required images, and submit it for admin publication.',
+        'upload': 'Verified sellers and agents can open Dashboard, complete the listing form, add the required images, and submit it for admin publication.',
+        'kyc': 'Agents and sellers need valid identity details and a selfie for KYC review. Students may also need matriculation and student ID details.',
+        'verification': 'Use the verification link sent to your email, then sign in to complete your profile and KYC when required.',
+        'password': 'Use Forgot password on the login page. AY\'SMART will send a secure reset link to your registered email.',
+        'booking': 'Open a LIVE property or hostel listing, review the details, and submit an inspection request from its dedicated page.',
+        'inspection': 'Open a LIVE property or hostel listing, review the details, and submit an inspection request from its dedicated page.',
+        'support': 'Use Contact support to send a complaint, payment issue, listing problem, or other request to the support team.',
+        'complaint': 'Use Contact support to send a complaint, payment issue, listing problem, or other request to the support team.',
+        'payment': 'Payments are verified by AY\'SMART. Do not share card details in chat. Contact support if a payment remains unconfirmed.',
+    }
+
+    def _fallback(self, question):
+        question_lower = question.lower()
+        for keyword, answer in self.FALLBACK_ANSWERS.items():
+            if keyword in question_lower:
+                return answer
+        return 'I can help with AY\'SMART listings, KYC, bookings, payments, and account access. For anything else, use Contact support for a human response.'
+
+    def post(self, request):
+        question = str(request.data.get('question') or '').strip()[:1000]
+        if not question:
+            return Response({'detail': 'A question is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        fallback = self._fallback(question)
+        provider_url = getattr(settings, 'AI_ASSISTANT_URL', '').strip()
+        provider_key = getattr(settings, 'AI_ASSISTANT_API_KEY', '').strip()
+        if not provider_url or not provider_key:
+            return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base'})
+
+        messages = request.data.get('messages') if isinstance(request.data.get('messages'), list) else []
+        safe_history = [
+            {'role': item.get('role'), 'content': str(item.get('content') or '')[:1000]}
+            for item in messages[-6:]
+            if isinstance(item, dict) and item.get('role') in {'user', 'assistant'}
+        ]
+        prompt = (
+            "You are AY-SMART's support assistant. Answer only from the supplied knowledge base. "
+            "Do not invent policies, prices, legal claims, or transaction status. Never request passwords, "
+            "one-time codes, card numbers, or identity document images. If the answer is not covered, "
+            "say that Contact Support should handle it. Keep the answer concise.\n\n"
+            f"Knowledge base: {self.KNOWLEDGE_BASE}"
+        )
+        try:
+            response = requests.post(
+                provider_url,
+                headers={'Authorization': f'Bearer {provider_key}', 'Content-Type': 'application/json'},
+                json={
+                    'model': getattr(settings, 'AI_ASSISTANT_MODEL', 'gpt-4o-mini'),
+                    'messages': [{'role': 'system', 'content': prompt}, *safe_history, {'role': 'user', 'content': question}],
+                    'temperature': 0.2,
+                    'max_tokens': getattr(settings, 'AI_ASSISTANT_MAX_TOKENS', 220),
+                },
+                timeout=getattr(settings, 'AI_ASSISTANT_TIMEOUT', 8),
+            )
+            response.raise_for_status()
+            answer = str(response.json().get('choices', [{}])[0].get('message', {}).get('content') or '').strip()
+            if answer:
+                return Response({'answer': answer[:2000], 'source': 'AY-SMART assistant'})
+        except (requests.RequestException, ValueError, IndexError, AttributeError, KeyError):
+            pass
+        return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base', 'fallback': True})
+
+
 class InspectionInvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InspectionInvoiceSerializer
     permission_classes = [IsAuthenticated]
@@ -1351,6 +1430,45 @@ class CheckoutView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+def finalize_successful_payment(payment):
+    """Apply a successful payment once, regardless of its confirmation source."""
+    with db_transaction.atomic():
+        locked_payment = PaymentTransaction.objects.select_for_update().select_related('invoice').get(pk=payment.pk)
+        if locked_payment.status == 'SUCCESS':
+            return locked_payment, False
+
+        locked_payment.status = 'SUCCESS'
+        locked_payment.save(update_fields=['status', 'updated_at'])
+        if locked_payment.invoice:
+            invoice = locked_payment.invoice
+            invoice.status = 'PAID'
+            invoice.paid_at = invoice.paid_at or timezone.now()
+            invoice.save(update_fields=['status', 'paid_at'])
+            Notification.objects.create(
+                user=locked_payment.user,
+                kind='payment_success',
+                title='Payment confirmed',
+                message=f'Invoice {invoice.invoice_number} has been paid successfully.',
+                link=f'/success?transactionId={locked_payment.id}',
+            )
+            return locked_payment, True
+
+        profile, _ = UserProfile.objects.get_or_create(user=locked_payment.user)
+        profile.subscription_plan = locked_payment.plan
+        profile.subscription_status = 'active'
+        profile.subscription_expires_at = timezone.now() + timedelta(days=7)
+        profile.save(update_fields=['subscription_plan', 'subscription_status', 'subscription_expires_at', 'updated_at'])
+        wallet, _ = Wallet.objects.get_or_create(user=locked_payment.user)
+        wallet.credit(locked_payment.amount, reason=f"Subscription {locked_payment.plan}")
+        referral = Referral.objects.filter(referred_user=locked_payment.user, status='CONFIRMED', rewarded=False).select_for_update().first()
+        if referral and referral.referrer:
+            ref_wallet, _ = Wallet.objects.get_or_create(user=referral.referrer)
+            ref_wallet.credit(Decimal('500.00'), reason=f"Referral reward for subscription {locked_payment.user.id}")
+            referral.rewarded = True
+            referral.save(update_fields=['rewarded'])
+        return locked_payment, True
+
+
 class PaymentInitiateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1406,6 +1524,7 @@ class PaymentInitiateView(APIView):
                         'amount': int(amount_value * 100),
                         'reference': reference,
                         'currency': 'NGN',
+                        'callback_url': f"{settings.FRONTEND_URL.rstrip('/')}/success",
                         'channels': ['card', 'bank', 'ussd', 'qr', 'mobile_money'],
                         'metadata': {'plan': plan, 'user_id': request.user.id},
                     },
@@ -1480,8 +1599,11 @@ class PaymentVerifyView(APIView):
                 if response.ok:
                     data = response.json().get('data', {})
                     if data.get('status') in {'success', 'settled'}:
-                        transaction.status = 'SUCCESS'
-                        transaction.save(update_fields=['status', 'updated_at'])
+                        if data.get('amount') is not None and Decimal(str(data['amount'])) != transaction.amount * 100:
+                            return Response({'detail': 'Payment amount does not match the transaction.'}, status=status.HTTP_400_BAD_REQUEST)
+                        if data.get('reference') and data['reference'] != transaction.provider_reference:
+                            return Response({'detail': 'Payment reference does not match the transaction.'}, status=status.HTTP_400_BAD_REQUEST)
+                        transaction, _ = finalize_successful_payment(transaction)
                     else:
                         return Response({'detail': 'Payment not completed yet.'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
@@ -1489,34 +1611,30 @@ class PaymentVerifyView(APIView):
             except requests.RequestException:
                 return Response({'detail': 'Payment verification service unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        if transaction.invoice:
-            transaction.invoice.status = 'PAID'
-            transaction.invoice.paid_at = timezone.now()
-            transaction.invoice.save(update_fields=['status', 'paid_at'])
-            Notification.objects.create(user=request.user, kind='payment_success', title='Payment confirmed', message=f'Invoice {transaction.invoice.invoice_number} has been paid successfully.', link=f'/success?transactionId={transaction.id}')
-            return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
-
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        profile.subscription_plan = transaction.plan
-        profile.subscription_status = 'active'
-        profile.subscription_expires_at = timezone.now() + timedelta(days=7)
-        profile.save(update_fields=['subscription_plan', 'subscription_status', 'subscription_expires_at', 'updated_at'])
-
-        wallet, _ = Wallet.objects.get_or_create(user=request.user)
-        wallet.credit(transaction.amount, reason=f"Subscription {transaction.plan}")
-        # If this user was referred and the referral is confirmed but not yet rewarded,
-        # credit the referrer with a one-time reward and mark the referral as rewarded.
-        try:
-            referral = Referral.objects.filter(referred_user=request.user, status='CONFIRMED', rewarded=False).first()
-            if referral and referral.referrer:
-                ref_wallet, _ = Wallet.objects.get_or_create(user=referral.referrer)
-                ref_wallet.credit(Decimal('500.00'), reason=f"Referral reward for subscription {request.user.id}")
-                referral.rewarded = True
-                referral.save(update_fields=['rewarded'])
-        except Exception:
-            # avoid failing the verification flow if referral reward logic has issues
-            pass
         return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
+
+
+class PaystackPaymentWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        secret = getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '').strip() or getattr(settings, 'PAYSTACK_SECRET_KEY', '').strip()
+        signature = request.headers.get('X-Paystack-Signature', '')
+        expected = hmac.new(secret.encode(), request.body, hashlib.sha512).hexdigest() if secret else ''
+        if not secret or not signature or not hmac.compare_digest(signature, expected):
+            return Response({'detail': 'Invalid webhook signature.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if request.data.get('event') != 'charge.success':
+            return Response({'detail': 'Event ignored.'}, status=status.HTTP_200_OK)
+        data = request.data.get('data') or {}
+        reference = str(data.get('reference') or '').strip()
+        payment = PaymentTransaction.objects.filter(provider='paystack', provider_reference=reference).first()
+        if not payment:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if data.get('amount') is not None and Decimal(str(data['amount'])) != payment.amount * 100:
+            return Response({'detail': 'Payment amount does not match the transaction.'}, status=status.HTTP_400_BAD_REQUEST)
+        payment, processed = finalize_successful_payment(payment)
+        return Response({'detail': 'Payment processed.' if processed else 'Already processed.', 'id': payment.id}, status=status.HTTP_200_OK)
 
 
 class WemaPaymentWebhookView(APIView):
@@ -1536,26 +1654,13 @@ class WemaPaymentWebhookView(APIView):
         transaction = PaymentTransaction.objects.filter(provider='wema', provider_reference=reference).first()
         if not transaction:
             return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if transaction.status == 'SUCCESS':
+            return Response({'detail': 'Already processed.'}, status=status.HTTP_200_OK)
         if provider_status not in {'success', 'successful', 'settled', 'completed'}:
             transaction.status = 'FAILED'
             transaction.save(update_fields=['status', 'updated_at'])
             return Response({'detail': 'Payment was not successful.'}, status=status.HTTP_200_OK)
-        if transaction.status == 'SUCCESS':
-            return Response({'detail': 'Already processed.'}, status=status.HTTP_200_OK)
-
-        transaction.status = 'SUCCESS'
-        transaction.save(update_fields=['status', 'updated_at'])
-        if transaction.invoice:
-            transaction.invoice.status = 'PAID'
-            transaction.invoice.paid_at = timezone.now()
-            transaction.invoice.save(update_fields=['status', 'paid_at'])
-            Notification.objects.create(user=transaction.user, kind='payment_success', title='Payment confirmed', message=f'Invoice {transaction.invoice.invoice_number} has been paid successfully.', link=f'/success?transactionId={transaction.id}')
-            return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
-        profile, _ = UserProfile.objects.get_or_create(user=transaction.user)
-        profile.subscription_plan = transaction.plan
-        profile.subscription_status = 'active'
-        profile.subscription_expires_at = timezone.now() + timedelta(days=7)
-        profile.save(update_fields=['subscription_plan', 'subscription_status', 'subscription_expires_at', 'updated_at'])
+        transaction, _ = finalize_successful_payment(transaction)
         return Response(PaymentTransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
 
@@ -1701,6 +1806,7 @@ AY'SMART Team
                     'reference': reference,
                     'currency': 'NGN',
                     'description': transaction.plan,
+                    'callback_url': getattr(settings, 'WEMA_CALLBACK_URL', f"{settings.FRONTEND_URL.rstrip('/')}/success"),
                     'customer_name': user.get_full_name() or user.username,
                     'customer_phone': user.profile.phone if hasattr(user, 'profile') else '',
                 },

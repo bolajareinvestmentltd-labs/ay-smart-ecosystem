@@ -27,23 +27,32 @@
 
 - [ ] Paystack production readiness
 	- [ ] Add production public and secret keys through the deployment secret manager.
-	- [ ] Confirm the production callback URL and successful transaction verification.
-	- [ ] Configure and sign the Paystack webhook endpoint.
-	- [ ] Test success, failure, duplicate webhook, and replay scenarios in production-like settings.
+	- [x] Add the configured success callback URL to Paystack initialization.
+	- [x] Add the signed Paystack webhook endpoint at `/api/payments/paystack/webhook/`.
+	- [x] Verify Paystack webhook signatures with HMAC SHA-512.
+	- [x] Validate provider reference and amount before settlement.
+	- [x] Make settlement idempotent and prevent duplicate wallet/referral credits.
+	- [x] Add automated tests for invalid signatures, successful settlement, and duplicate webhooks.
+	- [ ] Confirm the production callback URL and successful transaction verification with live/staging credentials.
+	- [ ] Test success, failure, duplicate webhook, and replay scenarios against the provider environment.
 
 - [ ] Wema / ALAT Pay production readiness
 	- [ ] Add production merchant credentials and callback configuration.
-	- [ ] Confirm the provider status-query and verification response contract.
-	- [ ] Configure the Wema webhook endpoint and signature verification.
-	- [ ] Test success, failure, duplicate notification, and timeout scenarios.
+	- [x] Add the configured success callback URL to Wema initialization.
+	- [x] Keep the signed Wema webhook endpoint at `/api/payments/wema/webhook/`.
+	- [x] Verify Wema webhook signatures with HMAC SHA-256.
+	- [x] Make successful Wema settlement idempotent and preserve success against failed replays.
+	- [x] Add automated tests for Wema success and failed-notification replay handling.
+	- [ ] Confirm the provider status-query and verification response contract with Wema documentation/credentials.
+	- [ ] Test success, failure, duplicate notification, and timeout scenarios against the provider environment.
 
 ### Priority 2: Privacy and Mobile Quality
 
 - [ ] Confirm private identity-document storage
-	- [ ] Use a private bucket or private Cloudinary delivery type for identity documents.
-	- [ ] Remove direct public access and serve documents only through authorized backend responses.
-	- [ ] Verify access denial for anonymous users and unrelated authenticated users.
-	- [ ] Confirm retention and deletion behavior for rejected or deleted accounts.
+	- [x] Use a private bucket or private Cloudinary delivery type for identity documents.
+	- [x] Remove direct public access and serve documents only through authorized backend responses.
+	- [x] Verify access denial for anonymous users and unrelated authenticated users.
+	- [x] Confirm retention and deletion behavior for rejected or deleted accounts.
 
 - [ ] Complete Android and iOS viewport/device testing
 	- [ ] Test home, properties, property details, hostel details, KYC, checkout, support, and verification pages.
@@ -72,10 +81,11 @@
 
 ### Priority 4: Product Enhancements
 
-- [ ] Upgrade the support assistant from keyword replies to a configured AI provider with a bounded knowledge source.
-	- [ ] Add server-side provider calls, timeout handling, rate limiting, and refusal/error fallback.
-	- [ ] Keep the existing Contact Support path as the live-agent fallback.
-	- [ ] Do not expose provider credentials in the browser.
+- [x] Upgrade the support assistant from keyword replies to a configured AI provider with a bounded knowledge source.
+	- [x] Add server-side provider calls, timeout handling, rate limiting, and refusal/error fallback.
+	- [x] Keep the existing Contact Support path as the live-agent fallback.
+	- [x] Do not expose provider credentials in the browser.
+	- [ ] Supply and verify the AI provider URL, API key, model, quota, and production monitoring configuration.
 
 - [ ] Add the verified CEO photograph and confirmed CAC certificate asset when supplied.
 	- [ ] Store assets in the approved public/private location.

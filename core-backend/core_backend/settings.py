@@ -166,6 +166,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'resend_verification': '5/hour',
         'support': '10/hour',
+        'support_assistant': '20/hour',
     },
 }
 
@@ -215,6 +216,7 @@ RESEND_WEBHOOK_SIGNING_SECRET = os.getenv('RESEND_WEBHOOK_SIGNING_SECRET', '')
 
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '').strip()
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY', '').strip()
+PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET', '').strip()
 PAYSTACK_USE_TEST_MODE = os.getenv('PAYSTACK_USE_TEST_MODE', 'true').lower() in {'1', 'true', 'yes', 'on'}
 
 # Dojah identity verification. Keep the secret server-side; the frontend only
@@ -229,6 +231,13 @@ WEMA_API_KEY = os.getenv('WEMA_API_KEY', '').strip()
 WEMA_BANK_CODE = os.getenv('WEMA_BANK_CODE', '035')  # Standard WEMA bank code
 WEMA_API_URL = os.getenv('WEMA_API_URL', 'https://sandbox.wemabank.com/api')  # Change to production URL when ready
 WEMA_WEBHOOK_SECRET = os.getenv('WEMA_WEBHOOK_SECRET', '').strip()
+WEMA_CALLBACK_URL = os.getenv('WEMA_CALLBACK_URL', f"{FRONTEND_URL.rstrip('/')}/success")
+
+AI_ASSISTANT_URL = os.getenv('AI_ASSISTANT_URL', '').strip()
+AI_ASSISTANT_API_KEY = os.getenv('AI_ASSISTANT_API_KEY', '').strip()
+AI_ASSISTANT_MODEL = os.getenv('AI_ASSISTANT_MODEL', 'gpt-4o-mini').strip()
+AI_ASSISTANT_TIMEOUT = int(os.getenv('AI_ASSISTANT_TIMEOUT', '8'))
+AI_ASSISTANT_MAX_TOKENS = int(os.getenv('AI_ASSISTANT_MAX_TOKENS', '220'))
 
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')

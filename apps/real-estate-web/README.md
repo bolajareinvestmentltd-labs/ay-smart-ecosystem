@@ -79,6 +79,13 @@ DOJAH_APP_ID=<your-dojah-app-id>
 DOJAH_SECRET_KEY=<your-dojah-secret-key>
 DOJAH_FACE_MATCH_THRESHOLD=85
 
+# Optional OpenAI-compatible AY-SMART support assistant (server-side only)
+AI_ASSISTANT_URL=https://api.openai.com/v1/chat/completions
+AI_ASSISTANT_API_KEY=<your-ai-provider-key>
+AI_ASSISTANT_MODEL=gpt-4o-mini
+AI_ASSISTANT_TIMEOUT=8
+AI_ASSISTANT_MAX_TOKENS=220
+
 # Seller/agent supporting identity evidence is uploaded through the KYC form.
 # Accepted types include Voters Card, International Passport, Drivers License, and National ID.
 ```

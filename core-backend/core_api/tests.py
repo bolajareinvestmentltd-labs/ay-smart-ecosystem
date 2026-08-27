@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import json
 from decimal import Decimal
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
@@ -9,7 +12,8 @@ from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
 from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction, HostelBooking
-from .views import send_verification_email
+from .views import purge_rejected_identity_documents, send_verification_email
+from .private_storage import PrivateIdentityDocumentStorage
 
 
 class InspectionBookingApiTests(TestCase):
@@ -192,6 +196,21 @@ class ReferralWalletTests(TestCase):
         user_response = self.client.get(f'/api/admin/identity-documents/{profile.id}/identity/')
         self.assertEqual(user_response.status_code, 403)
 
+    @patch.object(PrivateIdentityDocumentStorage, 'delete')
+    def test_rejected_kyc_purges_private_identity_documents(self, mock_delete):
+        user = User.objects.create_user(username='rejected-docs', email='rejected-docs@example.com', password='secret123')
+        profile = UserProfile.objects.get(user=user)
+        profile.identity_document.name = 'identity_documents/id-card.pdf'
+        profile.student_id_image.name = 'student_id_images/student-card.jpg'
+        profile.save(update_fields=['identity_document', 'student_id_image'])
+
+        purge_rejected_identity_documents(profile)
+
+        profile.refresh_from_db()
+        self.assertFalse(profile.identity_document.name)
+        self.assertFalse(profile.student_id_image.name)
+        self.assertEqual(mock_delete.call_count, 2)
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     @patch('core_api.views.send_mail')
     def test_verification_email_uses_resend_configured_sender(self, mock_send_mail):
@@ -265,6 +284,30 @@ class ReferralWalletTests(TestCase):
 
         self.assertEqual(response.status_code, 201, response.data)
         self.assertTrue(SupportRequest.objects.filter(subject="Payment issue").exists())
+
+    def test_support_assistant_uses_bounded_fallback_without_provider(self):
+        response = self.client.post('/api/support/assistant/', {'question': 'How do I complete KYC?'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['source'], 'AY-SMART support knowledge base')
+        self.assertIn('KYC', response.data['answer'])
+
+    @override_settings(AI_ASSISTANT_URL='https://ai.example.test/v1/chat/completions', AI_ASSISTANT_API_KEY='test-key')
+    @patch('core_api.views.requests.post')
+    def test_support_assistant_uses_provider_response(self, mock_post):
+        mock_post.return_value.ok = True
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {'choices': [{'message': {'content': 'Use the live listings page to browse approved homes.'}}]}
+        response = self.client.post('/api/support/assistant/', {'question': 'Where can I browse?'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['source'], 'AY-SMART assistant')
+        self.assertIn('live listings', response.data['answer'])
+        request_payload = mock_post.call_args.kwargs['json']
+        self.assertEqual(request_payload['model'], 'gpt-4o-mini')
+        self.assertIn("AY'SMART", request_payload['messages'][0]['content'])
+
+    def test_support_assistant_rejects_empty_question(self):
+        response = self.client.post('/api/support/assistant/', {'question': '   '}, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
 
     def test_authenticated_user_can_update_profile_and_create_listing(self):
         user = User.objects.create_user(username="profileuser", email="profile@example.com", password="secret123")
@@ -469,6 +512,46 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(resp2.status_code, 200)
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal('3500.00'))
+
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='paystack-webhook-secret')
+    def test_paystack_webhook_requires_signature_and_is_idempotent(self):
+        user = User.objects.create_user(username='paystackhook', email='paystackhook@example.com', password='secret123')
+        payment = PaymentTransaction.objects.create(
+            user=user, plan='basic', amount='3500', provider='paystack',
+            provider_reference='paystack-hook-ref', status='PENDING',
+        )
+        body = json.dumps({'event': 'charge.success', 'data': {'reference': payment.provider_reference, 'amount': 350000}})
+        rejected = self.client.post('/api/payments/paystack/webhook/', body, content_type='application/json')
+        self.assertEqual(rejected.status_code, 401)
+        signature = hmac.new(b'paystack-webhook-secret', body.encode(), hashlib.sha512).hexdigest()
+        accepted = self.client.post('/api/payments/paystack/webhook/', body, content_type='application/json', HTTP_X_PAYSTACK_SIGNATURE=signature)
+        self.assertEqual(accepted.status_code, 200, accepted.data)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'SUCCESS')
+        wallet = Wallet.objects.get(user=user)
+        self.assertEqual(wallet.balance, Decimal('3500.00'))
+        repeated = self.client.post('/api/payments/paystack/webhook/', body, content_type='application/json', HTTP_X_PAYSTACK_SIGNATURE=signature)
+        self.assertEqual(repeated.status_code, 200)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal('3500.00'))
+
+    @override_settings(WEMA_WEBHOOK_SECRET='wema-webhook-secret')
+    def test_wema_failed_replay_cannot_overwrite_success(self):
+        user = User.objects.create_user(username='wemahook', email='wemahook@example.com', password='secret123')
+        payment = PaymentTransaction.objects.create(
+            user=user, plan='basic', amount='3500', provider='wema',
+            provider_reference='wema-hook-ref', status='PENDING',
+        )
+        success_body = json.dumps({'reference': payment.provider_reference, 'status': 'successful'})
+        signature = hmac.new(b'wema-webhook-secret', success_body.encode(), hashlib.sha256).hexdigest()
+        success = self.client.post('/api/payments/wema/webhook/', success_body, content_type='application/json', HTTP_X_WEMA_SIGNATURE=signature)
+        self.assertEqual(success.status_code, 200, success.data)
+        failed_body = json.dumps({'reference': payment.provider_reference, 'status': 'failed'})
+        failed_signature = hmac.new(b'wema-webhook-secret', failed_body.encode(), hashlib.sha256).hexdigest()
+        failed = self.client.post('/api/payments/wema/webhook/', failed_body, content_type='application/json', HTTP_X_WEMA_SIGNATURE=failed_signature)
+        self.assertEqual(failed.status_code, 200)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'SUCCESS')
 
     def test_initiate_payment_rejects_invalid_amounts(self):
         user = User.objects.create_user(username="badamt", email="badamt@example.com", password="secret123")
