@@ -36,9 +36,9 @@ export default function VerifyEmailPage() {
         }
 
         setStatus('success');
-        setMessage('Your email has been verified successfully. Redirecting to login...');
+        setMessage(payload.detail || 'Your email has been verified successfully. Welcome to AY\'SMART.');
         // Auto-redirect to login after 2 seconds
-        setTimeout(() => router.push(`/auth/login${next ? `?next=${encodeURIComponent(next)}` : ''}`), 2000);
+        setTimeout(() => router.push(`/auth/login?next=${encodeURIComponent(next || '/auth/profile')}`), 2500);
       } catch {
         setStatus('failed');
         setMessage('Network error while verifying your email. Please try again.');
@@ -46,7 +46,7 @@ export default function VerifyEmailPage() {
     }
 
     verify();
-  }, [searchParams]);
+  }, [next, router, searchParams]);
 
   return (
     <main className="min-h-screen bg-[#07070D] px-4 py-10 text-zinc-100">
@@ -55,9 +55,19 @@ export default function VerifyEmailPage() {
         <h1 className="mt-4 text-3xl font-black">{status === 'success' ? 'Verified!' : status === 'failed' ? 'Verification failed' : 'Verifying...'}</h1>
         <p className="mt-4 text-sm leading-7 text-zinc-400">{message}</p>
         {status === 'success' ? (
-          <button onClick={() => router.push(`/auth/login${next ? `?next=${encodeURIComponent(next)}` : ''}`)} className="mt-8 rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-magenta">
-            Go to login
-          </button>
+          <div className="mt-8">
+            <div className="rounded-2xl border border-brand-accent/30 bg-brand-accent/10 p-4 text-sm text-zinc-300">
+              <p className="font-semibold text-brand-accent">Your AY&apos;SMART next steps</p>
+              <ul className="mt-2 space-y-1 text-zinc-400">
+                <li>Complete your profile</li>
+                <li>Finish KYC when required</li>
+                <li>Explore verified listings and services</li>
+              </ul>
+            </div>
+            <button onClick={() => router.push(`/auth/login?next=${encodeURIComponent(next || '/auth/profile')}`)} className="mt-4 rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-magenta">
+              Continue to onboarding
+            </button>
+          </div>
         ) : status === 'failed' ? (
           <button onClick={() => router.push('/register')} className="mt-8 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-brand-accent hover:text-brand-accent">
             Return to register

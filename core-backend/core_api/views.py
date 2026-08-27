@@ -59,6 +59,35 @@ def send_verification_email(user: User):
         "If you did not create this account, you can safely ignore this message.\n\n"
         "Thank you,\nAY'SMART Team"
     )
+    html_message = f"""
+        <!doctype html>
+        <html lang="en">
+            <body style="margin:0;background:#211b14;color:#f8f4ed;font-family:Arial,Helvetica,sans-serif;">
+                <div style="padding:32px 16px;background:#211b14;">
+                    <div style="max-width:560px;margin:0 auto;background:#0f1012;border:1px solid #514b45;">
+                        <div style="padding:36px 32px 24px;border-bottom:1px solid #2e2b29;">
+                            <img src="{settings.FRONTEND_URL.rstrip('/')}/assets/ay-smart-logo.png" alt="AY'SMART" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:contain;margin-bottom:24px;">
+                            <p style="margin:0;color:#f1b85f;font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;">AY'SMART ECO</p>
+                            <h1 style="margin:16px 0 0;color:#ff5148;font-family:Georgia,serif;font-size:42px;line-height:1.05;">Welcome to smarter living.</h1>
+                        </div>
+                        <div style="padding:32px;">
+                            <p style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;line-height:1.35;">Hello {user.get_full_name() or user.username},</p>
+                            <p style="margin:0;color:#d6d0c8;font-family:Georgia,serif;font-size:18px;line-height:1.65;">Your AY'SMART account is ready. Verify your email to explore trusted properties, student hostels, construction services, and secure marketplace tools.</p>
+                            <div style="margin:32px 0;text-align:center;">
+                                <a href="{verify_url}" style="display:inline-block;background:#e5c995;color:#211b14;text-decoration:none;font-size:16px;font-weight:bold;letter-spacing:.5px;padding:16px 30px;">SMART VERIFY</a>
+                            </div>
+                            <p style="margin:0;color:#a8a19a;font-size:13px;line-height:1.6;">This secure link is personal to you and may expire. If you did not create an AY'SMART account, you can safely ignore this email.</p>
+                            <div style="margin-top:32px;padding-top:20px;border-top:1px solid #2e2b29;color:#a8a19a;font-size:13px;line-height:1.7;">
+                                <strong style="color:#f8f4ed;">After verification</strong><br>
+                                Sign in, complete your profile, finish KYC when required, and start discovering verified opportunities.
+                            </div>
+                        </div>
+                        <div style="padding:20px 32px;color:#817b75;font-size:12px;border-top:1px solid #2e2b29;">AY'SMART Investment Ltd | Property, hostels, construction and automotive services</div>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@resend.dev')
     resend_api_key = getattr(settings, 'RESEND_API_KEY', '') or os.getenv('RESEND_API_KEY', '')
     if resend_api_key:
@@ -68,6 +97,7 @@ def send_verification_email(user: User):
                 'to': [user.email],
                 'subject': subject,
                 'text': message,
+                'html': html_message,
             }
             response = requests.post(
                 'https://api.resend.com/emails',
@@ -80,9 +110,9 @@ def send_verification_email(user: User):
             )
             response.raise_for_status()
         except Exception:
-            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+            send_mail(subject, message, from_email, [user.email], fail_silently=False, html_message=html_message)
     else:
-        send_mail(subject, message, from_email, [user.email], fail_silently=False)
+        send_mail(subject, message, from_email, [user.email], fail_silently=False, html_message=html_message)
     # Record timestamp on profile for server-side cooldown and clear bounce flag
     try:
         profile, _ = UserProfile.objects.get_or_create(user=user)
@@ -174,7 +204,14 @@ class EmailVerificationView(APIView):
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.email_verified = True
             profile.save(update_fields=['email_verified'])
-            return Response({'detail': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+            return Response({
+                'detail': 'Email verified successfully. Welcome to AY\'SMART.',
+                'onboarding': {
+                    'title': 'Welcome to AY\'SMART',
+                    'message': 'Your email is verified. Sign in to complete your profile and start exploring the ecosystem.',
+                    'next_steps': ['Complete your profile', 'Finish KYC when required', 'Explore verified listings and services'],
+                },
+            }, status=status.HTTP_200_OK)
 
         return Response({'detail': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -292,7 +329,14 @@ class EmailVerificationView(APIView):
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.email_verified = True
             profile.save(update_fields=['email_verified'])
-            return Response({'detail': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+            return Response({
+                'detail': 'Email verified successfully. Welcome to AY\'SMART.',
+                'onboarding': {
+                    'title': 'Welcome to AY\'SMART',
+                    'message': 'Your email is verified. Sign in to complete your profile and start exploring the ecosystem.',
+                    'next_steps': ['Complete your profile', 'Finish KYC when required', 'Explore verified listings and services'],
+                },
+            }, status=status.HTTP_200_OK)
 
         return Response({'detail': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
 

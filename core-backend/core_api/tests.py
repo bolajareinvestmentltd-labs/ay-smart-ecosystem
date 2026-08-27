@@ -192,6 +192,8 @@ class ReferralWalletTests(TestCase):
         args, kwargs = mock_send_mail.call_args
         self.assertEqual(args[2], settings.DEFAULT_FROM_EMAIL)
         self.assertIn('verify your', args[0].lower())
+        self.assertIn('SMART VERIFY', kwargs['html_message'])
+        self.assertIn('/auth/verify-email?uid=', kwargs['html_message'])
 
     @patch('core_api.views.send_mail')
     def test_password_reset_endpoint_updates_user_password(self, mock_send_mail):
