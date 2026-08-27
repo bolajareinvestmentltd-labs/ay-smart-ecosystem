@@ -18,7 +18,7 @@ export default function NewsletterSlideUp(){
           <div className="text-sm font-semibold text-zinc-100">Stay updated</div>
           <div className="mt-1 text-xs text-zinc-400">Subscribe to get the latest listings and offers.</div>
         </div>
-        <button onClick={() => setVisible(false)} className="ml-3 text-zinc-400">✕</button>
+        <button type="button" onClick={() => setVisible(false)} aria-label="Dismiss newsletter" className="ml-3 rounded-full p-1 text-zinc-400 hover:bg-white/10 hover:text-white">✕</button>
       </div>
       <form className="mt-3 flex gap-2">
         <input placeholder="Your email" className="flex-1 rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm" />

@@ -1,5 +1,5 @@
 'use client';
-import { Home, Search, Calendar, User, MessageCircle } from 'lucide-react';
+import { Home, Search, Calendar, User, Info } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -8,7 +8,7 @@ const navItems = [
   { href: '/saved', label: 'Saved', icon: Home },
   { href: '/inbox', label: 'Messages', icon: Calendar },
   { href: '/dashboard', label: 'Profile', icon: User },
-  { href: '/support', label: 'Support', icon: MessageCircle },
+  { href: '/about', label: 'About', icon: Info },
 ];
 
 export default function DockNavbar() {

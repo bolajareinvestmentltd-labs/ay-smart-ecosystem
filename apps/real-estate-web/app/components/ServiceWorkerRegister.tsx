@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 
 export default function ServiceWorkerRegister() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -36,6 +37,8 @@ export default function ServiceWorkerRegister() {
     }
   };
 
+  const dismissInstall = () => setShowInstall(false);
+
   if (!installPrompt || !showInstall) {
     return null;
   }
@@ -43,6 +46,9 @@ export default function ServiceWorkerRegister() {
   return (
     <div className="fixed bottom-44 right-4 z-40 flex items-center gap-3 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)]/95 px-3 py-2 shadow-xl backdrop-blur-xl sm:bottom-6">
       <span className="text-xs font-semibold text-[var(--text-primary)]">GET APP</span>
+        <button type="button" onClick={dismissInstall} aria-label="Dismiss app installation prompt" className="rounded-full p-1 text-[var(--text-muted)] hover:bg-[var(--brand-surface-3)] hover:text-[var(--text-primary)]">
+          <X size={16} />
+        </button>
         <button
           type="button"
           onClick={handleInstall}

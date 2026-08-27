@@ -53,6 +53,7 @@ def send_verification_email(user: User):
     verify_url = f"{settings.FRONTEND_URL.rstrip('/')}/auth/verify-email?uid={uid}&token={token}"
 
     subject = "Verify your AY'SMART email"
+    logo_url = getattr(settings, 'EMAIL_LOGO_URL', f"{settings.FRONTEND_URL.rstrip('/')}/assets/ay-smart-logo.png")
     message = (
         f"Hello {user.get_full_name() or user.username},\n\n"
         "Welcome to AY'SMART. Please verify your email address by clicking the link below:\n\n"
@@ -67,7 +68,7 @@ def send_verification_email(user: User):
                 <div style="padding:32px 16px;background:#211b14;">
                     <div style="max-width:560px;margin:0 auto;background:#0f1012;border:1px solid #514b45;">
                         <div style="padding:36px 32px 24px;border-bottom:1px solid #2e2b29;">
-                            <img src="{settings.FRONTEND_URL.rstrip('/')}/assets/ay-smart-logo.png" alt="AY'SMART" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:contain;margin-bottom:24px;">
+                            <img src="{logo_url}" alt="AY'SMART logo" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:contain;margin-bottom:24px;">
                             <p style="margin:0;color:#f1b85f;font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;">AY'SMART ECO</p>
                             <h1 style="margin:16px 0 0;color:#ff5148;font-family:Georgia,serif;font-size:42px;line-height:1.05;">Welcome to smarter living.</h1>
                         </div>
@@ -1213,7 +1214,7 @@ class SupportAssistantView(APIView):
         provider_url = getattr(settings, 'AI_ASSISTANT_URL', '').strip()
         provider_key = getattr(settings, 'AI_ASSISTANT_API_KEY', '').strip()
         if not provider_url or not provider_key:
-            return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base'})
+            return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base', 'fallback': True, 'escalation': '/support'})
 
         messages = request.data.get('messages') if isinstance(request.data.get('messages'), list) else []
         safe_history = [
@@ -1246,7 +1247,7 @@ class SupportAssistantView(APIView):
                 return Response({'answer': answer[:2000], 'source': 'AY-SMART assistant'})
         except (requests.RequestException, ValueError, IndexError, AttributeError, KeyError):
             pass
-        return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base', 'fallback': True})
+        return Response({'answer': fallback, 'source': 'AY-SMART support knowledge base', 'fallback': True, 'escalation': '/support'})
 
 
 class InspectionInvoiceViewSet(viewsets.ModelViewSet):

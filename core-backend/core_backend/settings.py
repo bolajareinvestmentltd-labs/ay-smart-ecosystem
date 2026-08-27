@@ -189,6 +189,7 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://aysmartinvestmentltd.com')
+EMAIL_LOGO_URL = os.getenv('EMAIL_LOGO_URL', f"{FRONTEND_URL.rstrip('/')}/assets/ay-smart-logo.png")
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         'CSRF_TRUSTED_ORIGINS',

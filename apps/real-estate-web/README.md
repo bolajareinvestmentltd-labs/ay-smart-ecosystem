@@ -60,6 +60,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1,ay-smart-backend.onrender.com,api.aysmartinves
 CORS_ALLOWED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
 CSRF_TRUSTED_ORIGINS=https://aysmartinvestmentltd.com,https://www.aysmartinvestmentltd.com
 FRONTEND_URL=https://aysmartinvestmentltd.com
+EMAIL_LOGO_URL=https://aysmartinvestmentltd.com/assets/ay-smart-logo.png
 NEXT_PUBLIC_API_URL=https://api.aysmartinvestmentltd.com/api
 
 RESEND_API_KEY=<your-resend-api-key>
