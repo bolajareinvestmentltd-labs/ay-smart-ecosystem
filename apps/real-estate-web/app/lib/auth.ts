@@ -1,8 +1,16 @@
 import { buildApiUrl } from './api';
 
+const REQUEST_TIMEOUT_MS = 8000;
+
+function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => window.clearTimeout(timeout));
+}
+
 async function ensureCsrfCookie() {
   if (typeof document === 'undefined' || document.cookie.includes('csrftoken=')) return;
-  await fetch(buildApiUrl('/api/auth/csrf/'), { credentials: 'include' });
+  await fetchWithTimeout(buildApiUrl('/api/auth/csrf/'), { credentials: 'include' }, 5000);
 }
 
 // Cookie-based auth: login will set HttpOnly cookies; use credentials: 'include'.
@@ -26,11 +34,11 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   const url = buildApiUrl(input);
   if (init.method && !['GET', 'HEAD', 'OPTIONS'].includes(init.method.toUpperCase())) await ensureCsrfCookie();
   const opts: RequestInit = { ...init, credentials: 'include' };
-  let res = await fetch(url, opts);
+  let res = await fetchWithTimeout(url, opts);
   if (res.status === 401) {
     const refreshed = await refreshToken();
     if (refreshed) {
-      res = await fetch(url, opts);
+      res = await fetchWithTimeout(url, opts);
     }
   }
   return res;
@@ -41,7 +49,7 @@ export default auth;
 
 export async function refreshToken() {
   try {
-    const res = await fetch(buildApiUrl('/api/auth/refresh-cookie/'), { method: 'POST', credentials: 'include' });
+    const res = await fetchWithTimeout(buildApiUrl('/api/auth/refresh-cookie/'), { method: 'POST', credentials: 'include' }, 5000);
     return res.ok;
   } catch {
     return false;

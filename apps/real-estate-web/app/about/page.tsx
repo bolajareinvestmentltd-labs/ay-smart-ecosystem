@@ -9,8 +9,8 @@ export default function AboutPage() {
       <div className="mx-auto max-w-5xl space-y-10">
         <section className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl">
           <div className="flex items-start gap-6">
-            <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-brand-purple/10 ring-1 ring-white/10">
-              <Image src="/assets/ay-smart-logo.png" alt="AY'SMART logo" fill className="object-contain" />
+            <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-white/95 p-2 ring-1 ring-white/10 sm:h-32 sm:w-32">
+              <Image src="/assets/brand-logo.svg" alt="AY'SMART logo" fill sizes="128px" className="object-contain p-2" priority />
             </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">About</p>
@@ -24,7 +24,9 @@ export default function AboutPage() {
           <div className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6">
             <h2 className="text-xl font-bold">Leadership</h2>
             <div className="mt-4 flex items-center gap-4">
-              <div className="h-16 w-16 overflow-hidden rounded-full bg-white/5" />
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-white/95 p-2 ring-2 ring-amber-400/60">
+                <Image src="/assets/brand-logo.svg" alt="AY'SMART leadership placeholder" fill sizes="80px" className="object-contain p-2" />
+              </div>
               <div>
                 <p className="font-semibold">CEO — AY&apos;SMART Investment Ltd</p>
                 <p className="text-sm text-zinc-400">Founder & Chief Executive. Passionate about building reliable marketplaces and trusted verification systems.</p>
@@ -43,10 +45,11 @@ export default function AboutPage() {
 
             <div className="mt-6">
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A855F7]">Follow Us</h3>
-              <div className="mt-3 flex gap-4 p-1">
-                <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Web</a>
-                <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Twitter</a>
-                <a href="#" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Instagram</a>
+              <div className="mt-3 flex flex-wrap gap-3 p-1">
+                <a href="https://www.facebook.com/share/194KKj3wqC/?mibextid=wwXIfr" target="_blank" rel="noreferrer" aria-label="AY'SMART on Facebook" className="inline-flex min-h-10 min-w-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Facebook</a>
+                <a href="#" aria-label="AY'SMART website" className="inline-flex min-h-10 min-w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Web</a>
+                <a href="#" aria-label="AY'SMART on Twitter" className="inline-flex min-h-10 min-w-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Twitter</a>
+                <a href="#" aria-label="AY'SMART on Instagram" className="inline-flex min-h-10 min-w-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-[#A855F7] hover:text-white">Instagram</a>
               </div>
             </div>
           </div>

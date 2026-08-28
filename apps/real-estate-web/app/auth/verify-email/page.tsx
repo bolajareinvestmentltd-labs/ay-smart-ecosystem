@@ -21,10 +21,13 @@ export default function VerifyEmailPage() {
         return;
       }
 
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 8000);
       try {
         const response = await fetch(buildApiUrl('/auth/verify-email/'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({ uid, token }),
         });
         const payload = await response.json().catch(() => ({}));
@@ -41,7 +44,9 @@ export default function VerifyEmailPage() {
         setTimeout(() => router.push(`/auth/login?next=${encodeURIComponent(next || '/auth/profile')}`), 2500);
       } catch {
         setStatus('failed');
-        setMessage('Network error while verifying your email. Please try again.');
+        setMessage('Verification service did not respond. Please request a fresh verification email and try again.');
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
 

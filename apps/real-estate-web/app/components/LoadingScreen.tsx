@@ -6,7 +6,7 @@ export default function LoadingScreen({ label = 'Loading AY\'SMART' }: { label?:
       <div className="loading-mark">
         <span className="loading-ring" aria-hidden="true" />
         <span className="loading-logo">
-          <Image src="/assets/ay-smart-logo.png" alt="AY'SMART" width={92} height={92} priority />
+          <Image src="/assets/brand-logo.svg" alt="AY'SMART" width={92} height={92} priority />
         </span>
       </div>
       <p>{label}</p>

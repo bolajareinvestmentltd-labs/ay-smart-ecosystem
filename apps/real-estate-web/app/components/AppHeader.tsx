@@ -20,7 +20,7 @@ export default function AppHeader() {
         <Link href="/" className="group flex min-w-0 items-center gap-2 rounded-3xl bg-[var(--brand-surface-3)] px-2 py-2 transition hover:opacity-90 sm:gap-3 sm:px-3">
           <div className="relative h-11 w-11 overflow-hidden rounded-3xl bg-[var(--brand-surface)] ring-1 ring-[var(--brand-border)]">
             <Image
-              src="/assets/ay-smart-logo.png"
+              src="/assets/brand-logo.svg"
               alt="AY'SMART logo"
               fill
               className="object-contain"

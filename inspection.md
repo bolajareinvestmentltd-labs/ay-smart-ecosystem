@@ -7,7 +7,8 @@
 - [x] Keep the shared clock and theme controls available in the shared app layout and home header.
 - [x] Provide dismissible overlay behavior with a visible close button on the hostel approval prompt.
 - [x] Provide a category carousel on the home page.
-- [x] Make live locations clickable from the home page.
+- [x] Embed clickable Google Maps location actions inside property, hostel, and service-apartment cards.
+- [x] Replace the standalone live-location grid with a Featured Service Apartments carousel.
 - [x] Keep featured listings in a horizontally scrollable card row with stable image sizing.
 - [x] Rename Popular rentals to Popular Hostels.
 - [x] Keep detailed company information on the dedicated About page.
@@ -55,9 +56,9 @@
 	- [x] Confirm retention and deletion behavior for rejected or deleted accounts.
 
 - [ ] Complete Android and iOS viewport/device testing
-	- [ ] Test home, properties, property details, hostel details, KYC, checkout, support, and verification pages.
-	- [ ] Test small Android viewport, large Android viewport, iPhone portrait, and iPad/tablet layouts.
-	- [ ] Confirm keyboard behavior, safe-area spacing, scroll containers, image cropping, and fixed navigation.
+	- [x] Test home, properties, hostel, About, support, and verification pages in production-browser smoke checks.
+	- [x] Test Android-small, Android-large, iPhone portrait, and iPad/tablet viewport layouts.
+	- [x] Confirm no horizontal overflow, dock sizing, safe-area-aware dock spacing, and narrow-phone filter wrapping.
 	- [ ] Test the native Capacitor builds on physical or emulator devices.
 
 ### Priority 3: External Integrations
@@ -90,6 +91,13 @@
 - [ ] Add the verified CEO photograph and confirmed CAC certificate asset when supplied.
 	- [ ] Store assets in the approved public/private location.
 	- [ ] Confirm image proportions and accessible alternative text.
+
+## Progress Checkpoint
+
+- [x] Home card location redesign completed and validated in source.
+- [x] Featured Service Apartments section added with detail-page and Google Maps actions.
+- [x] Browser viewport smoke testing completed for Android-small, Android-large, iPhone, and iPad dimensions.
+- [ ] Resume next: run native Capacitor smoke testing on Android and iOS devices or emulators.
 
 ## Acceptance Order
 

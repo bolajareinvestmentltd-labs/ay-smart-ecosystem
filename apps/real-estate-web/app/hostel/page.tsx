@@ -57,7 +57,7 @@ export default function HostelPage() {
         </div>
 
         {/* Category Tabs */}
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex flex-wrap gap-2">
           {['All Hostels', 'Popular', 'New', 'Deals'].map((tabOption) => (
             <button
               key={tabOption}

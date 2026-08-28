@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/auth';
 import { getStoredProfile, saveStoredProfile, type SellerProfile } from '../../lib/app-state';
 import PasswordInput from '../../components/PasswordInput';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,13 +19,22 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     async function loadProfile() {
-      const res = await authFetch('/api/auth/profile/');
-      if (!res.ok) return;
-      const payload = await res.json().catch(() => null);
-      if (!payload) return;
+      try {
+        const res = await authFetch('/api/auth/profile/');
+        if (!res.ok) {
+          setError(res.status === 401 ? 'Please sign in to view your profile.' : 'Unable to load your profile right now.');
+          return;
+        }
+        const payload = await res.json().catch(() => null);
+        if (!payload) {
+          setError('The profile response was invalid. Please try again.');
+          return;
+        }
       
       // Detect if this is a first-time user (just registered, not KYC verified, not admin approved)
       const isNew = !payload.is_kyc_verified && !payload.is_admin_approved;
@@ -45,11 +55,18 @@ export default function ProfilePage() {
       };
       saveStoredProfile(nextProfile);
       setProfile(nextProfile);
-      setLocation(payload.location || '');
+        setLocation(payload.location || '');
+      } catch {
+        setError('Network error while loading your profile. Please check your connection.');
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadProfile();
-  }, []);
+  }, [loadAttempt]);
+
+  if (loading) return <LoadingScreen label="Loading your profile" />;
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -141,9 +158,9 @@ export default function ProfilePage() {
     return (
       <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
         <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Welcome to AY'SMART</p>
-          <h1 className="mt-2 text-3xl font-black">Let's complete your profile</h1>
-          <p className="mt-2 text-sm text-zinc-400">You're almost ready! Just a few more details to get your account fully set up.</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Welcome to AY&apos;SMART</p>
+          <h1 className="mt-2 text-3xl font-black">Let&apos;s complete your profile</h1>
+          <p className="mt-2 text-sm text-zinc-400">You&apos;re almost ready! Just a few more details to get your account fully set up.</p>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* Account Summary */}
@@ -171,7 +188,7 @@ export default function ProfilePage() {
 
             {/* Next Steps */}
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/90 p-6">
-              <h2 className="text-lg font-bold">What's next?</h2>
+              <h2 className="text-lg font-bold">What&apos;s next?</h2>
               <ul className="mt-4 space-y-3 text-sm text-zinc-300">
                 <li className="flex items-start gap-3">
                   <span className="text-amber-400">✓</span>
@@ -254,7 +271,14 @@ export default function ProfilePage() {
 
         {(error || message) && (
           <div className={`rounded-3xl border p-4 text-sm ${error ? 'border-rose-500 bg-rose-500/10 text-rose-300' : 'border-emerald-500 bg-emerald-500/10 text-emerald-300'}`}>
-            {error || message}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{error || message}</span>
+              {error && (
+                <button type="button" onClick={() => { setError(''); setLoading(true); setLoadAttempt((attempt) => attempt + 1); }} className="rounded-full border border-current px-3 py-1 font-semibold">
+                  Try again
+                </button>
+              )}
+            </div>
           </div>
         )}
 
