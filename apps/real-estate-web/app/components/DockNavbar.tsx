@@ -7,7 +7,7 @@ const navItems = [
   { href: '/', label: 'Explore', icon: Search },
   { href: '/saved', label: 'Saved', icon: Home },
   { href: '/inbox', label: 'Messages', icon: Calendar },
-  { href: '/dashboard', label: 'Profile', icon: User },
+  { href: '/auth?next=%2Fdashboard', label: 'Profile', icon: User },
   { href: '/about', label: 'About', icon: Info },
 ];
 

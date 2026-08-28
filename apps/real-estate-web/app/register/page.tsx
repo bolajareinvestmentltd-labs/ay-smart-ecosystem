@@ -6,6 +6,7 @@ import { buildApiUrl } from '../lib/api';
 import { getStoredProfile, saveStoredProfile, type ListingPlan, type UserRole } from '../lib/app-state';
 import PasswordInput from '../components/PasswordInput';
 import SocialAuthButtons from '../components/SocialAuthButtons';
+import AuthShell from '../components/AuthShell';
 
 const studentEmailHint = 'Use your school email or a personal email that matches your student records.';
 
@@ -157,12 +158,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-6 shadow-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">Account registration</p>
-        <h1 className="mt-2 text-3xl font-black">Create your AY&apos;SMART account</h1>
-        <p className="mt-2 text-sm text-zinc-400">Choose your role, complete your profile, and get ready for verification and listing management.</p>
-
+    <AuthShell eyebrow="Create account" title="Create your AY&apos;SMART account" description="Choose your role, complete your profile, and get ready for verification and listing management.">
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <input required value={name} onChange={(e) => setName(e.target.value)} className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3" placeholder="Full name" />
@@ -224,7 +220,6 @@ export default function RegisterPage() {
           <Link href="/auth/login" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Already have an account?</Link>
           <Link href="/kyc" className="rounded-full border border-zinc-700 px-4 py-2 text-sm">Go to KYC</Link>
         </div>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

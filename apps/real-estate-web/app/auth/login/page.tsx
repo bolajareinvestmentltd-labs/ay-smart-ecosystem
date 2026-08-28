@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { loginWithPassword, getCurrentUser } from '../../lib/auth';
 import PasswordInput from '../../components/PasswordInput';
 import SocialAuthButtons from '../../components/SocialAuthButtons';
+import AuthShell from '../../components/AuthShell';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 
 export default function LoginPage() {
@@ -71,15 +72,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--brand-surface)] px-4 py-8 text-[var(--text-primary)]">
-      <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] shadow-2xl backdrop-blur-xl">
-        <div className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-3)] p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-accent">Sign in</p>
-          <h1 className="mt-2 text-3xl font-black">Access your AY&apos;SMART account</h1>
-          <p className="mt-3 text-sm text-zinc-400">Sign in with your email or username and password.</p>
-        </div>
-
-        <div className="p-8">
+    <AuthShell eyebrow="Sign in" title="Access your AY&apos;SMART account" description="Sign in with your email or username and password.">
           <form onSubmit={handleLogin} className="space-y-4">
             <input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-brand-purple" placeholder="Email or username" />
             <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3 text-[var(--text-primary)] outline-none transition focus:border-brand-purple" placeholder="Password" />
@@ -96,8 +89,6 @@ export default function LoginPage() {
 
           {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
           {message && <p className="mt-4 text-sm text-emerald-400">{message}</p>}
-        </div>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

@@ -63,7 +63,7 @@ export default function RealEstateHome() {
             <LiveClock />
             <ThemeToggle className="text-white hover:bg-white/10" />
             <button type="button" aria-label="Notifications" className="rounded-full p-2 text-white hover:bg-white/10"><Bell size={18} /></button>
-            <Link href="/dashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-purple-deep)]"><UserRound size={16} /></Link>
+            <Link href="/auth?next=%2Fdashboard" aria-label="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-purple-deep)]"><UserRound size={16} /></Link>
           </div>
         </header>
 
