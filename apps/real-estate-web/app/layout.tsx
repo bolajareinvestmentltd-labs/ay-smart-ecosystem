@@ -27,10 +27,10 @@ export const metadata: Metadata = {
   creator: 'AYSMART INVESTMENT LTD',
   publisher: 'AYSMART INVESTMENT LTD',
   icons: {
-    icon: '/assets/ay-smart-logo.png',
-    shortcut: '/assets/ay-smart-logo.png',
-    apple: '/assets/ay-smart-logo.png',
-    other: [{ rel: 'mask-icon', url: '/assets/ay-smart-logo.png' }],
+    icon: '/assets/brand-logo.svg',
+    shortcut: '/assets/brand-logo.svg',
+    apple: '/assets/brand-logo.svg',
+    other: [{ rel: 'mask-icon', url: '/assets/brand-logo.svg' }],
   },
   metadataBase: new URL('https://ay-smart-ecosystem.vercel.app'),
   alternates: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     description: 'Luxury properties, hostels, and automotive marketplace.',
     url: 'https://ay-smart-ecosystem.vercel.app',
     siteName: "AY'SMART ECO",
-    images: [{ url: '/assets/ay-smart-logo.png', alt: "AY'SMART ECO" }],
+    images: [{ url: '/assets/brand-logo.svg', alt: "AY'SMART ECO" }],
     type: 'website',
   },
   twitter: {

@@ -355,6 +355,7 @@ class UserProfile(models.Model):
     student_matric_number = models.CharField(max_length=100, blank=True)
     student_email = models.EmailField(blank=True)
     student_id_image = models.ImageField(storage=PrivateIdentityDocumentStorage(), upload_to='student_id_images/', blank=True, null=True)
+    avatar = models.ImageField(upload_to='profile_avatars/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -364,7 +365,7 @@ class UserProfile(models.Model):
 
 @receiver(post_delete, sender=UserProfile)
 def delete_private_identity_documents(sender, instance, **kwargs):
-    for field_name in ('identity_document', 'student_id_image'):
+    for field_name in ('identity_document', 'student_id_image', 'avatar'):
         field = getattr(instance, field_name, None)
         if field and field.name:
             field.delete(save=False)

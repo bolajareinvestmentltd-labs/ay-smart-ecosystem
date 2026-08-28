@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/auth';
@@ -21,6 +22,8 @@ export default function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   useEffect(() => {
     async function loadProfile() {
@@ -53,6 +56,7 @@ export default function ProfilePage() {
         isKycVerified: Boolean(payload.is_kyc_verified),
         adminApproved: Boolean(payload.is_admin_approved),
       };
+      if (payload.avatar) setAvatarPreview(payload.avatar);
       saveStoredProfile(nextProfile);
       setProfile(nextProfile);
         setLocation(payload.location || '');
@@ -74,10 +78,15 @@ export default function ProfilePage() {
     setError('');
     setMessage('');
 
+    const formData = new FormData();
+    formData.append('phone', profile.phone);
+    formData.append('location', location);
+    formData.append('role', profile.role);
+    if (avatar) formData.append('avatar', avatar);
+
     const res = await authFetch('/api/auth/profile/', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: profile.phone, location, role: profile.role }),
+      body: formData,
     });
 
     if (!res.ok) {
@@ -100,6 +109,8 @@ export default function ProfilePage() {
     };
     saveStoredProfile(nextProfile);
     setProfile(nextProfile);
+    setAvatar(null);
+    if (payload?.avatar) setAvatarPreview(payload.avatar);
     setMessage('Profile saved successfully. Username and email remain unchanged.');
     setIsSaving(false);
   }
@@ -242,6 +253,16 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-zinc-400">Email and username cannot be changed without admin support.</p>
 
             <div className="mt-4 space-y-4">
+              <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4">
+                <div className="h-20 w-20 overflow-hidden rounded-full border border-amber-400/60 bg-zinc-800">
+                  {avatarPreview ? <Image src={avatarPreview} alt="Profile preview" width={80} height={80} unoptimized className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center text-2xl font-black text-amber-400">{(profile.name || profile.username || 'A').slice(0, 1).toUpperCase()}</span>}
+                </div>
+                <div className="min-w-[12rem] flex-1">
+                  <p className="font-semibold">Profile photo</p>
+                  <p className="mt-1 text-xs text-zinc-500">Choose an image or take a photo with your phone camera.</p>
+                  <input type="file" accept="image/*" capture="user" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setAvatar(file); setAvatarPreview(URL.createObjectURL(file)); } }} className="mt-3 block w-full text-xs text-zinc-400 file:mr-3 file:rounded-full file:border-0 file:bg-amber-500 file:px-3 file:py-2 file:font-bold file:text-zinc-950" />
+                </div>
+              </div>
               <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 text-sm">
                 <p className="font-semibold">Username</p>
                 <p className="text-zinc-500">{profile.username || 'Not set'}</p>

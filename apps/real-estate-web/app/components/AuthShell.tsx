@@ -43,7 +43,7 @@ export default function AuthShell({ eyebrow, title, description, children }: Aut
           ))}
           <div className="relative z-10 flex min-h-[370px] flex-col justify-between p-6 sm:p-8 lg:min-h-full lg:p-10">
             <div className="flex items-center gap-3">
-              <span className="relative h-11 w-11 overflow-hidden rounded-xl bg-white p-2"><Image src="/assets/brand-logo.svg" alt="AY'SMART" fill className="object-contain p-2" /></span>
+              <span className="relative h-11 w-11 overflow-hidden rounded-xl bg-white p-2"><Image src="/assets/brand-logo.svg" alt="AY'SMART" fill className="object-contain" /></span>
               <span className="text-sm font-black tracking-[0.2em]">AY&apos;SMART ECO</span>
             </div>
             <div>

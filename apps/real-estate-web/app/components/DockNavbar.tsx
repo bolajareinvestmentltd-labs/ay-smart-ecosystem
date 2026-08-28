@@ -14,7 +14,7 @@ const navItems = [
 export default function DockNavbar() {
   const pathname = usePathname();
   return (
-    <nav style={{ width: 'calc(100% - 1rem)', maxWidth: 480 }} className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 rounded-[2rem] border border-[#4e235f]/20 bg-white/95 p-2.5 shadow-[0_18px_48px_rgba(46,17,54,0.16)] backdrop-blur-xl">
+    <nav style={{ width: 'min(30rem, calc(100% - 2rem))' }} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 rounded-[2rem] border border-[#4e235f]/20 bg-white/95 p-2.5 shadow-[0_18px_48px_rgba(46,17,54,0.16)] backdrop-blur-xl">
       <div className="grid grid-cols-5 gap-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href));

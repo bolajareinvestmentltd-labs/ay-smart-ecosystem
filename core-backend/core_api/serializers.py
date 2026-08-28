@@ -213,13 +213,14 @@ class WalletSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     identity_document = serializers.FileField(write_only=True, required=False, allow_null=True)
     student_id_image = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    avatar = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = UserProfile
         fields = [
             'phone', 'location', 'role', 'subscription_plan', 'subscription_status', 'subscription_expires_at',
             'is_kyc_verified', 'is_admin_approved', 'kyc_status', 'kyc_provider', 'kyc_reference', 'kyc_face_match_score', 'kyc_verified_at', 'identity_document_type', 'identity_document_number', 'identity_document', 'kyc_rejection_reason', 'email_verified',
-            'student_matric_number', 'student_email', 'student_id_image',
+            'student_matric_number', 'student_email', 'student_id_image', 'avatar',
         ]
 
 

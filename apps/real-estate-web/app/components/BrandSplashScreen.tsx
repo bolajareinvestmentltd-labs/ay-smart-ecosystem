@@ -45,7 +45,7 @@ export default function BrandSplashScreen() {
             <div className="brand-orb relative flex h-32 w-32 items-center justify-center rounded-full border border-[#4e235f]/10 bg-[radial-gradient(circle,_rgba(241,184,165,0.45),_rgba(255,255,255,0.94)_60%,_rgba(255,255,255,0.78)_100%)] shadow-[0_12px_30px_rgba(78,35,95,0.12)]">
               <div className="brand-ring absolute inset-1 rounded-full border border-dashed border-[#4e235f]/20" />
               <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/80 ring-1 ring-[#4e235f]/10">
-                <Image src="/assets/ay-smart-logo.png" alt="AYSMART ECO" width={72} height={72} className="object-contain" priority />
+                <Image src="/assets/brand-logo.svg" alt="AYSMART ECO" width={72} height={72} className="object-contain" priority />
               </div>
             </div>
 

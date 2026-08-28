@@ -44,7 +44,7 @@ export default function HostelPage() {
         {/* Header with Search */}
         <div className="mb-6 rounded-[1.6rem] border border-[#4e235f]/20 bg-gradient-to-br from-[#4e235f] to-[#6b2d82] p-5 shadow-lg">
           <div className="mb-4 flex items-center gap-2">
-            <Image src="/assets/ay-smart-logo.png" alt="AY'SMART logo" width={28} height={28} className="h-7 w-7 rounded-lg object-contain" />
+            <Image src="/assets/brand-logo.svg" alt="AY'SMART logo" width={28} height={28} className="h-7 w-7 rounded-lg object-contain" />
             <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f1b8a5]">Hostels & Stays</p>
           </div>
           <input
