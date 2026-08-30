@@ -11,7 +11,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
-from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction, HostelBooking
+from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction, HostelBooking, EscrowRecord
 from .views import purge_rejected_identity_documents, send_verification_email
 from .private_storage import PrivateIdentityDocumentStorage
 
@@ -372,6 +372,109 @@ class ReferralWalletTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal("6500.00"))
+
+    def test_kyc_required_before_subscription_checkout(self):
+        user = User.objects.create_user(username="unverifiedpay", email="unverifiedpay@example.com", password="secret123")
+        wallet = Wallet.objects.get(user=user)
+        wallet.credit(Decimal("20000.00"), reason="Top up")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/payments/checkout/",
+            {"plan": "basic", "amount": "3500"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403, response.data)
+        self.assertIn('KYC', str(response.data.get('detail', '')).upper())
+
+    def test_escrow_holds_funds_and_creates_audit_log(self):
+        buyer = User.objects.create_user(username='escrowbuyer', email='escrowbuyer@example.com', password='secret123')
+        seller = User.objects.create_user(username='escrowseller', email='escrowseller@example.com', password='secret123')
+        buyer_profile = UserProfile.objects.get(user=buyer)
+        buyer_profile.is_kyc_verified = True
+        buyer_profile.is_admin_approved = True
+        buyer_profile.kyc_status = 'VERIFIED'
+        buyer_profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status'])
+
+        wallet = Wallet.objects.get(user=buyer)
+        wallet.credit(Decimal('50000.00'), reason='Escrow top-up')
+
+        self.client.force_authenticate(user=buyer)
+        response = self.client.post(
+            '/api/escrows/create/',
+            {'seller_id': seller.id, 'amount': '15000', 'listing_id': 999999, 'reason': 'Property purchase deposit'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['status'], 'FUNDS_HELD')
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal('35000.00'))
+        self.assertTrue(response.data['audit_id'])
+
+    def test_admin_can_release_escrow_and_create_audit_entry(self):
+        buyer = User.objects.create_user(username='escrowbuyer2', email='escrowbuyer2@example.com', password='secret123')
+        seller = User.objects.create_user(username='escrowseller2', email='escrowseller2@example.com', password='secret123')
+        admin = User.objects.create_superuser(username='adminreview', email='adminreview@example.com', password='secret123')
+
+        buyer_profile = UserProfile.objects.get(user=buyer)
+        buyer_profile.is_kyc_verified = True
+        buyer_profile.is_admin_approved = True
+        buyer_profile.kyc_status = 'VERIFIED'
+        buyer_profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status'])
+
+        wallet = Wallet.objects.get(user=buyer)
+        wallet.credit(Decimal('20000.00'), reason='Escrow top-up')
+        self.client.force_authenticate(user=buyer)
+        create_response = self.client.post(
+            '/api/escrows/create/',
+            {'seller_id': seller.id, 'amount': '5000', 'listing_id': 777, 'reason': 'Property deposit'},
+            format='json',
+        )
+        self.assertEqual(create_response.status_code, 201, create_response.data)
+
+        self.client.force_authenticate(user=admin)
+        review_response = self.client.post(
+            '/api/escrows/review/',
+            {'escrow_id': create_response.data['id'], 'decision': 'RELEASE', 'note': 'Approved after verification'},
+            format='json',
+        )
+
+        self.assertEqual(review_response.status_code, 200, review_response.data)
+        self.assertEqual(review_response.data['status'], 'RELEASED')
+        escrow = EscrowRecord.objects.get(pk=create_response.data['id'])
+        self.assertEqual(escrow.audit_logs.count(), 2)
+
+    def test_admin_financial_audit_endpoint_returns_summary(self):
+        buyer = User.objects.create_user(username='auditbuyer', email='auditbuyer@example.com', password='secret123')
+        seller = User.objects.create_user(username='auditseller', email='auditseller@example.com', password='secret123')
+        admin = User.objects.create_superuser(username='auditadmin', email='auditadmin@example.com', password='secret123')
+
+        buyer_profile = UserProfile.objects.get(user=buyer)
+        buyer_profile.is_kyc_verified = True
+        buyer_profile.is_admin_approved = True
+        buyer_profile.kyc_status = 'VERIFIED'
+        buyer_profile.save(update_fields=['is_kyc_verified', 'is_admin_approved', 'kyc_status'])
+
+        wallet = Wallet.objects.get(user=buyer)
+        wallet.credit(Decimal('25000.00'), reason='Audit scenario funding')
+        self.client.force_authenticate(user=buyer)
+        create_response = self.client.post(
+            '/api/escrows/create/',
+            {'seller_id': seller.id, 'amount': '8000', 'listing_id': 123, 'reason': 'Escrow audit trail'},
+            format='json',
+        )
+
+        self.assertEqual(create_response.status_code, 201, create_response.data)
+
+        self.client.force_authenticate(user=admin)
+        response = self.client.get('/api/admin/financial-audit/', format='json')
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn('summary', response.data)
+        self.assertGreaterEqual(response.data['summary']['total_escrows'], 1)
+        self.assertGreaterEqual(response.data['summary']['total_audit_logs'], 1)
 
     def test_authenticated_user_can_submit_kyc_for_admin_review(self):
         user = User.objects.create_user(username="kycuser", email="kyc@example.com", password="secret123")

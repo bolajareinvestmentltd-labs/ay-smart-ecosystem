@@ -30,7 +30,7 @@ from .models import (
     BranchLocation, BuildProject, InspectionBooking, Promotion,
     Listing, ListingImage, PaymentTransaction, InspectionInvoice, Notification, PickupVoucher, Property, SupportRequest, UserProfile,
     Vehicle, Wallet, WalletTransaction, SavedSearch, FavoriteListing, HiddenListing, Conversation, ConversationMessage,
-    HostelBooking, ServiceApartmentBooking,
+    HostelBooking, ServiceApartmentBooking, EscrowRecord, EscrowAuditLog,
 )
 from .serializers import (
     BranchLocationSerializer, VehicleSerializer,
@@ -44,6 +44,13 @@ from .serializers import (
     ListingSerializer, PaymentTransactionSerializer, InspectionInvoiceSerializer, NotificationSerializer, ReferralSerializer, SupportRequestSerializer, UserProfileSerializer,
     WalletSerializer, WalletTransactionSerializer,
 )
+
+
+def ensure_verified_transaction_user(user):
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    if not profile.is_kyc_verified or not profile.is_admin_approved:
+        raise PermissionError('KYC verification is required before completing a transaction.')
+    return profile
 
 
 def send_verification_email(user: User):
@@ -1364,6 +1371,71 @@ class AdminOperationsDashboardView(APIView):
         })
 
 
+class AdminFinancialAuditView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        escrows = EscrowRecord.objects.select_related('buyer', 'seller').order_by('-created_at')[:50]
+        audit_logs = EscrowAuditLog.objects.select_related('escrow', 'actor').order_by('-created_at')[:100]
+        wallet_transactions = WalletTransaction.objects.select_related('user').order_by('-created_at')[:100]
+
+        escrow_summary = {
+            'total_escrows': EscrowRecord.objects.count(),
+            'funds_held': EscrowRecord.objects.filter(status='FUNDS_HELD').count(),
+            'released': EscrowRecord.objects.filter(status='RELEASED').count(),
+            'disputed': EscrowRecord.objects.filter(status='DISPUTED').count(),
+            'refunded': EscrowRecord.objects.filter(status='REFUNDED').count(),
+            'total_value': str(EscrowRecord.objects.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')),
+            'total_audit_logs': EscrowAuditLog.objects.count(),
+        }
+
+        return Response({
+            'summary': escrow_summary,
+            'escrows': [
+                {
+                    'id': escrow.id,
+                    'reference': escrow.reference,
+                    'buyer': escrow.buyer.username,
+                    'seller': escrow.seller.username,
+                    'amount': str(escrow.amount),
+                    'status': escrow.status,
+                    'reason': escrow.reason,
+                    'created_at': escrow.created_at.isoformat(),
+                    'released_at': escrow.released_at.isoformat() if escrow.released_at else None,
+                    'admin_review_note': escrow.admin_review_note,
+                }
+                for escrow in escrows
+            ],
+            'audit_logs': [
+                {
+                    'id': log.id,
+                    'escrow_id': log.escrow_id,
+                    'escrow_reference': log.escrow.reference,
+                    'actor': log.actor.username if log.actor else None,
+                    'actor_role': log.actor_role,
+                    'action': log.action,
+                    'previous_status': log.previous_status,
+                    'new_status': log.new_status,
+                    'amount': str(log.amount),
+                    'note': log.note,
+                    'created_at': log.created_at.isoformat(),
+                }
+                for log in audit_logs
+            ],
+            'wallet_transactions': [
+                {
+                    'id': tx.id,
+                    'user': tx.user.username,
+                    'kind': tx.kind,
+                    'amount': str(tx.amount),
+                    'description': tx.description,
+                    'created_at': tx.created_at.isoformat(),
+                }
+                for tx in wallet_transactions
+            ],
+        })
+
+
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Wallet.objects.all()
     serializer_class = WalletSerializer
@@ -1401,6 +1473,11 @@ class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        try:
+            ensure_verified_transaction_user(request.user)
+        except PermissionError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
         plan = (request.data.get('plan') or 'basic').strip().lower()
         amount = request.data.get('amount')
 
@@ -1429,6 +1506,126 @@ class CheckoutView(APIView):
             'wallet_balance': str(wallet.balance),
             'subscription_status': profile.subscription_status,
         }, status=status.HTTP_201_CREATED)
+
+
+class EscrowCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            ensure_verified_transaction_user(request.user)
+        except PermissionError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        seller_id = request.data.get('seller_id')
+        amount = request.data.get('amount')
+        reason = (request.data.get('reason') or 'Property transaction deposit').strip()
+        listing_id = request.data.get('listing_id')
+
+        if not seller_id:
+            return Response({'detail': 'A seller is required for escrow.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            seller = User.objects.get(pk=seller_id)
+        except User.DoesNotExist:
+            return Response({'detail': 'Seller not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            amount_value = Decimal(str(amount))
+        except Exception:
+            return Response({'detail': 'A valid escrow amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if amount_value <= 0:
+            return Response({'detail': 'Escrow amount must be greater than zero.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        buyer_wallet, _ = Wallet.objects.get_or_create(user=request.user)
+        if buyer_wallet.balance < amount_value:
+            return Response({'detail': 'Insufficient wallet balance to place funds in escrow.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        buyer_wallet.debit(amount_value, reason=f"Escrow hold: {reason}")
+        escrow = EscrowRecord.objects.create(
+            buyer=request.user,
+            seller=seller,
+            listing_id=listing_id,
+            amount=amount_value,
+            reason=reason,
+            status='FUNDS_HELD',
+        )
+        EscrowAuditLog.log_change(
+            escrow,
+            action='CREATED',
+            actor=request.user,
+            actor_role='buyer',
+            previous_status='',
+            new_status='FUNDS_HELD',
+            note=reason,
+            amount=amount_value,
+        )
+
+        return Response({
+            'id': escrow.id,
+            'reference': escrow.reference,
+            'amount': str(escrow.amount),
+            'status': escrow.status,
+            'seller_id': seller.id,
+            'listing_id': escrow.listing_id,
+            'audit_id': escrow.audit_logs.first().id if escrow.audit_logs.exists() else None,
+        }, status=status.HTTP_201_CREATED)
+
+
+class EscrowReviewView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        escrow_id = request.data.get('escrow_id')
+        decision = (request.data.get('decision') or '').strip().upper()
+        note = (request.data.get('note') or '').strip()
+
+        if not escrow_id:
+            return Response({'detail': 'Escrow id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if decision not in {'RELEASE', 'DISPUTE', 'REFUND'}:
+            return Response({'detail': 'decision must be RELEASE, DISPUTE, or REFUND.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            escrow = EscrowRecord.objects.get(pk=escrow_id)
+        except EscrowRecord.DoesNotExist:
+            return Response({'detail': 'Escrow record not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        previous_status = escrow.status
+        if decision == 'RELEASE':
+            seller_wallet, _ = Wallet.objects.get_or_create(user=escrow.seller)
+            seller_wallet.credit(escrow.amount, reason=f"Escrow release: {escrow.reference}")
+            escrow.status = 'RELEASED'
+            escrow.released_at = timezone.now()
+            escrow.admin_review_note = note
+        elif decision == 'DISPUTE':
+            escrow.status = 'DISPUTED'
+            escrow.admin_review_note = note or 'Escrow held pending manual review.'
+        else:
+            buyer_wallet, _ = Wallet.objects.get_or_create(user=escrow.buyer)
+            buyer_wallet.credit(escrow.amount, reason=f"Escrow refund: {escrow.reference}")
+            escrow.status = 'REFUNDED'
+            escrow.admin_review_note = note or 'Funds returned to buyer.'
+
+        escrow.save(update_fields=['status', 'admin_review_note', 'released_at', 'updated_at'])
+        EscrowAuditLog.log_change(
+            escrow,
+            action=f'ADMIN_{decision}',
+            actor=request.user,
+            actor_role='admin',
+            previous_status=previous_status,
+            new_status=escrow.status,
+            note=note,
+            amount=escrow.amount,
+        )
+
+        return Response({
+            'id': escrow.id,
+            'reference': escrow.reference,
+            'status': escrow.status,
+            'audit_count': escrow.audit_logs.count(),
+        }, status=status.HTTP_200_OK)
 
 
 def finalize_successful_payment(payment):

@@ -261,6 +261,65 @@ class WalletTransaction(models.Model):
         return f"{self.user.username} {self.kind} {self.amount}"
 
 
+class EscrowRecord(models.Model):
+    STATUS_CHOICES = [
+        ('FUNDS_HELD', 'Funds Held'),
+        ('RELEASED', 'Released'),
+        ('CANCELLED', 'Cancelled'),
+        ('DISPUTED', 'Disputed'),
+        ('REFUNDED', 'Refunded'),
+    ]
+
+    buyer = models.ForeignKey(User, related_name='escrow_buys', on_delete=models.CASCADE)
+    seller = models.ForeignKey(User, related_name='escrow_sells', on_delete=models.CASCADE)
+    listing_id = models.PositiveIntegerField(null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='FUNDS_HELD')
+    reference = models.CharField(max_length=80, unique=True, default=lambda: f"ESC-{uuid.uuid4().hex[:12].upper()}")
+    admin_review_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.reference} ({self.buyer.username} -> {self.seller.username})"
+
+
+class EscrowAuditLog(models.Model):
+    escrow = models.ForeignKey(EscrowRecord, related_name='audit_logs', on_delete=models.CASCADE)
+    actor = models.ForeignKey(User, related_name='escrow_audit_logs', on_delete=models.SET_NULL, null=True, blank=True)
+    actor_role = models.CharField(max_length=20, default='buyer')
+    action = models.CharField(max_length=40)
+    previous_status = models.CharField(max_length=20, blank=True)
+    new_status = models.CharField(max_length=20, blank=True)
+    note = models.TextField(blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @classmethod
+    def log_change(cls, escrow, action, actor=None, actor_role='buyer', previous_status='', new_status='', note='', amount=None):
+        cls.objects.create(
+            escrow=escrow,
+            actor=actor,
+            actor_role=actor_role,
+            action=action,
+            previous_status=previous_status,
+            new_status=new_status,
+            note=note,
+            amount=amount if amount is not None else escrow.amount,
+        )
+
+    def __str__(self):
+        return f"{self.action} - {self.escrow.reference}"
+
+
 class PaymentTransaction(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
