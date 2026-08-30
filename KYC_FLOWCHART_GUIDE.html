@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AySmart KYC & Trust Flow - Visual Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 20px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .flowchart-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            border-left: 5px solid #667eea;
+        }
+        
+        .description {
+            background: #e7f0ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .description h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .description ul {
+            margin-left: 20px;
+        }
+        
+        .description li {
+            margin: 8px 0;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .feature-card p {
+            font-size: 0.95em;
+            color: #666;
+        }
+        
+        .endpoints-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .endpoints-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .endpoints-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .endpoints-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .endpoints-table code {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+        
+        .print-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .print-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+            
+            .print-button {
+                display: none;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+            
+            .header {
+                margin-bottom: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .section h2 {
+                font-size: 1.5em;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .print-button {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 24px;
+                font-size: 0.9em;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .key-rules {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .key-rules h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .key-rules ul {
+            margin-left: 20px;
+        }
+        
+        .key-rules li {
+            color: #856404;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 AySmart KYC & Trust Flow</h1>
+            <p>Visual Guide for Money-Safe Marketplace Operations</p>
+        </div>
+        
+        <div class="content">
+            <!-- SECTION 1: User Flow -->
+            <div class="section">
+                <h2>1️⃣ User Journey (Product Flow)</h2>
+                
+                <div class="description">
+                    <h3>What users see and do</h3>
+                    <ul>
+                        <li>Sign up → Complete profile → Submit KYC documents</li>
+                        <li>Wait for verification → Get approved by admin</li>
+                        <li>Once verified: list properties, buy, manage wallet</li>
+                        <li>Checkout triggers escrow hold (funds stay safe)</li>
+                        <li>View transaction history with full audit trail</li>
+                    </ul>
+                </div>
+                
+                <div class="flowchart-container">
+                    <div class="mermaid">
+flowchart TD
+    A[User logs in] --> B{KYC status?}
+    B -- Not Started --> C[Prompt KYC submission]
+    B -- In Progress --> D[Show: Waiting for verification]
+    B -- Verified --> E[All features unlocked]
+    B -- Rejected --> F[Show rejection reason]
+    
+    C --> G[KYC Form Screen]
+    G --> H{Account type?}
+    H -- Seller/Agent --> I[Collect: NIN + Selfie + ID docs]
+    H -- Student --> J[Collect: Matric# + Student email + ID image]
+    H -- Both --> K[Collect: All seller + student docs]
+    
+    I --> L[Submit to verification]
+    J --> L
+    K --> L
+    L --> M[Processing...]
+    M --> N{Provider approves?}
+    N -- Yes --> O[KYC Verified! ✓]
+    N -- No --> F
+    
+    F --> P[Show error message]
+    P --> C
+    
+    O --> Q{Admin approval needed?}
+    Q -- Auto-approved --> R[Ready to list/transact]
+    Q -- Manual review --> S[Awaiting admin approval]
+    
+    S --> T[Show: In queue for admin]
+    T --> U{Admin approved?}
+    U -- Yes --> R
+    U -- No --> F
+    
+    R --> V[User can now...]
+    V --> W1[List properties]
+    V --> W2[Buy properties]
+    V --> W3[Manage wallet]
+    V --> W4[View transaction history]
+    
+    W1 --> X1[Create listing]
+    W2 --> X2[Browse marketplace]
+    W3 --> X3[View balance]
+    W4 --> X4[See audit trail]
+    
+    X2 --> Y[Select property]
+    Y --> Z[Checkout]
+    Z --> AA[Funds held in escrow]
+    AA --> AB[Show: Waiting for seller acceptance]
+    
+    AB --> AC{Transaction decision}
+    AC -- Seller accepts --> AD[Funds released to seller]
+    AC -- Buyer cancels --> AE[Funds refunded]
+    AC -- Dispute --> AF[Flagged for admin review]
+    
+    AD --> AG[Transaction complete]
+    AE --> AG
+    AF --> AG
+                    </div>
+                </div>
+                
+                <div class="key-rules">
+                    <h3>⚠️ Critical Rules</h3>
+                    <ul>
+                        <li>NO checkout or listing allowed without KYC verification</li>
+                        <li>NO direct transfers - all money goes through escrow</li>
+                        <li>Admin approval required for profile activation</li>
+                        <li>Rejected KYC can be re-submitted</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 2: Admin Flow -->
+            <div class="section">
+                <h2>2️⃣ Admin Dashboard (Operations Flow)</h2>
+                
+                <div class="description">
+                    <h3>What admins manage</h3>
+                    <ul>
+                        <li>Review and approve pending KYC applications</li>
+                        <li>Manage escrow holds (release, refund, escalate)</li>
+                        <li>View financial summary and reconciliation</li>
+                        <li>Handle disputes and issues</li>
+                        <li>Export audit logs and financial reports</li>
+                    </ul>
+                </div>
+                
+                <div class="flowchart-container">
+                    <div class="mermaid">
+flowchart TD
+    ADMIN[Admin logs in] --> MENU{Dashboard menu}
+    
+    MENU --> A[KYC Approvals Queue]
+    MENU --> B[Escrow Management]
+    MENU --> C[Financial Audit]
+    MENU --> D[Disputes & Issues]
+    
+    A --> A1[List pending KYC reviews]
+    A1 --> A2[Filter: Seller/Student/Both]
+    A2 --> A3{Review KYC?}
+    A3 -- Approve --> A4[Update profile: verified]
+    A3 -- Reject --> A5[Send rejection reason to user]
+    A4 --> A6[Immutable audit log entry]
+    A5 --> A6
+    
+    B --> B1[List active escrows]
+    B1 --> B2[Filter: Pending/Disputed/Resolved]
+    B2 --> B3{Select escrow}
+    B3 --> B4[View: Buyer, Seller, Amount, Status]
+    B4 --> B5[View: Full transaction timeline + audit trail]
+    B5 --> B6{Admin decision}
+    B6 -- Release to Seller --> B7[Funds transferred]
+    B6 -- Refund to Buyer --> B8[Funds returned]
+    B6 -- Escalate Dispute --> B9[Mark for manual handling]
+    B7 --> B10[Audit log created]
+    B8 --> B10
+    B9 --> B10
+    
+    C --> C1[Financial Summary]
+    C1 --> C2[Metrics: Total Volume, Escrow Held, Processed]
+    C2 --> C3[Export ledger]
+    C3 --> C4[Reconciliation report]
+    C4 --> C5[Verify: Wallet balances match ledger]
+    
+    D --> D1[List disputes/flags]
+    D1 --> D2[Filter: Open/Resolved]
+    D2 --> D3{Select dispute}
+    D3 --> D4[View: Issue description, timeline, evidence]
+    D4 --> D5{Resolution}
+    D5 -- Contact buyer/seller --> D6[Send message]
+    D5 -- Manual refund override --> D7[Release escrow + refund]
+    D5 -- Investigate fraud --> D8[Flag account, block transactions]
+    D6 --> D9[Document decision]
+    D7 --> D9
+    D8 --> D9
+    D9 --> D10[Audit log entry]
+                    </div>
+                </div>
+                
+                <div class="key-rules">
+                    <h3>⚠️ Admin Powers & Restrictions</h3>
+                    <ul>
+                        <li>Approve/reject KYC with reason logged</li>
+                        <li>Release, refund, or escalate escrow (all logged)</li>
+                        <li>View financial ledger and reconciliation</li>
+                        <li>Contact users and resolve disputes</li>
+                        <li>Export audit trail for compliance</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 3: Frontend Screens -->
+            <div class="section">
+                <h2>3️⃣ Frontend Screens to Build</h2>
+                
+                <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">User Screens</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h4>📋 KYC Status</h4>
+                        <p>Show user's KYC state, progress, and rejection reasons (if any). Allow retry if rejected.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📝 KYC Form</h4>
+                        <p>Collect documents based on account type (NIN + selfie for sellers, matric for students, both for dual accounts).</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⏳ Verification Pending</h4>
+                        <p>Show loading state while documents are being verified. Display timestamp and estimated wait time.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>❌ KYC Rejected</h4>
+                        <p>Display rejection reason and allow user to resubmit with corrections.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🏠 Marketplace</h4>
+                        <p>Browse and list properties. Only visible to KYC-verified users. Shows filters and search.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🛒 Checkout</h4>
+                        <p>Complete purchase with escrow hold. Show: property details, price, escrow status, and timeline.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💰 Wallet</h4>
+                        <p>Display wallet balance, available funds, and recent transactions with audit trail links.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Transaction History</h4>
+                        <p>List all past and current escrows with status, amounts, and links to full audit trail.</p>
+                    </div>
+                </div>
+                
+                <h3 style="color: #667eea; margin-top: 30px; margin-bottom: 15px;">Admin Dashboard Screens</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h4>📥 KYC Approvals Queue</h4>
+                        <p>List pending KYC reviews, filter by type, view documents, approve or reject with reason.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📦 Escrow Board</h4>
+                        <p>Manage active holds. Filter by status, view full transaction details, and make release/refund decisions.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📄 Escrow Detail</h4>
+                        <p>Deep dive into a single escrow. View buyer/seller info, documents, complete audit trail, and action buttons.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💵 Financial Summary</h4>
+                        <p>See total volume, escrow held, processed transactions. Export ledger and run reconciliation reports.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚠️ Dispute Queue</h4>
+                        <p>Handle conflicts. Filter by status, view evidence, contact users, refund, or flag for investigation.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 4: API Endpoints -->
+            <div class="section">
+                <h2>4️⃣ Backend API (Already Built & Tested)</h2>
+                
+                <div class="description">
+                    <h3>Ready-to-use endpoints</h3>
+                    <p>All of these are implemented and tested. Your frontend can call them directly.</p>
+                </div>
+                
+                <table class="endpoints-table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Purpose</th>
+                            <th>Frontend Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>POST /api/kyc/submit/</code></td>
+                            <td>Submit KYC documents</td>
+                            <td>KYC Form → verification</td>
+                        </tr>
+                        <tr>
+                            <td><code>GET /api/profile/</code></td>
+                            <td>Get user KYC status</td>
+                            <td>Show status everywhere</td>
+                        </tr>
+                        <tr>
+                            <td><code>POST /api/payments/checkout/</code></td>
+                            <td>Start escrow checkout</td>
+                            <td>Marketplace → buy flow</td>
+                        </tr>
+                        <tr>
+                            <td><code>GET /api/escrows/</code></td>
+                            <td>List user's escrows</td>
+                            <td>Transaction history</td>
+                        </tr>
+                        <tr>
+                            <td><code>POST /api/escrows/review/</code></td>
+                            <td>Admin release/refund</td>
+                            <td>Admin board → decision</td>
+                        </tr>
+                        <tr>
+                            <td><code>GET /api/admin/financial-audit/</code></td>
+                            <td>Financial summary</td>
+                            <td>Admin dashboard</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- SECTION 5: Quick Reference -->
+            <div class="section">
+                <h2>5️⃣ Quick Reference - Trust Chain</h2>
+                
+                <div class="key-rules">
+                    <h3>The Complete Money Flow</h3>
+                    <ul>
+                        <li><strong>User:</strong> Register → Profile → Submit KYC docs</li>
+                        <li><strong>System:</strong> Verify against provider (Dojah)</li>
+                        <li><strong>Admin:</strong> Approve verified user</li>
+                        <li><strong>User:</strong> Now can list or buy (only when verified + approved)</li>
+                        <li><strong>Buyer:</strong> Clicks checkout</li>
+                        <li><strong>System:</strong> Debit buyer wallet → Create escrow → Hold funds</li>
+                        <li><strong>Seller:</strong> Accepts or cancels</li>
+                        <li><strong>Admin:</strong> Reviews if disputed</li>
+                        <li><strong>System:</strong> Release to seller OR refund buyer → Create audit log</li>
+                        <li><strong>Admin:</strong> View financial audit & reconciliation</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 6: How to Use This Guide -->
+            <div class="section">
+                <h2>📱 How to Use This on Mobile</h2>
+                
+                <div class="description">
+                    <h3>View on Phone/Tablet</h3>
+                    <ul>
+                        <li><strong>Desktop:</strong> Open this file in any web browser (it's fully responsive)</li>
+                        <li><strong>Mobile:</strong> Save the file and open it on your phone - it auto-adjusts</li>
+                        <li><strong>Share:</strong> Email this HTML file to your team</li>
+                        <li><strong>Print:</strong> Click the "Print" button below, or use Ctrl+P / Cmd+P</li>
+                        <li><strong>PDF:</strong> Print to PDF using your browser's print dialog</li>
+                    </ul>
+                </div>
+                
+                <div class="key-rules">
+                    <h3>💡 Tips</h3>
+                    <ul>
+                        <li>Click sections to collapse/expand (if implemented)</li>
+                        <li>Zoom in/out on diagrams for detail</li>
+                        <li>Print as PDF for offline reference</li>
+                        <li>Share the PDF with your development team</li>
+                        <li>Use as specification for frontend implementation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🔐 AySmart Ecosystem - Trust & KYC Flow Documentation</p>
+            <p>Generated: 2026-08-29 | Backend Status: ✅ Tested & Ready</p>
+        </div>
+    </div>
+    
+    <button class="print-button" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>
