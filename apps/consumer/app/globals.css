@@ -1,0 +1,11 @@
+:root {
+  --smartassetz-purple: #621063;
+  --smartassetz-gold: #E79E23;
+  --smartassetz-ink: #121826;
+  --smartassetz-soft: #f7f3ef;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background: #f8f9fa; color: var(--smartassetz-ink); }
+body { min-height: 100vh; }
+main { display: block; }

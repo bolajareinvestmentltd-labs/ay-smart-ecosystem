@@ -1,3 +1,5 @@
+from core_api.models_legacy import generate_invoice_number
+
 from .auth_kyc import (
     Referral,
     SiteBrand,
@@ -45,6 +47,7 @@ __all__ = [
     'EscrowAuditLog',
     'EscrowRecord',
     'FavoriteListing',
+    'generate_invoice_number',
     'HiddenListing',
     'HostelBooking',
     'InspectionBooking',
