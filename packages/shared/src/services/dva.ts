@@ -1,3 +1,5 @@
+import { isMockPaymentsEnabled } from './alatpay';
+
 export type DvaStatus = 'pending' | 'credited' | 'failed' | 'expired';
 
 export interface DvaAccount {
@@ -35,6 +37,23 @@ export async function createDvaAccount(
   customerEmail: string,
   options: DvaRequestOptions = {},
 ): Promise<DvaAccount> {
+  if (isMockPaymentsEnabled()) {
+    const reference = `DVA_MOCK_${Date.now()}`;
+    const createdAt = new Date().toISOString();
+    return {
+      id: reference,
+      reference,
+      bankCode: '035',
+      accountNumber: '9900112233',
+      accountName: 'SMART ASSETZ TRUST HOLDING',
+      amount,
+      currency: 'NGN',
+      status: 'pending',
+      createdAt,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
+  }
+
   const baseUrl = options.baseUrl ?? '/api/payments/dva/';
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(baseUrl, {
@@ -65,6 +84,18 @@ export async function pollDvaStatus(
   pollIntervalMs = 4000,
   maxAttempts = 10,
 ): Promise<DvaStatusPayload> {
+  if (isMockPaymentsEnabled()) {
+    return {
+      reference,
+      status: 'credited',
+      amount: 0,
+      accountNumber: '9900112233',
+      bankCode: '035',
+      confirmedAt: new Date().toISOString(),
+      detail: 'Mock DVA payment confirmed successfully.',
+    };
+  }
+
   const baseUrl = options.baseUrl ?? '/api/payments/dva/';
   const fetcher = options.fetcher ?? fetch;
 

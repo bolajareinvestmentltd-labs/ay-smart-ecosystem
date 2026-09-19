@@ -1840,6 +1840,21 @@ class WemaPaymentWebhookView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        if getattr(settings, 'USE_MOCK_PAYMENTS', False):
+            payload = request.data if isinstance(request.data, dict) else {}
+            data = payload.get('data') if isinstance(payload.get('data'), dict) else payload
+            reference = str(payload.get('reference') or data.get('reference') or 'TXN_MOCK_TEST_999').strip()
+            provider_status = str(payload.get('status') or data.get('status') or 'successful').lower()
+            if provider_status not in {'success', 'successful', 'settled', 'completed'}:
+                return Response({'detail': 'Mock payment was not successful.', 'reference': reference}, status=status.HTTP_200_OK)
+            return Response({
+                'detail': 'Mock payment processed successfully.',
+                'reference': reference,
+                'status': 'SUCCESS',
+                'virtual_account': '9900112233',
+                'mock_mode': True,
+            }, status=status.HTTP_200_OK)
+
         secret = getattr(settings, 'WEMA_WEBHOOK_SECRET', '').strip()
         signature = request.headers.get('X-WEMA-SIGNATURE', '')
         raw_body = request.body

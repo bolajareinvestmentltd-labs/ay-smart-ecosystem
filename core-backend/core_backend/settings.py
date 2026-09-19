@@ -38,6 +38,7 @@ load_dotenv(ROOT_ENV_FILE)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('1', 'true', 'yes')
+USE_MOCK_PAYMENTS = os.getenv('USE_MOCK_PAYMENTS', 'false').lower() in ('1', 'true', 'yes', 'on')
 if not SECRET_KEY:
     if DEBUG:
         SECRET_KEY = 'django-insecure-local-development-only'

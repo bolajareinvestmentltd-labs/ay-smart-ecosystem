@@ -46,6 +46,33 @@ const defaultHeaders = {
   'Content-Type': 'application/json',
 };
 
+export function isMockPaymentsEnabledForApi(): boolean {
+  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    const runtimeFlag = (window as Window & { __NEXT_PUBLIC_USE_MOCK_PAYMENTS?: string }).__NEXT_PUBLIC_USE_MOCK_PAYMENTS;
+    return runtimeFlag === 'true';
+  }
+
+  return false;
+}
+
+function createMockSession(request: PaymentInitiationRequest): PaymentSessionPayload {
+  const reference = `TXN_MOCK_${Date.now()}`;
+  return {
+    id: 'mock-session-1',
+    provider: 'wema',
+    amount: Number(request.amount ?? 0),
+    plan: request.plan ?? 'basic',
+    provider_reference: reference,
+    reference,
+    payment_url: 'mock://wema-checkout',
+    detail: 'Mock payment session created successfully.',
+  };
+}
+
 function mergeHeaders(headers?: Record<string, string>, authToken?: string) {
   return {
     ...defaultHeaders,
@@ -83,6 +110,10 @@ export async function createPaymentSession(
   request: PaymentInitiationRequest,
   apiOptions: PaymentApiOptions = {},
 ): Promise<PaymentSessionPayload> {
+  if (isMockPaymentsEnabledForApi()) {
+    return createMockSession(request);
+  }
+
   const baseUrl = apiOptions.baseUrl ?? '/api/payments/initiate/';
   return callJson<PaymentSessionPayload>(baseUrl, {
     method: 'POST',
@@ -94,6 +125,10 @@ export async function checkoutPayment(
   request: PaymentInitiationRequest,
   apiOptions: PaymentApiOptions = {},
 ): Promise<PaymentSessionPayload> {
+  if (isMockPaymentsEnabledForApi()) {
+    return createMockSession(request);
+  }
+
   const baseUrl = apiOptions.baseUrl ?? '/api/payments/checkout/';
   return callJson<PaymentSessionPayload>(baseUrl, {
     method: 'POST',
@@ -105,6 +140,18 @@ export async function verifyPayment(
   request: PaymentVerificationRequest,
   apiOptions: PaymentApiOptions = {},
 ): Promise<PaymentSessionPayload> {
+  if (isMockPaymentsEnabledForApi()) {
+    const reference = request.reference || `TXN_MOCK_${Date.now()}`;
+    return {
+      id: 'mock-verify-1',
+      provider: 'wema',
+      provider_reference: reference,
+      reference,
+      amount: 0,
+      detail: 'Mock payment verified successfully in offline mode.',
+    };
+  }
+
   const baseUrl = apiOptions.baseUrl ?? '/api/payments/verify/';
   return callJson<PaymentSessionPayload>(baseUrl, {
     method: 'POST',

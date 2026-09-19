@@ -28,6 +28,7 @@ export function AlatPayCheckout({
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
 
   const formattedAmount = useMemo(() => new Intl.NumberFormat('en-NG', {
     style: 'currency',
@@ -74,6 +75,12 @@ export function AlatPayCheckout({
       });
 
       if (result.status === 'success') {
+        if (useMockPayments) {
+          setMessage(`Mock payment confirmed via ALATPay (${result.reference}).`);
+          onSuccess?.(result);
+          return;
+        }
+
         await verifyPayment({ reference: result.reference, provider: 'wema' });
       }
     } catch (caughtError) {
