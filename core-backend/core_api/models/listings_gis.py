@@ -1,0 +1,31 @@
+from core_api.models_legacy import (
+    BranchLocation,
+    Conversation,
+    ConversationMessage,
+    FavoriteListing,
+    HiddenListing,
+    Listing,
+    ListingImage,
+    PickupVoucher,
+    Promotion,
+    Property,
+    PropertyImage,
+    SavedSearch,
+    Vehicle,
+)
+
+__all__ = [
+    'BranchLocation',
+    'Conversation',
+    'ConversationMessage',
+    'FavoriteListing',
+    'HiddenListing',
+    'Listing',
+    'ListingImage',
+    'PickupVoucher',
+    'Promotion',
+    'Property',
+    'PropertyImage',
+    'SavedSearch',
+    'Vehicle',
+]
