@@ -1,0 +1,331 @@
+'use client';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import PropertyGallery from '../../components/PropertyGallery';
+import InspectionBookingForm from '../../components/InspectionBookingForm';
+import { authFetch } from '../../lib/auth';
+import { buildApiUrl } from '../../lib/api';
+import LoadingScreen from '../../components/LoadingScreen';
+
+type PropertyImageItem = { id?: number; url?: string; image?: string; video_url?: string; caption?: string };
+type FavoriteItem = { id?: number; listing?: { id?: number | string } | null };
+type HiddenItem = { id?: number; listing?: { id?: number | string } | null };
+type UserProfile = { role?: string };
+type PropertyData = {
+  id?: number | string;
+  title?: string;
+  price?: number | string;
+  property_type_display?: string;
+  location_address?: string;
+  main_image_url?: string;
+  source?: string;
+  map_url?: string;
+  latitude?: number | string;
+  longitude?: number | string;
+  images?: PropertyImageItem[];
+  virtual_tour_url?: string;
+};
+
+export default function PropertyDetailPage() {
+  const params = useParams();
+  const propertyId = params?.id ? String(params.id) : null;
+  const [property, setProperty] = useState<PropertyData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [uploadMessage, setUploadMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      if (!propertyId) {
+        setErrorMessage('Unable to determine property ID.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage('');
+      try {
+        let res = await fetch(buildApiUrl(`/listings/${propertyId}/`));
+        let source = 'listing';
+        if (!res.ok) {
+          source = 'property';
+          res = await fetch(buildApiUrl(`/properties/${propertyId}/`));
+        }
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          const raw = payload?.detail || payload?.message || res.statusText || 'Unknown error';
+          // Friendly mapping for token errors and guidance for users
+          const detail = typeof raw === 'string' && /token/i.test(raw)
+            ? 'Session expired or invalid token. Please sign in again or clear your browser cookies.'
+            : raw;
+          setErrorMessage(`Failed to load property: ${res.status} ${detail}`);
+          return;
+        }
+        const data = await res.json();
+        setProperty({
+          ...data,
+          title: data.title,
+          property_type_display: data.property_type_display || data.category,
+          location_address: data.location_address || data.location,
+          main_image_url: data.main_image_url || data.images?.[0]?.url,
+          source,
+        });
+
+        // Check user auth and favorites/hidden status
+        try {
+          const userRes = await authFetch(buildApiUrl('/auth/me/'));
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            setUser(userData);
+
+            // Check if favorited
+            const favRes = await authFetch(buildApiUrl('/favorites/'));
+            if (favRes.ok) {
+              const favorites = await favRes.json();
+              const isFav = favorites.some((fav: FavoriteItem) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
+              setIsFavorited(isFav);
+            }
+
+            // Check if hidden
+            const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
+            if (hiddenRes.ok) {
+              const hidden = await hiddenRes.json();
+              const isHid = hidden.some((hid: HiddenItem) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
+              setIsHidden(isHid);
+            }
+          }
+        } catch {
+          console.log('User not authenticated');
+        }
+      } catch (error) {
+        setErrorMessage(`Network or server error: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [propertyId]);
+
+  if (loading) return <LoadingScreen label="Loading property" />;
+  if (errorMessage)
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 text-center">
+        <div className="max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950/95 p-8 shadow-2xl">
+          <h1 className="text-2xl font-black text-white">Unable to load property</h1>
+          <p className="mt-4 text-sm text-zinc-400">{errorMessage}</p>
+          <div className="mt-6">
+            <Link href="/properties" className="rounded-full bg-brand-purple px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple/20 transition hover:bg-brand-magenta">
+              Back to listings
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  if (!property) return <div className="min-h-screen flex items-center justify-center">Property not found</div>;
+
+  const openMap = () => {
+    const locationQuery = property.location_address ?? 'property location';
+    if (property.latitude && property.longitude) {
+      window.open(`https://www.google.com/maps?q=${property.latitude},${property.longitude}`, '_blank');
+    } else {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`, '_blank');
+    }
+  };
+
+  async function handleToggleFavorite() {
+    if (!user) {
+      setErrorMessage('Please sign in to save favorites.');
+      return;
+    }
+
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        const favRes = await authFetch(buildApiUrl('/favorites/'));
+        if (favRes.ok) {
+          const favorites = await favRes.json();
+          const favToDelete = favorites.find((fav: FavoriteItem) => String(fav.listing?.id) === propertyId || String(fav.id) === propertyId);
+          if (favToDelete) {
+            await authFetch(buildApiUrl(`/favorites/${favToDelete.id}/`), { method: 'DELETE' });
+            setIsFavorited(false);
+          }
+        }
+      } else {
+        // Add to favorites
+        const res = await authFetch(buildApiUrl('/favorites/'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listing: propertyId }),
+        });
+        if (res.ok) {
+          setIsFavorited(true);
+        } else {
+          setErrorMessage('Failed to save favorite.');
+        }
+      }
+    } catch (error) {
+      setErrorMessage(`Error updating favorite: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function handleToggleHidden() {
+    if (!user) {
+      setErrorMessage('Please sign in to hide listings.');
+      return;
+    }
+
+    try {
+      if (isHidden) {
+        // Remove from hidden
+        const hiddenRes = await authFetch(buildApiUrl('/hidden-listings/'));
+        if (hiddenRes.ok) {
+          const hidden = await hiddenRes.json();
+          const hidToDelete = hidden.find((hid: HiddenItem) => String(hid.listing?.id) === propertyId || String(hid.id) === propertyId);
+          if (hidToDelete) {
+            await authFetch(buildApiUrl(`/hidden-listings/${hidToDelete.id}/`), { method: 'DELETE' });
+            setIsHidden(false);
+          }
+        }
+      } else {
+        // Add to hidden
+        const res = await authFetch(buildApiUrl('/hidden-listings/'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listing: propertyId }),
+        });
+        if (res.ok) {
+          setIsHidden(true);
+        } else {
+          setErrorMessage('Failed to hide listing.');
+        }
+      }
+    } catch (error) {
+      setErrorMessage(`Error updating hidden status: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function handleUploadImage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedFile && !selectedVideo) {
+      setUploadMessage('Please choose an image or video to upload.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage('');
+    const formData = new FormData();
+    if (selectedFile) formData.append('image', selectedFile);
+    if (selectedVideo) formData.append('video', selectedVideo);
+
+    const res = await authFetch(buildApiUrl(`/properties/${propertyId}/upload_image/`), {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setUploadMessage(payload?.detail || 'Upload failed. Please sign in and try again.');
+      setUploading(false);
+      return;
+    }
+
+    const payload = await res.json().catch(() => null);
+    if (payload && payload.id) {
+      const newImage = { id: payload.id, url: payload.image || payload.url, video_url: payload.video, caption: payload.caption || '' };
+      setProperty((prev) => (prev ? { ...prev, images: prev.images ? [newImage, ...prev.images] : [newImage] } : prev));
+      setUploadMessage('Image uploaded successfully.');
+      setSelectedFile(null);
+      setSelectedVideo(null);
+    }
+    setUploading(false);
+  }
+
+  return (
+    <main className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl">
+        <div className="mb-6 flex items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.28em] text-brand-accent">Property detail</p>
+            <h1 className="mt-2 text-3xl font-black">{property.title}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleToggleFavorite}
+              className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-semibold transition ${
+                isFavorited
+                  ? 'bg-red-500/20 border-red-500/50 border text-red-400'
+                  : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'
+              }`}
+              title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              ❤️ {isFavorited ? 'Favorited' : 'Favorite'}
+            </button>
+            <button
+              onClick={handleToggleHidden}
+              className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-semibold transition ${
+                isHidden
+                  ? 'bg-gray-500/20 border-gray-500/50 border text-gray-400'
+                  : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'
+              }`}
+              title={isHidden ? 'Unhide this listing' : 'Hide this listing'}
+            >
+              👁️ {isHidden ? 'Hidden' : 'Hide'}
+            </button>
+            <Link
+              href="/properties"
+              className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Back to listings
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-6 md:grid-cols-2">
+          <div>
+            <PropertyGallery images={property.images && property.images.length ? property.images.map((item, index) => ({ id: item.id ?? index, url: item.url ?? item.image, video_url: item.video_url, caption: item.caption })) : [{ id: 0, url: property.main_image_url }]} />
+            {property.virtual_tour_url && (
+              <a href={property.virtual_tour_url} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full border border-zinc-700 px-4 py-2">Open Virtual Tour</a>
+            )}
+          </div>
+          <div>
+            <div className="text-sm text-zinc-400">{property.property_type_display}</div>
+            <div className="mt-2 text-2xl font-black">₦{Number(property.price).toLocaleString()}</div>
+            {property.map_url ? <a href={property.map_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-full border border-zinc-700 px-4 py-2">Open location in Google Maps</a> : <button onClick={openMap} className="mt-4 rounded-full border border-zinc-700 px-4 py-2">{property.location_address}</button>}
+            <p className="mt-4 text-zinc-300">{property.location_address}</p>
+            <div className="mt-6 space-y-4">
+              <div id="book">
+                <InspectionBookingForm
+                  {...(property.source === 'listing'
+                    ? { listingId: Number(propertyId) }
+                    : { propertyId: Number(propertyId) })}
+                />
+              </div>
+              {user && user.role && ['seller', 'agent', 'both'].includes(user.role) && <form onSubmit={handleUploadImage} className="rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4">
+                <h2 className="text-lg font-black">Upload property media</h2>
+                <p className="mt-2 text-sm text-zinc-400">Trusted agents and authenticated sellers can submit photos or walkthrough videos for this listing.</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                  className="mt-4 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100"
+                />
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(e) => setSelectedVideo(e.target.files?.[0] ?? null)} className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100" />
+                <button disabled={uploading} className="mt-4 rounded-2xl bg-brand-purple px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-70">
+                  {uploading ? 'Uploading...' : 'Upload media'}
+                </button>
+                {uploadMessage && <p className="mt-3 text-sm text-zinc-300">{uploadMessage}</p>}
+              </form>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import socket
 from pathlib import Path
 from urllib.parse import urlparse
@@ -35,6 +35,11 @@ except Exception:
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_ENV_FILE = BASE_DIR.parent / '.env'
 load_dotenv(ROOT_ENV_FILE)
+LOCAL_ENV_FILE = BASE_DIR / '.env'
+if ROOT_ENV_FILE.exists():
+    load_dotenv(ROOT_ENV_FILE, override=True)
+if LOCAL_ENV_FILE.exists():
+    load_dotenv(LOCAL_ENV_FILE, override=True)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('1', 'true', 'yes')

@@ -2004,32 +2004,57 @@ AY'SMART Team
         return None
 
     def _init_wema(self, user, transaction, reference, amount):
-        """Initialize Wema/Alat Pay payment"""
+        """Initialize Wema/Alat Pay payment."""
         wema_api_key = getattr(settings, 'WEMA_API_KEY', '').strip()
         if not wema_api_key:
             return None
+
+        profile = UserProfile.objects.filter(user=user).first()
+        merchant_id = getattr(settings, 'WEMA_MERCHANT_ID', '').strip()
+        callback_url = getattr(settings, 'WEMA_CALLBACK_URL', f"{settings.FRONTEND_URL.rstrip('/')}/success")
+        customer_phone = profile.phone if profile and profile.phone else ''
+
+        payload = {
+            'email': user.email,
+            'amount': int(amount),
+            'reference': reference,
+            'currency': 'NGN',
+            'description': transaction.plan,
+            'callback_url': callback_url,
+            'customer_name': user.get_full_name() or user.username,
+            'customer_phone': customer_phone,
+        }
+        if merchant_id:
+            payload['merchant_id'] = merchant_id
 
         try:
             response = requests.post(
                 f"{getattr(settings, 'WEMA_API_URL', '').rstrip('/')}/transaction/initialize",
                 headers={'Authorization': f'Bearer {wema_api_key}', 'Content-Type': 'application/json'},
-                json={
-                    'email': user.email,
-                    'amount': int(amount),
-                    'reference': reference,
-                    'currency': 'NGN',
-                    'description': transaction.plan,
-                    'callback_url': getattr(settings, 'WEMA_CALLBACK_URL', f"{settings.FRONTEND_URL.rstrip('/')}/success"),
-                    'customer_name': user.get_full_name() or user.username,
-                    'customer_phone': user.profile.phone if hasattr(user, 'profile') else '',
-                },
-                timeout=10,
+                json=payload,
+                timeout=15,
             )
             if response.ok:
-                payload = response.json().get('data', {})
-                transaction.provider_reference = payload.get('reference', reference)
-                transaction.save(update_fields=['provider_reference'])
-                return payload.get('payment_url') or payload.get('checkout_url')
+                raw = response.json()
+                data = raw.get('data') if isinstance(raw, dict) and isinstance(raw.get('data'), dict) else raw if isinstance(raw, dict) else {}
+                transaction.provider_reference = (
+                    data.get('reference')
+                    or data.get('transaction_reference')
+                    or data.get('payment_reference')
+                    or data.get('id')
+                    or reference
+                )
+                transaction.save(update_fields=['provider_reference', 'updated_at'])
+                payment_url = (
+                    data.get('payment_url')
+                    or data.get('checkout_url')
+                    or data.get('paymentUrl')
+                    or data.get('checkoutUrl')
+                    or data.get('url')
+                    or data.get('redirect_url')
+                )
+                if payment_url:
+                    return payment_url
         except requests.RequestException:
             pass
         return None

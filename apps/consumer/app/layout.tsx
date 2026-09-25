@@ -1,15 +1,77 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import Footer from './components/Footer';
+import DockNavbar from './components/DockNavbar';
+import PageTransition from './components/PageTransition';
+import ThemeProvider from './components/ThemeProvider';
+import NewsletterSlideUp from './components/NewsletterSlideUp';
+import AppHeader from './components/AppHeader';
+import ServiceWorkerRegister from './components/ServiceWorkerRegister';
+import Analytics from './components/Analytics';
+import SupportAssistant from './components/SupportAssistant';
+import type { Viewport } from 'next';
 
-export const metadata: Metadata = {
-  title: 'SMART ASSETZ Consumer',
-  description: 'Consumer marketplace and checkout experience for SMART ASSETZ.',
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: "Smart Assetz | Real Estate, Hostels & Luxury Living",
+  description: "Find and book luxury properties, student hostels, short lets, and construction services.",
+  manifest: '/manifest.webmanifest',
+  applicationName: "Smart Assetz",
+  keywords: ['real estate', 'hostel', 'luxury property', 'automotive', 'marketplace'],
+  authors: [{ name: 'AYSMART INVESTMENT LTD' }],
+  creator: 'AYSMART INVESTMENT LTD',
+  publisher: 'AYSMART INVESTMENT LTD',
+  icons: {
+    icon: '/assets/brand-logo.svg',
+    shortcut: '/assets/brand-logo.svg',
+    apple: '/assets/brand-logo.svg',
+    other: [{ rel: 'mask-icon', url: '/assets/brand-logo.svg' }],
+  },
+  metadataBase: new URL('https://ay-smart-ecosystem.vercel.app'),
+  alternates: {
+    canonical: 'https://ay-smart-ecosystem.vercel.app',
+  },
+  openGraph: {
+    title: "AY'SMART ECO",
+    description: 'Luxury properties, hostels, and automotive marketplace.',
+    url: 'https://ay-smart-ecosystem.vercel.app',
+    siteName: "AY'SMART ECO",
+    images: [{ url: '/assets/brand-logo.svg', alt: "AY'SMART ECO" }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "AY'SMART ECO",
+    description: 'Luxury properties, hostels, and automotive marketplace.',
+    images: ['/assets/ay-smart-logo.png'],
+    creator: '@aysmartinvest',
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen overflow-x-hidden antialiased">
+        <ThemeProvider>
+          <AppHeader />
+          <PageTransition>{children}</PageTransition>
+          <DockNavbar />
+          <Footer />
+          <NewsletterSlideUp />
+          <ServiceWorkerRegister />
+          <Analytics />
+          <SupportAssistant />
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

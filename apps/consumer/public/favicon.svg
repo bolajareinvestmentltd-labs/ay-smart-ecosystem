@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="AYSMART logo">
+  <rect width="200" height="200" rx="40" fill="#0f172a"/>
+  <rect x="18" y="18" width="164" height="164" rx="32" fill="#ffffff"/>
+  <image href="/assets/ay-smart-logo.png" x="24" y="24" width="152" height="152" preserveAspectRatio="xMidYMid meet"/>
+</svg>

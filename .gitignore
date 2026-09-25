@@ -4,6 +4,8 @@ __pycache__/
 *.sqlite3
 *.log
 .env
+.env.local
+.env.*
 *.pyc
 media/
 core-backend/media/
@@ -13,5 +15,6 @@ node_modules/
 .next/
 out/
 dist/
+*.tsbuildinfo
 npm-debug.log*
 .turbo/

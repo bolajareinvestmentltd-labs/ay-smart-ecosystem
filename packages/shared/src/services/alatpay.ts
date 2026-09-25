@@ -32,8 +32,6 @@ export interface AlatPayCheckoutOptions {
 declare global {
   interface Window {
     AlatPay?: AlatPaySDK;
-    __SMART_ASSETZ_MOCK_ALATPAY__?: Record<string, unknown>;
-    __NEXT_PUBLIC_USE_MOCK_PAYMENTS?: string;
   }
 }
 
@@ -41,52 +39,7 @@ function hasWindow(): boolean {
   return typeof window !== 'undefined';
 }
 
-export function isMockPaymentsEnabled(): boolean {
-  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true') {
-    return true;
-  }
-
-  if (hasWindow()) {
-    return window.__NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
-  }
-
-  return false;
-}
-
-function createMockAlatPaySDK(): AlatPaySDK {
-  return {
-    setup: (config) => {
-      if (hasWindow()) {
-        window.__SMART_ASSETZ_MOCK_ALATPAY__ = config;
-      }
-    },
-    open: () => {
-      if (hasWindow()) {
-        window.__SMART_ASSETZ_MOCK_ALATPAY__ = {
-          ...(window.__SMART_ASSETZ_MOCK_ALATPAY__ ?? {}),
-          mode: 'mock',
-          state: 'open',
-          virtualAccount: '9900112233',
-        };
-      }
-    },
-    close: () => {
-      if (hasWindow()) {
-        window.__SMART_ASSETZ_MOCK_ALATPAY__ = {
-          ...(window.__SMART_ASSETZ_MOCK_ALATPAY__ ?? {}),
-          mode: 'mock',
-          state: 'closed',
-        };
-      }
-    },
-  };
-}
-
 export function loadAlatPaySDK(): Promise<AlatPaySDK> {
-  if (isMockPaymentsEnabled()) {
-    return Promise.resolve(createMockAlatPaySDK());
-  }
-
   if (!hasWindow()) {
     return Promise.reject(new Error('ALATPay can only be loaded in the browser.'));
   }
@@ -126,30 +79,6 @@ export function loadAlatPaySDK(): Promise<AlatPaySDK> {
 }
 
 export async function openZeroRedirectAlatpayCheckout(options: AlatPayCheckoutOptions): Promise<AlatPayCheckoutResult> {
-  if (isMockPaymentsEnabled()) {
-    const mockReference = String(options.reference || `TXN_MOCK_${Date.now()}`);
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const normalized = {
-          reference: mockReference,
-          provider: 'wema' as const,
-          status: 'success' as const,
-          payload: {
-            reference: mockReference,
-            amount: options.amount,
-            currency: options.currency ?? 'NGN',
-            virtual_account: '9900112233',
-            mode: 'mock',
-            modal_state: 'success',
-          },
-        };
-        options.onSuccess?.(normalized);
-        resolve(normalized);
-      }, 800);
-    });
-  }
-
   const sdk = await loadAlatPaySDK();
 
   return new Promise((resolve, reject) => {
@@ -160,7 +89,7 @@ export async function openZeroRedirectAlatpayCheckout(options: AlatPayCheckoutOp
       phone: options.phone,
       reference: options.reference,
       metadata: options.metadata ?? {},
-      publicKey: options.publicKey,
+      publicKey: options.publicKey ?? process.env.NEXT_PUBLIC_ALATPAY_API_KEY,
       label: options.label ?? 'SMART ASSETZ checkout',
       zIndex: options.zIndex ?? 1000,
       onSuccess: (result: Record<string, unknown>) => {
@@ -199,5 +128,5 @@ export async function openZeroRedirectAlatpayCheckout(options: AlatPayCheckoutOp
 }
 
 export function isAlatPayConfigured(): boolean {
-  return isMockPaymentsEnabled() || (typeof window !== 'undefined' && Boolean(window.AlatPay));
+  return typeof window !== 'undefined' && Boolean(window.AlatPay);
 }

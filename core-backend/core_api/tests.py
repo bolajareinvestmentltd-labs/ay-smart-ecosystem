@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
 from .models import InspectionBooking, Listing, PaymentTransaction, Property, Referral, SupportRequest, UserProfile, Wallet, WalletTransaction, HostelBooking, EscrowRecord
-from .views import purge_rejected_identity_documents, send_verification_email
+from .views_legacy import purge_rejected_identity_documents, send_verification_email
 from .private_storage import PrivateIdentityDocumentStorage
 
 
@@ -158,6 +158,33 @@ class ReferralWalletTests(TestCase):
         wallet = Wallet.objects.get(user=user)
         self.assertEqual(wallet.balance, 0)
         self.assertFalse(WalletTransaction.objects.filter(user=user, description="Inspection booking").exists())
+
+    @patch('core_api.views_legacy.requests.post')
+    @override_settings(WEMA_API_KEY='sandbox-key-123', WEMA_MERCHANT_ID='merchant-456')
+    def test_wema_payment_initiation_includes_required_merchant_id(self, mock_post):
+        user = User.objects.create_user(username='newwemauser', email='newwema@example.com', password='secret123')
+        self.client.force_authenticate(user=user)
+
+        mock_response = mock_post.return_value
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            'data': {
+                'reference': 'wema-ref-123',
+                'payment_url': 'https://sandbox.example/pay/wema-ref-123',
+            }
+        }
+
+        response = self.client.post(
+            '/api/payments/initiate/',
+            {'provider': 'wema', 'plan': 'basic', 'amount': '3500'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['provider_reference'], 'wema-ref-123')
+        self.assertEqual(response.data['payment_url'], 'https://sandbox.example/pay/wema-ref-123')
+        self.assertEqual(mock_post.call_args.kwargs['json']['merchant_id'], 'merchant-456')
+        self.assertTrue(PaymentTransaction.objects.filter(user=user, provider='wema').exists())
 
     def test_registration_endpoint_creates_user_and_wallet(self):
         response = self.client.post(

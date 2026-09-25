@@ -1,15 +1,19 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { PartnerProvider } from './lib/partner-context';
 
 export const metadata: Metadata = {
-  title: 'SMART ASSETZ Partner Suite',
-  description: 'Multi-tenant partner portal for SMART ASSETZ operations.',
+  title: 'Smart Assetz | Partner Suite',
+  description: 'Dedicated multi-tenant portals for agents, sellers, landlords, investors, tenants, students, and hotel hosts.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-[#0b0610] text-[#f4eff8] antialiased">
+        <PartnerProvider>{children}</PartnerProvider>
+      </body>
     </html>
   );
 }
+

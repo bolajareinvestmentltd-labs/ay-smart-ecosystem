@@ -9,10 +9,13 @@
   "scripts": {
     "dev:consumer": "npm --workspace @smartassetz/consumer run dev",
     "dev:partner-suite": "npm --workspace @smartassetz/partner-suite run dev",
+    "dev:admin": "npm --workspace @smartassetz/admin run dev -- --port 3002",
     "build:consumer": "npm --workspace @smartassetz/consumer run build",
     "build:partner-suite": "npm --workspace @smartassetz/partner-suite run build",
+    "build:admin": "npm --workspace @smartassetz/admin run build",
     "lint:consumer": "npm --workspace @smartassetz/consumer run lint",
-    "lint:partner-suite": "npm --workspace @smartassetz/partner-suite run lint"
+    "lint:partner-suite": "npm --workspace @smartassetz/partner-suite run lint",
+    "lint:admin": "npm --workspace @smartassetz/admin run lint"
   },
   "packageManager": "npm@10.9.2"
 }

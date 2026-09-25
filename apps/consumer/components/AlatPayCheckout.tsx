@@ -28,7 +28,6 @@ export function AlatPayCheckout({
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
 
   const formattedAmount = useMemo(() => new Intl.NumberFormat('en-NG', {
     style: 'currency',
@@ -57,6 +56,7 @@ export function AlatPayCheckout({
         email: email ?? 'customer@smartassetz.com',
         reference,
         label,
+        publicKey: process.env.NEXT_PUBLIC_ALATPAY_API_KEY,
         metadata: {
           ...(metadata ?? {}),
           paymentSessionId: session.id ?? reference,
@@ -75,13 +75,8 @@ export function AlatPayCheckout({
       });
 
       if (result.status === 'success') {
-        if (useMockPayments) {
-          setMessage(`Mock payment confirmed via ALATPay (${result.reference}).`);
-          onSuccess?.(result);
-          return;
-        }
-
         await verifyPayment({ reference: result.reference, provider: 'wema' });
+        setMessage(`Payment verified successfully via ALATPay (${result.reference}).`);
       }
     } catch (caughtError) {
       const nextError = caughtError instanceof Error ? caughtError : new Error('Unable to complete secure payment.');

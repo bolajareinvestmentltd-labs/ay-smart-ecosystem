@@ -1,4 +1,4 @@
-﻿from django.conf import settings
+from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from rest_framework.routers import DefaultRouter
 from core_api.auth_views import CookieTokenObtainPairView, CookieTokenRefreshView, LogoutView
+from core_api.auth_views import CookieTokenObtainPairView, CookieTokenRefreshView, LogoutView, GoogleSocialAuthView
 from core_api.views import (
     BranchLocationViewSet, BuildProjectViewSet, CheckoutView,
     HostelBookingViewSet, InspectionBookingViewSet, KycApprovalView, ListingViewSet,
@@ -52,6 +53,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # Cookie-based auth endpoints (sets HttpOnly cookies)
     path("api/auth/login-cookie/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair_cookie"),
+    path("api/auth/google/", GoogleSocialAuthView.as_view(), name="auth_google"),
     path("api/auth/csrf/", lambda request: JsonResponse({'csrfToken': get_token(request)}), name="auth_csrf"),
     path("api/auth/refresh-cookie/", CookieTokenRefreshView.as_view(), name="token_refresh_cookie"),
     path("api/auth/logout/", LogoutView.as_view(), name="token_logout"),
