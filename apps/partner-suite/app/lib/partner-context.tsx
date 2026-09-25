@@ -11,6 +11,9 @@ export type PartnerCategory =
   | 'student'
   | 'shortlet-hotel';
 
+export type ThemeMode = 'dark' | 'light';
+export type SupportedLanguage = 'en' | 'fr' | 'yo' | 'ha';
+
 export interface CategoryMetadata {
   id: PartnerCategory;
   name: string;
@@ -102,10 +105,14 @@ export interface PartnerUser {
 interface PartnerContextType {
   user: PartnerUser | null;
   loading: boolean;
+  theme: ThemeMode;
+  language: SupportedLanguage;
   subscribeCategory: (cat: PartnerCategory) => void;
   hasAccess: (cat: PartnerCategory) => boolean;
   loginDemo: (category: PartnerCategory) => void;
   logout: () => void;
+  setTheme: (mode: ThemeMode) => void;
+  setLanguage: (language: SupportedLanguage) => void;
 }
 
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
@@ -113,18 +120,21 @@ const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 export function PartnerProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PartnerUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [language, setLanguage] = useState<SupportedLanguage>('en');
 
   useEffect(() => {
-    // Check local storage or backend cookie
-    const saved = localStorage.getItem('smartassetz_partner_user');
-    if (saved) {
+    const savedUser = localStorage.getItem('smartassetz_partner_user');
+    const savedTheme = localStorage.getItem('smartassetz_theme') as ThemeMode | null;
+    const savedLanguage = localStorage.getItem('smartassetz_language') as SupportedLanguage | null;
+
+    if (savedUser) {
       try {
-        setUser(JSON.parse(saved));
+        setUser(JSON.parse(savedUser));
       } catch {
-        // ignore
+        setUser(null);
       }
     } else {
-      // Default to demo verified partner with all portals unlocked for immediate inspection
       const initial: PartnerUser = {
         id: 1,
         username: 'partner_executive',
@@ -139,8 +149,23 @@ export function PartnerProvider({ children }: { children: React.ReactNode }) {
       setUser(initial);
       localStorage.setItem('smartassetz_partner_user', JSON.stringify(initial));
     }
+
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      setTheme(savedTheme);
+    }
+
+    if (savedLanguage && ['en', 'fr', 'yo', 'ha'].includes(savedLanguage)) {
+      setLanguage(savedLanguage);
+    }
+
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.lang = language;
+    localStorage.setItem('smartassetz_theme', theme);
+  }, [theme, language]);
 
   const subscribeCategory = (cat: PartnerCategory) => {
     if (!user) return;
@@ -178,7 +203,20 @@ export function PartnerProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <PartnerContext.Provider value={{ user, loading, subscribeCategory, hasAccess, loginDemo, logout }}>
+    <PartnerContext.Provider
+      value={{
+        user,
+        loading,
+        theme,
+        language,
+        setTheme,
+        setLanguage,
+        subscribeCategory,
+        hasAccess,
+        loginDemo,
+        logout,
+      }}
+    >
       {children}
     </PartnerContext.Provider>
   );

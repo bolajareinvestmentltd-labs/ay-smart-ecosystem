@@ -1,11 +1,11 @@
 export const API = {
-  base: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+  base: process.env.NEXT_PUBLIC_API_URL || 'https://api.smartassetz.ng',
 };
 
 export const SITE = {
   name: "Smart Assetz",
   description: "Nigeria's Leading Real Estate & Property Marketplace.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://smartassetz.ng",
   email: "support@smartassetz.ng",
   phone: "+234 800 000 0000",
   whatsapp: "+2348000000000",
